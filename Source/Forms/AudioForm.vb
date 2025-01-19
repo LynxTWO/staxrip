@@ -1148,7 +1148,7 @@ Public Class AudioForm
 
     Sub mbLanguage_ValueChanged() Handles mbLanguage.ValueChangedUser
         TempProfile.Language = mbLanguage.GetValue(Of Language)()
-        mbLanguage.Text = TempProfile.Language.ToString()
+        mbLanguage.Text = g.GetExtendedLanguageName(TempProfile.Language)
         If Not BlockUpdate Then UpdateControls()
     End Sub
 
@@ -1201,7 +1201,7 @@ Public Class AudioForm
         mbDecoder.Value = TempProfile.Decoder
 
         mbLanguage.Value = TempProfile.Language
-        mbLanguage.Text = TempProfile.Language.ToString()
+        mbLanguage.Text = g.GetExtendedLanguageName(TempProfile.Language)
 
         SetQuality(TempProfile.Params.Quality)
 

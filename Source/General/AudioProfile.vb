@@ -714,20 +714,22 @@ Public Class MuxAudioProfile
             tbb.Button.Text = "Macro Editor..."
             tbb.Button.ClickAction = AddressOf tbb.Edit.EditMacro
 
+            Dim mbi = ui.AddMenu(Of Language)(page)
+            mbi.Label.Text = "Language:"
+            mbi.Label.Help = "Language of the audio track."
+            mbi.Expanded = True
+            mbi.Button.Value = Language
+            mbi.Button.Text = g.GetExtendedLanguageName(Language)
+            mbi.Button.SaveAction = Sub(value) Language = value
+
+            g.PopulateLanguagesAsync(mbi.Button)
+
             Dim nb = ui.AddNum(page)
             nb.Label.Text = "Delay:"
             nb.Label.Help = "Delay used by the muxer."
             nb.NumEdit.Config = {Integer.MinValue, Integer.MaxValue, 1}
             nb.NumEdit.Value = Delay
             nb.NumEdit.SaveAction = Sub(value) Delay = CInt(value)
-
-            Dim mbi = ui.AddMenu(Of Language)(page)
-            mbi.Label.Text = "Language:"
-            mbi.Label.Help = "Language of the audio track."
-            mbi.Button.Value = Language
-            mbi.Button.SaveAction = Sub(value) Language = value
-
-            g.PopulateLanguagesAsync(mbi.Button)
 
             Dim cb = ui.AddBool(page)
             cb.Text = "Default"

@@ -1276,8 +1276,8 @@ Public Class GlobalClass
                 If menuButton?.IsDisposed Then Return
 
                 Dim path = If(lng.IsCommon,
-                    $"{lng} ({lng.TwoLetterCode}, {lng.ThreeLetterCode})",
-                    $"More | {lng.ToString().Substring(0, 1).ToUpperInvariant()} | {lng} ({lng.TwoLetterCode}, {lng.ThreeLetterCode})")
+                    $"{GetExtendedLanguageName(lng)}",
+                    $"More | {lng.ToString().Substring(0, 1).ToUpperInvariant()}... | {GetExtendedLanguageName(lng)}")
 
                 MenuItemEx.Add(Of Language)(tsic, path, Sub(l As Language)
                                                             menuButton.OnAction(l.ToString(), l)
@@ -1317,6 +1317,12 @@ Public Class GlobalClass
 
         Await task
     End Sub
+
+    Public Function GetExtendedLanguageName(lang As Language) As String
+        If lang Is Nothing Then Return ""
+
+        Return $"{lang} ({lang.TwoLetterCode}, {lang.ThreeLetterCode})"
+    End Function
 
     Sub RaiseAppEvent(ae As ApplicationEvent, Optional commandline As String = Nothing, Optional progress As Single = -1.0F, Optional progressline As String = Nothing)
         Select Case ae
