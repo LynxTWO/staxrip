@@ -1551,6 +1551,7 @@ Namespace UI
         Inherits LabelEx
 
         Private _state As Boolean = False
+        Private _stateChangeOnRightClick As Boolean = False
 
         Property State As Boolean
             Get
@@ -1564,10 +1565,22 @@ Namespace UI
             End Set
         End Property
 
+        Property StateChangeOnRightClick As Boolean
+            Get
+                Return _stateChangeOnRightClick
+            End Get
+            Set(value As Boolean)
+                If _stateChangeOnRightClick <> value Then
+                    _stateChangeOnRightClick = value
+                End If
+            End Set
+        End Property
+
         Property LinkOnColor As Color
         Property LinkOffColor As Color
         Property LinkHoverColor As Color
-        Property ClickAction As Action(Of Boolean)
+        Property LeftClickAction As Action(Of Boolean)
+        Property RightClickAction As Action(Of Boolean)
 
         Sub New()
             ApplyTheme()
@@ -1630,10 +1643,19 @@ Namespace UI
             MyBase.OnMouseLeave(e)
         End Sub
 
+        Protected Overrides Sub OnMouseClick(e As MouseEventArgs)
+            MyBase.OnMouseClick(e)
+            If e.Button = MouseButtons.Left Then
+                State = Not State
+                LeftClickAction?.Invoke(State)
+            ElseIf e.Button = MouseButtons.Right Then
+                If StateChangeOnRightClick Then State = Not State
+                RightClickAction?.Invoke(State)
+            End If
+        End Sub
+
         Protected Overrides Sub OnClick(e As EventArgs)
-            State = Not State
             MyBase.OnClick(e)
-            ClickAction?.Invoke(State)
         End Sub
     End Class
 

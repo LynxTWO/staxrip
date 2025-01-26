@@ -141,11 +141,14 @@ Public Class SvtAv1EncAppControl
         lv.ContextMenuStrip = cms
         lv.ShowContextMenuOnLeftClick = True
 
-        tblOverrideName.ClickAction = Sub(value)
-                                          Params.OverrideTargetFileName.Value = value
-                                          If value Then Encoder.UpdateTargetFile()
-                                          UpdateControls()
-                                      End Sub
+        tblOverrideName.LeftClickAction = Sub(value)
+                                              Params.OverrideTargetFileName.Value = value
+                                              If value Then Encoder.UpdateTargetFile()
+                                              UpdateControls()
+                                          End Sub
+        tblOverrideName.RightClickAction = Sub(value)
+                                               Encoder.ShowConfigDialog(Params.OverrideTargetFileName)
+                                           End Sub
 
         AddHandler Params.ValueChanged, AddressOf ParamsValueChanged
         AddHandler lv.UpdateContextMenu, AddressOf UpdateMenu
