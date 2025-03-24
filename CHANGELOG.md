@@ -14,6 +14,52 @@ v2.5x.0 (not published yet)
 -->
 
 
+v2.52.5 (2026-08-08)
+====================
+
+- General: Improve Dolby Vision cropping
+    - In case no cropping could be determined, a normal check via AutoCrop is performed
+- UI: Add a filter bar to the Jobs window, which let's you filter the names of your jobs ([#1761](/../../issues/1761))
+    - Similar to the one on the Apps Manager
+    - Case-insensitive
+    - Special words:
+        - `<active>` -> Shows only active jobs
+    - :information_source: Does not affect the job queue
+- SvtAv1EncApp: Add "--enable-kf-tf" parameter
+- SvtAv1EncApp: Extend "--hierarchical-levels" parameter
+- x265: Add "--fovea-delta" parameter
+- x265: Add "--fovea-gaze" parameter
+- x265: Add "--fovea-sigma" parameter
+- x265: Add "--fovea-gaze" parameter
+- x265: Add "--mcstf" parameter
+- x265: Add "--mcstf-ref-range" parameter
+- x265: Add "--selective-mcstf" parameter
+- AviSynth: Add indexing for BestSource
+- AviSynth: Alter BestSource filter profile
+- VapourSynth: Add indexing for BestSource
+- VapourSynth: Alter BestSource filter profile
+- VapourSynth: Extend QTGMC filter profiles with new macro functions regarding ScanOrder
+- Update tools
+    - eac3to v3.64
+    - ffmpeg v8.2-dev-N-125670-x64-clang22.1.8
+    - MediaInfo v26.05
+    - MKVToolNix v100.0
+    - NVEncC v9.30
+    - QSVEncC v8.25
+    - SvtAv1EncApp v4.2.0+71+88-17cd99550-[Mod-by-Patman]-x64-clang22.1.8 [SVT-AV1]
+    - SvtAv1EncApp v4.1.0+77+85-e4b6c4ff5-[Mod by Patman]-x64-clang22.1.8 [SVT-AV1-HDR]
+    - SvtAv1EncApp v4.1.0+54+28-12aa310be-[Mod-by-Patman]-x64-clang22.1.8 [SVT-AV1-Tritium]
+    - TrueHDD v0.5.3
+    - VCEEncC v9.11
+    - vvencFFapp v1.14.0 r705-9c979c5
+    - x264 v0.165.3223+40-25a99de-[Mod-by-Patman]-x64-clang22.1.8
+    - x265 v4.3+6+70-44ebc4e46-[Mod-by-Patman]-x64-avx2-clang22.1.8
+- Update VapourSynth plugins
+    - DotKill R4
+    - FillBorders v4
+    - VSFilterMod r5.3.1
+
+
 v2.52.4 (2026-06-06)
 ====================
 

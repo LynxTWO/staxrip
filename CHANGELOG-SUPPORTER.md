@@ -14,6 +14,45 @@ v2.5x.0 (not published yet)
 -->
 
 
+v2.53.13 (2026-06-06)
+====================
+
+- General: Improve Dolby Vision cropping
+    - In case no cropping could be determined, a normal check via AutoCrop is performed
+- UI: Add a filter bar to the Jobs window, which let's you filter the names of your jobs ([#1761](/../../issues/1761))
+    - Similar to the one on the Apps Manager
+    - Case-insensitive
+    - Special words:
+        - `<active>` -> Shows only active jobs
+    - :information_source: Does not affect the job queue
+- AviSynth: Add indexing for BestSource
+- AviSynth: Alter BestSource filter profile
+- VapourSynth: Add indexing for BestSource
+- VapourSynth: Alter BestSource filter profile
+- VapourSynth: Extend QTGMC filter profiles with new macro functions regarding ScanOrder
+- SvtAv1EncApp: Update controls and parameters
+- SvtAv1EncApp-Essential: Fix Editing Control on main window regarding showing and setting Quality values
+- SvtAv1EncApp-Essential: Fix not properly working setting of "--crf" and "--qp" parameter values
+- SvtAv1EncApp-HDR: Update controls and parameters
+- SvtAv1EncApp-Tritium: Update controls and parameters
+- Update tools
+    - aomenc v3.14.1+46-1b5a433c0a-x64-clang22.1.4
+    - eac3to v3.62
+    - ffmpeg v8.2-dev-N-124300-x64-clang22.1.4
+    - MKVToolNix v99.0
+    - MP4Box v2.6.03-DEV-rev317-g260872025-64bit-clang22.1.4
+    - NVEncC v9.16
+    - rav1e v0.8.0-(p20250624+3-564ae3b0)-64bit-clang22.1.4
+    - QSVEncC v8.14
+    - Subtitle Edit v4.0.16
+    - SvtAv1EncApp v4.1.0+157+82-5cb9a0009-[Mod-by-Patman]-x64-clang22.1.6 [SVT-AV1]
+    - SvtAv1EncApp v4.1.0+65+79-b7b101deb-[Mod by Patman]-x64-clang22.1.6 [SVT-AV1-HDR]
+    - SvtAv1EncApp v4.1.0+40+23-21fb20f32-[Mod by Patman]-x64-clang22.1.6 [SVT-AV1-Tritium]
+    - x265 v4.2+39+63-cb5d1a257-[Mod-by-Patman]-x64-avx2-clang22.1.6
+- Update Dual plugins
+    - BestSource R17
+
+
 v2.53.12 (2026-04-07)
 ====================
 
