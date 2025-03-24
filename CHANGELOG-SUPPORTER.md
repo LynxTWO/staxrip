@@ -14,22 +14,88 @@ v2.5x.0 (not published yet)
 -->
 
 
-v2.53.9 (not published yet)
+v2.53.12 (2026-04-07)
+====================
+
+- SvtAv1EncApp-Essential: Improve Editing Control on main window
+- SvtAv1EncApp-Essential: Always include "--webm" parameter
+    - Makes it easier in case other builds are used
+- Update tools
+    - MKVToolNix v98.0
+    - SvtAv1EncApp v4.0.1-1+14-e3b55b316-[Mod by Patman]-x64-clang22.1.2 [SVT-AV1-Essential]
+    - x265 v4.1+242+52-95e7e90a5-[Mod-by-Patman]-x64-avx2-clang22.1.2
+
+
+v2.53.11 (2026-04-06)
+====================
+
+- General: Strengthen setting file savings and loadings towards simultaneous usage
+- General: Update Target File Name when filters are (de-)activated
+- eac3to: Fix DTS recognition as valid audio track ([#1943](/../../issues/1943))
+- SvtAv1EncApp-Essential: Update to v4
+    - Too many changes to list them all
+- SvtAv1EncApp-HDR: Rename "--photon-noise*" parameters to "--noise*"
+- SvtAv1EncApp-HDR: Add new "--noise-chroma-from-luma" parameter
+- SvtAv1EncApp-HDR: Add new "--noise-size" parameter
+- SvtAv1EncApp-Tritium: Add new "--noise*" parameters
+- Update tools
+    - DGMPGDec v3.0.0.1
+    - NVEncC v9.14
+    - QSVEncC v8.08
+    - SvtAv1EncApp v4.1.0-7+75-ec30d718f-[Mod-by-Patman]-x64-clang22.1.2 [SVT-AV1]
+    - SvtAv1EncApp v4.0.1-1+11-2f04393ca-[Mod by Patman]-x64-clang22.1.2 [SVT-AV1-Essential]
+    - SvtAv1EncApp v4.0.1-18+65-6b7f4a4fe-[Mod by Patman]-x64-clang22.1.2 [SVT-AV1-HDR]
+    - SvtAv1EncApp v4.0.1-32+10-00b360c14-[Mod by Patman]-x64-clang22.1.2 [SVT-AV1-Tritium]
+    - VCEEncC v9.05
+    - x264 v0.165.3223+28-cfee1f8-[Mod-by-Patman]-x64-gcc15.2.0
+    - x265 v4.1+242+51-a267d1509-[Mod-by-Patman]-x64-avx2-clang22.1.2
+- Add AviSynth+ plugins
+    - EDI3CL v1.1.1
+- Update AviSynth+ plugins
+    - NNEDI3CL v1.0.9
+    - TDeint v1.11
+    - TIVTC v1.0.31
+- Update VapourSynth plugins
+    - NNEDI3CL r8
+
+
+v2.53.10 (2026-03-10)
+====================
+
+- Audio: Fix AC4 channel selection causing crash ([#1930](/../../issues/1930))
+- Audio: Improve audio track setting when "all" is used
+- FFmpeg: Change FFV1 output extension to MKV
+- SvtAv1EncApp-HDR: Remove Essential parameters again
+    - Introduced in `v2.50.6`, but now unnecessary due to Tritium
+- SvtAv1EncApp-HDR: Add "--photon-noise" parameter
+- SvtAv1EncApp-HDR: Add "--photon-noise-chroma" parameter
+- Add tools
+    - SvtAv1EncApp v4.0.1-27+8-487dab04c-[Mod by Patman]-x64-clang22.1.0 [SVT-AV1-Tritium]
+- Update tools
+    - eac3to v3.60
+    - SvtAv1EncApp v4.0.1-118+74-cfcfbacc5-[Mod-by-Patman]-x64-clang22.1.0 [SVT-AV1]
+    - SvtAv1EncApp v4.0.1-15+59-534fdf4d5-[Mod by Patman]-x64-clang22.1.0 [SVT-AV1-HDR]
+    - vvencFFapp v1.14.0 r583-316087e
+
+
+v2.53.9 (2026-03-01)
 ====================
 
 - General: Fix Dolby Vision croppping in case of changing aspect ratios without cropping
+- General: Fix restoring of last used template within/after File Batch
 - General: Fix ExecuteCommandLine command when using "Show Process Window" without "Wait For Exit" ([#1927](/../../issues/1927))
 - General: Make fmtconv a dual plugin ([#1926](/../../issues/1926))
-- Demux: Fix wrong ffmpeg format selection due to MediaInfo when demuxing audio tracks ([#1925](/../../issues/1925))
+- Demux: Fix wrong ffmpeg PCM format selection due to MediaInfo when demuxing audio tracks ([#1925](/../../issues/1925))
+- UI: Expend "Open Video Source File(s)" menu item, to directly access the option you need
+- UI: Improve Language buttons and menus
+- UI: Right-click on "Target Name Overwrite" ToggleButton opens the related options
+- UI: Improve Template Selection in rare cases
+- UI: Let Templates be saved anywhere ([#1886](/../../issues/1886))
+    - Gives you the opportunity to take full advantage of Templates in subfolders
+    - :warning: "Load template on startup" Checkbox is therefore gone
 - Update tools
     - OpusEnc v0.2-39-g9b1ca51 (using libopus 1.6.1-6-ga3f0ec0)
     - x264 v0.165.3223+26-ed3d55b-[Mod-by-Patman]-x64-gcc15.2.0
-- Update AviSynth+ plugins
-    - ...
-- Update Dual plugins
-    - ...
-- Update VapourSynth plugins
-    - ...
 
 
 v2.53.8 (2026-02-16)
