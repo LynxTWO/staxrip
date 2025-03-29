@@ -3810,6 +3810,35 @@ Partial Public Class MainForm
                     proc.Start()
                 End Using
             End If
+        ElseIf codeLower.Contains("bsvideosource(") OrElse codeLower.Contains("bs.videosource(") Then
+            If FileTypes.VideoIndex.Contains(p.SourceFile.Ext) Then
+                p.SourceFile = p.LastOriginalSourceFile
+                BlockSourceTextBoxTextChanged = True
+                tbSourceFile.Text = p.SourceFile
+                BlockSourceTextBoxTextChanged = False
+            End If
+
+            Dim cacheBase = If(codeLower.Contains("cachepath") AndAlso p.TempDir <> "", Path.Combine(p.TempDir, g.GetSourceBase), p.SourceFile)
+            Dim cachePath = cacheBase + ".0.bsindex"
+
+            If Not cachePath.FileExists() Then
+                Using proc As New Proc
+                    proc.Header = "Index BestSource"
+                    proc.Encoding = Encoding.UTF8
+                    proc.SkipStrings = {"Creating bsindex"}
+
+                    If p.Script.IsAviSynth Then
+                        proc.File = Package.ffmpeg.Path
+                        proc.Arguments = "-i " + p.Script.Path.LongPathPrefix.Escape + " -hide_banner"
+                    Else
+                        proc.File = Package.vspipe.Path
+                        proc.Arguments = p.Script.Path.Escape + " NUL -i"
+                    End If
+
+                    proc.AllowedExitCodes = {0, 1}
+                    proc.Start()
+                End Using
+            End If
         ElseIf codeLower.Contains("lsmashvideosource(") OrElse
             codeLower.Contains("libavsmashsource(") OrElse
             codeLower.Contains("directshowsource(") OrElse
