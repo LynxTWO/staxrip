@@ -59,13 +59,13 @@ Deinterlace | EEDI = $select:EEDI2|clip = core.eedi2.EEDI2;EEDI3|clip = core.eed
 Deinterlace | NNEDI3 = $select:znedi3|clip = core.znedi3.nnedi3;nnedi3cl|clip = core.nnedi3cl.NNEDI3CL;nnedi3|clip = core.nnedi3.nnedi3$(clip, field=$select:msg:Select Field Option;Same Rate Bottom Field|0;Same Rate Top Field|1;Double Rate Alternates Bottom Field|2;Double Rate Alternates Top Field|3$)
 
 Deinterlace | QTGMC | QTGMC =
-    clip = core.std.SetFieldBased(clip, 2) # 1=BFF, 2=TFF
+    clip = core.std.SetFieldBased(clip, <if('%source_mi_v:ScanOrder%'='BFF';1;2)>) # 1=BFF, 2=TFF
     clip = havsfunc.QTGMC(clip, TFF=True, Preset='$select:msg:Select a preset.;Draft;Ultra Fast;Super Fast;Very Fast;Faster;Fast;Medium;Slow;Slower;Very Slow;Placebo$', InputType=$select:msg:Select Input Type;Interlaced|0;Progressive|1;Progressive Repair Details|2;Progressive Full Repair|3$, SourceMatch=3, Sharpness=0.2)
 
 Deinterlace | QTGMC | QTGMC with Repair =
-    clip = core.std.SetFieldBased(clip, 2) # 1=BFF, 2=TFF
-    QTGMC1 = havsfunc.QTGMC(clip, TFF=True, Preset='Slower', InputType=2)
-    QTGMC2 = havsfunc.QTGMC(clip, TFF=True, Preset='Slower', InputType=3)
+    clip = core.std.SetFieldBased(clip, <if('%source_mi_v:ScanOrder%'='BFF';1;2)>) # 1=BFF, 2=TFF
+    QTGMC1 = havsfunc.QTGMC(clip, TFF=<if('%source_mi_v:ScanOrder%'='BFF';False;True)>, Preset='Slower', InputType=2)
+    QTGMC2 = havsfunc.QTGMC(clip, TFF=<if('%source_mi_v:ScanOrder%'='BFF';False;True)>, Preset='Slower', InputType=3)
     clip = core.rgvs.Repair(QTGMC1, QTGMC2, mode=1)
 
 Deinterlace | W3FDIF = clip = core.w3fdif.W3FDIF(clip,$select:msg:Select Order Option;BFF|0;TFF|1$,$select:msg:Select Interlacing Filter Coefficients;Simple|0;Complex|1$)
