@@ -1,4 +1,4 @@
-
+﻿
 Imports System.Threading
 Imports System.Threading.Tasks
 
@@ -12,6 +12,7 @@ Friend Class JobsForm
     Friend WithEvents bnDown As StaxRip.UI.ButtonEx
     Friend WithEvents bnUp As StaxRip.UI.ButtonEx
     Friend WithEvents bnLoad As StaxRip.UI.ButtonEx
+    Friend WithEvents stb As StaxRip.SearchTextBox
     Friend WithEvents lv As ListViewEx
     Friend WithEvents tlpMain As TableLayoutPanel
     Friend WithEvents tlpButtonsLeft As TableLayoutPanel
@@ -27,6 +28,7 @@ Friend Class JobsForm
         Me.bnStart = New StaxRip.UI.ButtonEx()
         Me.bnLoad = New StaxRip.UI.ButtonEx()
         Me.lv = New StaxRip.UI.ListViewEx()
+        Me.stb = New StaxRip.SearchTextBox()
         Me.tlpMain = New System.Windows.Forms.TableLayoutPanel()
         Me.tlpButtonsRight = New System.Windows.Forms.TableLayoutPanel()
         Me.bnMenu = New StaxRip.UI.ButtonEx()
@@ -71,33 +73,45 @@ Friend Class JobsForm
         Me.bnLoad.Size = New System.Drawing.Size(250, 70)
         Me.bnLoad.Text = "Load"
         '
+        'stb
+        '
+        Me.stb.Anchor = CType((AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Top), AnchorStyles)
+        Me.stb.Location = New System.Drawing.Point(10, 15)
+        Me.stb.Margin = New Padding(0, 0, 0, 15)
+        Me.stb.Name = "stb"
+        Me.stb.Size = New System.Drawing.Size(453, 70)
+        Me.stb.TabIndex = 7
+        '
         'lv
         '
         Me.lv.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
             Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.tlpMain.SetColumnSpan(Me.lv, 2)
         Me.lv.HideSelection = False
         Me.lv.Location = New System.Drawing.Point(15, 15)
         Me.lv.Margin = New System.Windows.Forms.Padding(0, 0, 0, 14)
         Me.lv.Name = "lv"
         Me.lv.Size = New System.Drawing.Size(1668, 594)
-        Me.lv.TabIndex = 7
+        Me.lv.TabIndex = 8
         Me.lv.UseCompatibleStateImageBehavior = False
         '
         'tlpMain
         '
+        Me.tlpMain.SetColumnSpan(Me.stb, 2)
+        Me.tlpMain.SetColumnSpan(Me.lv, 2)
         Me.tlpMain.ColumnCount = 2
         Me.tlpMain.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50.0!))
         Me.tlpMain.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50.0!))
-        Me.tlpMain.Controls.Add(Me.tlpButtonsRight, 1, 1)
-        Me.tlpMain.Controls.Add(Me.tlpButtonsLeft, 0, 1)
-        Me.tlpMain.Controls.Add(Me.lv, 0, 0)
+        Me.tlpMain.Controls.Add(Me.stb, 0, 0)
+        Me.tlpMain.Controls.Add(Me.lv, 0, 1)
+        Me.tlpMain.Controls.Add(Me.tlpButtonsLeft, 0, 2)
+        Me.tlpMain.Controls.Add(Me.tlpButtonsRight, 1, 2)
         Me.tlpMain.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tlpMain.Location = New System.Drawing.Point(0, 0)
         Me.tlpMain.Name = "tlpMain"
         Me.tlpMain.Padding = New System.Windows.Forms.Padding(15)
-        Me.tlpMain.RowCount = 2
+        Me.tlpMain.RowCount = 3
+        Me.tlpMain.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tlpMain.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 66.66666!))
         Me.tlpMain.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tlpMain.Size = New System.Drawing.Size(1698, 708)
@@ -125,7 +139,7 @@ Friend Class JobsForm
         Me.tlpButtonsRight.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
         Me.tlpButtonsRight.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 70.0!))
         Me.tlpButtonsRight.Size = New System.Drawing.Size(834, 70)
-        Me.tlpButtonsRight.TabIndex = 9
+        Me.tlpButtonsRight.TabIndex = 10
         '
         'bnMenu
         '
@@ -159,7 +173,7 @@ Friend Class JobsForm
         Me.tlpButtonsLeft.RowCount = 1
         Me.tlpButtonsLeft.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
         Me.tlpButtonsLeft.Size = New System.Drawing.Size(834, 70)
-        Me.tlpButtonsLeft.TabIndex = 8
+        Me.tlpButtonsLeft.TabIndex = 9
         '
         'JobsForm
         '
@@ -186,6 +200,21 @@ Friend Class JobsForm
     Private FileWatcher As New FileSystemWatcher
     Private IsLoading As Boolean
     Private BlockSave As Boolean
+    Private AllJobs As List(Of Job)
+
+    Private ReadOnly Property FilteredJobs As List(Of Job)
+        Get
+            Dim lowerText = stb.Text.ToLowerEx()
+
+            If String.IsNullOrEmpty(lowerText) Then
+                Return AllJobs.ToList()
+            ElseIf lowerText = "<active>" Then
+                Return AllJobs.Where(Function(x) x.Active).ToList()
+            Else
+                Return AllJobs.Where(Function(x) x.Name.ToLower().Contains(lowerText)).ToList()
+            End If
+        End Get
+    End Property
 
     Sub New()
         MyClass.New(ThemeManager.CurrentTheme)
@@ -196,6 +225,7 @@ Friend Class JobsForm
         RestoreClientSize(55, 35)
 
         SaveAndLoadSize = True
+        AllJobs = JobManager.GetJobs()
 
         lv.UpButton = bnUp
         lv.DownButton = bnDown
@@ -206,8 +236,10 @@ Friend Class JobsForm
         lv.CheckBoxes = True
         lv.EnableListBoxMode()
         lv.ItemCheckProperty = NameOf(Job.Active)
-        lv.AddItems(JobManager.GetJobs())
+        lv.AddItems(AllJobs)
         lv.SelectFirst()
+
+        SetTitle()
 
         Dim cms As New ContextMenuStripEx()
         cms.Form = Me
@@ -217,7 +249,11 @@ Friend Class JobsForm
         AddHandler Disposed, Sub() cms.Dispose()
 
         AddHandler lv.ItemRemoved, Sub(item)
-                                       Dim fp = DirectCast(item.Tag, Job).Path
+                                       Dim job = DirectCast(item.Tag, Job)
+                                       Dim fp = job.Path
+
+                                       AllJobs.Remove(job)
+                                       SaveJobs()
 
                                        If fp.StartsWith(Path.Combine(Folder.Settings, "Batch Projects") + Path.DirectorySeparatorChar) Then
                                            FileHelp.Delete(fp)
@@ -268,9 +304,7 @@ Friend Class JobsForm
     End Sub
 
     Sub ApplyTheme(theme As Theme)
-        If DesignHelp.IsDesignMode Then
-            Exit Sub
-        End If
+        If DesignHelp.IsDesignMode Then Exit Sub
 
         BackColor = theme.General.BackColor
     End Sub
@@ -326,8 +360,8 @@ Friend Class JobsForm
             item.Selected = False
         Next
 
-        BlockSave = False
         HandleItemsChanged()
+        BlockSave = False
     End Sub
 
     Sub SelectAll()
@@ -337,23 +371,39 @@ Friend Class JobsForm
             item.Selected = True
         Next
 
-        BlockSave = False
         HandleItemsChanged()
+        BlockSave = False
     End Sub
 
-    Sub HandleItemsChanged()
-        If Not BlockSave Then
-            SaveJobs()
-            UpdateControls()
+    Sub HandleItemsChanged(ParamArray indices As Integer())
+        If stb.Text = "" AndAlso AllJobs.Count = lv.Items.Count Then
+            If indices?.Any() Then
+                Dim orderedIndices = indices.OrderByDescending(Function(x) x)
+
+                For Each index As Integer In orderedIndices
+                    AllJobs.RemoveAt(index)
+                    AllJobs.Insert(index, DirectCast(lv.Items(index).Tag, Job))
+                Next
+            Else
+                AllJobs.Clear()
+                AllJobs.AddRange(lv.Items.OfType(Of ListViewItem).Select(Function(x) DirectCast(x.Tag, Job)))
+            End If
+
+            If Not BlockSave Then SaveJobs()
         End If
+
+        UpdateControls()
     End Sub
 
     Sub Reload(sender As Object, e As FileSystemEventArgs)
+        AllJobs = JobManager.GetJobs()
         Invoke(Sub()
                    If Not Disposing AndAlso Not IsDisposed Then
                        IsLoading = True
+                       lv.BeginUpdate()
                        lv.Items.Clear()
-                       lv.AddItems(JobManager.GetJobs())
+                       lv.AddItems(FilteredJobs)
+                       lv.EndUpdate()
                        lv.SelectFirst()
                        UpdateControls()
                        IsLoading = False
@@ -362,34 +412,27 @@ Friend Class JobsForm
     End Sub
 
     Sub UpdateControls()
-        Dim activeJobs = From item In lv.Items.OfType(Of ListViewItem)
-                         Where DirectCast(item.Tag, Job).Active
+        bnStart.Enabled = AllJobs.Any(Function(x) x.Active)
+        SetTitle()
+    End Sub
 
-        bnStart.Enabled = activeJobs.Count > 0
+    Sub SetTitle()
+        Dim all = AllJobs.Count
+        Dim filtered = FilteredJobs.Count
+
+        Me.Text = $"Jobs ( {filtered} / {all} ) - {g.DefaultCommands.GetApplicationDetails()}"
     End Sub
 
     Sub SaveJobs()
-        If IsLoading Then
-            Exit Sub
-        End If
-
-        Dim jobs As New List(Of Job)
-
-        For Each item As ListViewItem In lv.Items
-            If Not item Is Nothing Then
-                jobs.Add(DirectCast(item.Tag, Job))
-            End If
-        Next
+        If IsLoading Then Exit Sub
 
         FileWatcher.EnableRaisingEvents = False
-        JobManager.SaveJobs(jobs)
+        JobManager.SaveJobs(AllJobs)
         FileWatcher.EnableRaisingEvents = True
     End Sub
 
     Sub bnStart_Click(sender As Object, e As EventArgs) Handles bnStart.Click
-        If Not g.VerifyRequirements Then
-            Exit Sub
-        End If
+        If Not g.VerifyRequirements Then Exit Sub
 
         Close()
 
@@ -409,6 +452,16 @@ Friend Class JobsForm
         If g.MainForm.LoadProject(job.Path) Then
             Close()
         End If
+    End Sub
+
+    Sub SearchTextBox_TextChanged() Handles stb.TextChanged
+        BlockSave = True
+        lv.BeginUpdate()
+        lv.Items.Clear()
+        lv.AddItems(FilteredJobs)
+        lv.EndUpdate()
+        BlockSave = False
+        SetTitle()
     End Sub
 
     Protected Overrides Sub OnActivated(e As EventArgs)

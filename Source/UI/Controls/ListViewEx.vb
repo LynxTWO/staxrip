@@ -15,6 +15,7 @@ Namespace UI
 
         Private LastDragOverPos As Point
         Private LastDrawPos As Integer
+        Private _blockItemChanged As Boolean = False
 
         Private _backAlternateColor As Color
         Private _backHighlightColor As Color
@@ -124,7 +125,7 @@ Namespace UI
             Return SeparatorColor <> Color.Empty
         End Function
 
-        Event ItemsChanged()
+        Event ItemsChanged(indices As Integer())
         Event ItemRemoved(item As ListViewItem)
         Event UpdateContextMenu()
 
@@ -250,8 +251,8 @@ Namespace UI
             MyBase.OnCreateControl()
         End Sub
 
-        Sub OnItemsChanged()
-            RaiseEvent ItemsChanged()
+        Sub OnItemsChanged(ParamArray indices As Integer())
+            RaiseEvent ItemsChanged(indices)
         End Sub
 
         Function GetTextAlignment(columnIndex As Integer) As TextFormatFlags
@@ -293,14 +294,16 @@ Namespace UI
             Dim listItem = Items.Add("")
             listItem.Tag = item
             RefreshItem(listItem.Index)
-            OnItemsChanged()
+            If Not _blockItemChanged Then OnItemsChanged()
             Return listItem
         End Function
 
         Sub AddItems(items As IEnumerable)
+            _blockItemChanged = True
             For Each item In items
                 AddItem(item)
             Next
+            _blockItemChanged = False
         End Sub
 
         Sub RefreshItem(index As Integer)
@@ -396,18 +399,17 @@ Namespace UI
         Sub MoveSelectionUp()
             If CanMoveUp() Then
                 Dim indexAbove = SelectedIndices(0) - 1
+                If indexAbove < 0 Then Exit Sub
 
-                If indexAbove = -1 Then
-                    Exit Sub
-                End If
+                Dim movedIndices = SelectedIndices.Cast(Of Integer).Union({indexAbove}).ToArray()
+                Dim itemAbove = Items(indexAbove)
+                Dim indexInsert = SelectedIndices(SelectedIndices.Count - 1)
 
                 BeginUpdate()
-                Dim itemAbove = Items(indexAbove)
                 Items.RemoveAt(indexAbove)
-                Dim indexLastItem = SelectedIndices(SelectedIndices.Count - 1)
-                Items.Insert(indexLastItem + 1, itemAbove)
+                Items.Insert(indexInsert, itemAbove)
                 UpdateControls()
-                OnItemsChanged()
+                OnItemsChanged(movedIndices)
                 EnsureVisible(indexAbove)
                 EndUpdate()
             End If
@@ -416,18 +418,17 @@ Namespace UI
         Sub MoveSelectionDown()
             If CanMoveDown() Then
                 Dim indexBelow = SelectedIndices(SelectedIndices.Count - 1) + 1
+                If indexBelow >= Items.Count Then Exit Sub
 
-                If indexBelow >= Items.Count Then
-                    Exit Sub
-                End If
+                Dim movedIndices = SelectedIndices.Cast(Of Integer).Union({indexBelow}).ToArray()
+                Dim itemBelow = Items(indexBelow)
+                Dim indexInsert = SelectedIndices(0)
 
                 BeginUpdate()
-                Dim itemBelow = Items(indexBelow)
                 Items.RemoveAt(indexBelow)
-                Dim iAbove = SelectedIndices(0) - 1
-                Items.Insert(iAbove + 1, itemBelow)
+                Items.Insert(indexInsert, itemBelow)
                 UpdateControls()
-                OnItemsChanged()
+                OnItemsChanged(movedIndices)
                 EnsureVisible(indexBelow)
                 EndUpdate()
             End If
