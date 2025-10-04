@@ -11,7 +11,8 @@ Public Class SourceFilesForm
     Friend WithEvents bnDown As ButtonEx
     Friend WithEvents bnUp As ButtonEx
     Friend WithEvents bnRemove As ButtonEx
-    Friend WithEvents bnAdd As ButtonEx
+    Friend WithEvents bnAddFiles As ButtonEx
+    Friend WithEvents bnAddFolder As ButtonEx
     Friend WithEvents bnCancel As StaxRip.UI.ButtonEx
     Friend WithEvents tlpMain As TableLayoutPanel
     Friend WithEvents pnLB As PanelEx
@@ -23,7 +24,8 @@ Public Class SourceFilesForm
         Me.bnDown = New StaxRip.UI.ButtonEx()
         Me.bnRemove = New StaxRip.UI.ButtonEx()
         Me.bnUp = New StaxRip.UI.ButtonEx()
-        Me.bnAdd = New StaxRip.UI.ButtonEx()
+        Me.bnAddFiles = New StaxRip.UI.ButtonEx()
+        Me.bnAddFolder = New StaxRip.UI.ButtonEx()
         Me.bnCancel = New StaxRip.UI.ButtonEx()
         Me.bnOK = New StaxRip.UI.ButtonEx()
         Me.tlpMain = New System.Windows.Forms.TableLayoutPanel()
@@ -53,39 +55,47 @@ Public Class SourceFilesForm
         Me.bnDown.Anchor = System.Windows.Forms.AnchorStyles.Bottom
         Me.bnDown.Location = New System.Drawing.Point(749, 370)
         Me.bnDown.Margin = New System.Windows.Forms.Padding(8)
-        Me.bnDown.Size = New System.Drawing.Size(250, 80)
-        Me.bnDown.Text = "    &Down"
+        Me.bnDown.Size = New System.Drawing.Size(350, 80)
+        Me.bnDown.Text = "&Down"
         '
         'bnRemove
         '
         Me.bnRemove.Anchor = System.Windows.Forms.AnchorStyles.Top
         Me.bnRemove.Location = New System.Drawing.Point(749, 112)
         Me.bnRemove.Margin = New System.Windows.Forms.Padding(8)
-        Me.bnRemove.Size = New System.Drawing.Size(250, 80)
-        Me.bnRemove.Text = "   &Remove"
+        Me.bnRemove.Size = New System.Drawing.Size(350, 80)
+        Me.bnRemove.Text = "&Remove"
         '
         'bnUp
         '
         Me.bnUp.Anchor = System.Windows.Forms.AnchorStyles.Bottom
         Me.bnUp.Location = New System.Drawing.Point(749, 274)
         Me.bnUp.Margin = New System.Windows.Forms.Padding(8)
-        Me.bnUp.Size = New System.Drawing.Size(250, 80)
+        Me.bnUp.Size = New System.Drawing.Size(350, 80)
         Me.bnUp.Text = "&Up"
         '
-        'bnAdd
+        'bnAddFiles
         '
-        Me.bnAdd.Anchor = System.Windows.Forms.AnchorStyles.Top
-        Me.bnAdd.Location = New System.Drawing.Point(749, 16)
-        Me.bnAdd.Margin = New System.Windows.Forms.Padding(8)
-        Me.bnAdd.Size = New System.Drawing.Size(250, 80)
-        Me.bnAdd.Text = "&Add..."
+        Me.bnAddFiles.Anchor = System.Windows.Forms.AnchorStyles.Top
+        Me.bnAddFiles.Location = New System.Drawing.Point(749, 16)
+        Me.bnAddFiles.Margin = New System.Windows.Forms.Padding(8)
+        Me.bnAddFiles.Size = New System.Drawing.Size(350, 80)
+        Me.bnAddFiles.Text = "   &Add Files..."
+        '
+        'bnAddFolder
+        '
+        Me.bnAddFolder.Anchor = System.Windows.Forms.AnchorStyles.Top
+        Me.bnAddFolder.Location = New System.Drawing.Point(749, 16)
+        Me.bnAddFolder.Margin = New System.Windows.Forms.Padding(8)
+        Me.bnAddFolder.Size = New System.Drawing.Size(350, 80)
+        Me.bnAddFolder.Text = "     Add &Folder..."
         '
         'bnCancel
         '
         Me.bnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
         Me.bnCancel.Location = New System.Drawing.Point(749, 632)
         Me.bnCancel.Margin = New System.Windows.Forms.Padding(8)
-        Me.bnCancel.Size = New System.Drawing.Size(250, 80)
+        Me.bnCancel.Size = New System.Drawing.Size(350, 80)
         Me.bnCancel.Text = "Cancel"
         '
         'bnOK
@@ -93,7 +103,7 @@ Public Class SourceFilesForm
         Me.bnOK.DialogResult = System.Windows.Forms.DialogResult.OK
         Me.bnOK.Location = New System.Drawing.Point(483, 632)
         Me.bnOK.Margin = New System.Windows.Forms.Padding(8)
-        Me.bnOK.Size = New System.Drawing.Size(250, 80)
+        Me.bnOK.Size = New System.Drawing.Size(350, 80)
         Me.bnOK.Text = "OK"
         '
         'tlpMain
@@ -102,13 +112,14 @@ Public Class SourceFilesForm
         Me.tlpMain.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
         Me.tlpMain.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
         Me.tlpMain.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.tlpMain.Controls.Add(Me.bnRemove, 2, 1)
-        Me.tlpMain.Controls.Add(Me.bnAdd, 2, 0)
-        Me.tlpMain.Controls.Add(Me.bnCancel, 2, 7)
+        Me.tlpMain.Controls.Add(Me.pnLB, 0, 0)
         Me.tlpMain.Controls.Add(Me.bnOK, 1, 7)
+        Me.tlpMain.Controls.Add(Me.bnAddFiles, 2, 0)
+        Me.tlpMain.Controls.Add(Me.bnAddFolder, 2, 1)
+        Me.tlpMain.Controls.Add(Me.bnRemove, 2, 2)
         Me.tlpMain.Controls.Add(Me.bnUp, 2, 3)
         Me.tlpMain.Controls.Add(Me.bnDown, 2, 4)
-        Me.tlpMain.Controls.Add(Me.pnLB, 0, 0)
+        Me.tlpMain.Controls.Add(Me.bnCancel, 2, 7)
         Me.tlpMain.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tlpMain.Location = New System.Drawing.Point(0, 0)
         Me.tlpMain.Name = "tlpMain"
@@ -167,21 +178,18 @@ Public Class SourceFilesForm
         MyBase.New()
         InitializeComponent()
 
-        ScaleClientSize(36, 22)
+        ScaleClientSize(42, 25)
         MinimumSize = New Size(Width \ 2, CInt(Height * 0.6))
 
-        bnUp.Image = ImageHelp.GetSymbolImage(Symbol.Up)
-        bnDown.Image = ImageHelp.GetSymbolImage(Symbol.Down)
-        bnAdd.Image = ImageHelp.GetSymbolImage(Symbol.Add)
-        bnRemove.Image = ImageHelp.GetSymbolImage(Symbol.Remove)
+        bnAddFiles.Symbol = Symbol.Add
+        bnAddFolder.Symbol = Symbol.DictionaryAdd
+        bnRemove.Symbol = Symbol.Remove
+        bnUp.Symbol = Symbol.Up
+        bnDown.Symbol = Symbol.Down
 
-        For Each bn In {bnAdd, bnRemove, bnUp, bnDown}
-            bn.TextImageRelation = TextImageRelation.Overlay
+        For Each bn In {bnAddFiles, bnAddFolder, bnRemove, bnUp, bnDown}
+            bn.TextImageRelation = TextImageRelation.ImageBeforeText
             bn.ImageAlign = ContentAlignment.MiddleLeft
-            Dim pad = bn.Padding
-            pad.Left = Control.DefaultFont.Height \ 10
-            pad.Right = pad.Left
-            bn.Padding = pad
         Next
 
         ActiveControl = bnOK
@@ -206,9 +214,7 @@ Public Class SourceFilesForm
     End Sub
 
     Sub ApplyTheme(theme As Theme)
-        If DesignHelp.IsDesignMode Then
-            Exit Sub
-        End If
+        If DesignHelp.IsDesignMode Then Exit Sub
 
         BackColor = theme.General.BackColor
     End Sub
@@ -227,36 +233,25 @@ Public Class SourceFilesForm
         End Using
     End Sub
 
-    Sub bnAdd_Click() Handles bnAdd.Click
-        If IsMerge Then
-            ShowOpenFileDialog()
-            Exit Sub
-        End If
+    Sub bnAdd_Click() Handles bnAddFiles.Click
+        ShowOpenFileDialog()
+    End Sub
 
-        Using td As New TaskDialog(Of String)
-            td.AddCommand("Add files")
-            td.AddCommand("Add folder")
+    Sub bnAddFolder_Click() Handles bnAddFolder.Click
+        Using dialog As New FolderBrowserDialog
+            If dialog.ShowDialog = DialogResult.OK Then
+                Dim subfolders = Directory.GetDirectories(dialog.SelectedPath)
+                Dim opt = SearchOption.TopDirectoryOnly
 
-            Select Case td.Show
-                Case "Add files"
-                    ShowOpenFileDialog()
-                Case "Add folder"
-                    Using dialog As New FolderBrowserDialog
-                        If dialog.ShowDialog = DialogResult.OK Then
-                            Dim subfolders = Directory.GetDirectories(dialog.SelectedPath)
-                            Dim opt = SearchOption.TopDirectoryOnly
+                If subfolders.Count > 0 Then
+                    If MsgQuestion("Include sub folders?", TaskButton.YesNo) = DialogResult.Yes Then
+                        opt = SearchOption.AllDirectories
+                    End If
+                End If
 
-                            If subfolders.Count > 0 Then
-                                If MsgQuestion("Include sub folders?", TaskButton.YesNo) = DialogResult.Yes Then
-                                    opt = SearchOption.AllDirectories
-                                End If
-                            End If
-
-                            lb.Items.AddRange(Directory.GetFiles(dialog.SelectedPath, "*.*", opt).Where(Function(val) FileTypes.Video.Contains(val.Ext)).OrderBy(Function(x) x, New StringLogicalComparer()).ToArray)
-                            lb.SelectedIndex = lb.Items.Count - 1
-                        End If
-                    End Using
-            End Select
+                lb.Items.AddRange(Directory.GetFiles(dialog.SelectedPath, "*.*", opt).Where(Function(val) FileTypes.Video.Contains(val.Ext)).OrderBy(Function(x) x, New StringLogicalComparer()).ToArray)
+                lb.SelectedIndex = lb.Items.Count - 1
+            End If
         End Using
     End Sub
 
@@ -266,7 +261,7 @@ Public Class SourceFilesForm
         If DialogResult = DialogResult.OK Then
             Dim files = GetFiles()
 
-            If Not g.VerifySource(GetFiles) Then
+            If Not g.VerifySource(files) Then
                 args.Cancel = True
             End If
         End If
@@ -279,9 +274,9 @@ Public Class SourceFilesForm
     Sub lb_DragDrop(sender As Object, e As DragEventArgs) Handles lb.DragDrop
         Dim items = TryCast(e.Data.GetData(DataFormats.FileDrop), String())
 
-        If Not items.NothingOrEmpty Then
+        If Not items.NothingOrEmpty() Then
             Array.Sort(items)
-            lb.Items.AddRange(items.Where(Function(val) File.Exists(val)).ToArray)
+            lb.Items.AddRange(items.Where(Function(val) File.Exists(val)).ToArray())
         End If
     End Sub
 
