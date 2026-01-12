@@ -1655,7 +1655,7 @@ Partial Public Class MainForm
 
             dialog.FileName = If(p.SourceFile <> "", p.TargetFile.Base, "Untitled")
 
-            dialog.Filter = "StaxRip Project Files (*.srip)|*.srip"
+            dialog.Filter = $"StaxRip Project Files (*.srip)|*.srip"
 
             If dialog.ShowDialog() = DialogResult.OK Then
                 If Not dialog.FileName.ToLowerInvariant.EndsWith(".srip") Then
@@ -1666,6 +1666,45 @@ Partial Public Class MainForm
                 Return True
             End If
         End Using
+    End Function
+
+    Function OpenSaveTemplateDialog() As Boolean
+        If p.SourceFile = "" Then
+            Using dialog As New SaveFileDialog
+                Dim tp As String
+                Try
+                    Dim dirName = Path.GetDirectoryName(p.TemplatePath)
+                    If Directory.Exists(dirName) Then tp = dirName
+                Catch ex As Exception
+                    tp = Folder.Template
+                End Try
+                
+                dialog.SetInitDir(tp)
+
+                dialog.FileName = If(p.TemplateName <> "", p.TemplateName, "Untitled")
+                dialog.Filter = $"StaxRip Template Files (*.srip)|*.srip"
+
+                If dialog.ShowDialog() = DialogResult.OK Then
+                    Dim fp = Path.GetFullPath(dialog.FileName)
+
+                    If Not fp.StartsWith(Folder.Template, StringComparison.OrdinalIgnoreCase) Then
+                        If MsgQuestion("Saving outside Template Folder", "You are going to save the template outside of the Template Folder, so this template won't be able to be used!", TaskButton.OkCancel) = DialogResult.Cancel Then
+                            Return False
+                        End If
+                    End If
+                    
+                    If Not fp.ToLower.EndsWith(".srip") Then
+                        fp += ".srip"
+                    End If
+
+                    SaveProjectPath(fp)
+                    UpdateTemplatesMenuAsync()
+                    Return True
+                End If
+            End Using
+        Else
+            MsgWarn("A template cannot be created after a source file was opened.")
+        End If
     End Function
 
     Sub SetBindings(proj As Project, add As Boolean)
@@ -1999,7 +2038,7 @@ Partial Public Class MainForm
                                  If index >= audioStreams.Count Then Exit Sub
                                  If audioStreams(index) Is Nothing Then Exit Sub
                                  If p.DemuxAudio = DemuxMode.Dialog Then Exit Sub
-                                 If s.Demuxers.Any(Function (x) x.Active AndAlso TypeOf x Is eac3toDemuxer AndAlso x.InputExtensions.Contains(p.SourceFile.Ext())) Then Exit Sub
+                                 If s.Demuxers.Any(Function(x) x.Active AndAlso TypeOf x Is eac3toDemuxer AndAlso x.InputExtensions.Contains(p.SourceFile.Ext())) Then Exit Sub
 
                                  audioTracks.Add((audioStreams(index).Name, audioStreams(index).Language, audioStreams(index).Title, audioStreams(index)))
                              End Sub
@@ -2111,7 +2150,7 @@ Partial Public Class MainForm
     End Sub
 
     Function GetAudioTextBox(ap As AudioProfile) As TextEdit
-        Return p.AudioTracks.FirstOrDefault(Function (x) x.AudioProfile Is ap)?.TextEdit
+        Return p.AudioTracks.FirstOrDefault(Function(x) x.AudioProfile Is ap)?.TextEdit
     End Function
 
     Dim BlockAudioTextChanged As Boolean
@@ -3637,13 +3676,13 @@ Partial Public Class MainForm
         Dim searchTask = Task.Run(Sub()
                                       Try
                                           files = Directory.GetFiles(sourcePath.Dir(), $"{sourcePath.Base}*.*", SearchOption.TopDirectoryOnly)
-                                          jsonFile = files.FirstOrDefault(Function (x) {"json"}.Contains(x.Ext) AndAlso Not x.Base.EndsWithAny("_L5", "_Config"))
-                                          rpuFile = files.FirstOrDefault(Function (x) {"bin", "rpu"}.Contains(x.Ext) AndAlso Not x.Base.EndsWith("_Cropped"))
+                                          jsonFile = files.FirstOrDefault(Function(x) {"json"}.Contains(x.Ext) AndAlso Not x.Base.EndsWithAny("_L5", "_Config"))
+                                          rpuFile = files.FirstOrDefault(Function(x) {"bin", "rpu"}.Contains(x.Ext) AndAlso Not x.Base.EndsWith("_Cropped"))
 
                                           If Not String.IsNullOrWhiteSpace(proj.TempDir) AndAlso String.IsNullOrWhiteSpace(jsonFile) AndAlso String.IsNullOrWhiteSpace(rpuFile) Then
                                               files = Directory.GetFiles(proj.TempDir, "*.*", SearchOption.TopDirectoryOnly)
-                                              jsonFile = If(String.IsNullOrWhiteSpace(jsonFile), files.FirstOrDefault(Function (x) {"json"}.Contains(x.Ext) AndAlso Not x.Base.EndsWithAny("_L5", "_Config")), jsonFile)
-                                              rpuFile = If(String.IsNullOrWhiteSpace(rpuFile), files.FirstOrDefault(Function (x) {"bin", "rpu"}.Contains(x.Ext) AndAlso Not x.Base.EndsWith("_Cropped")), rpuFile)
+                                              jsonFile = If(String.IsNullOrWhiteSpace(jsonFile), files.FirstOrDefault(Function(x) {"json"}.Contains(x.Ext) AndAlso Not x.Base.EndsWithAny("_L5", "_Config")), jsonFile)
+                                              rpuFile = If(String.IsNullOrWhiteSpace(rpuFile), files.FirstOrDefault(Function(x) {"bin", "rpu"}.Contains(x.Ext) AndAlso Not x.Base.EndsWith("_Cropped")), rpuFile)
                                           End If
                                       Catch ex As Exception
                                           Log.WriteLine(ex.Message)
@@ -3856,28 +3895,7 @@ Partial Public Class MainForm
 
     <Command("Saves the current project as template.")>
     Sub SaveProjectAsTemplate()
-        If p.SourceFile = "" Then
-            Dim box As New InputBox With {
-                .Text = "Enter the name of the template.",
-                .Title = "Save Template",
-                .Value = p.TemplateName,
-                .CheckBoxText = "Load template on startup"
-            }
-
-            If box.Show = DialogResult.OK Then
-                p.TemplateName = box.Value.RemoveChars(Path.GetInvalidFileNameChars)
-                p.TemplatePath = Path.Combine(Folder.Template, p.TemplateName + ".srip")
-                SaveProjectPath(p.TemplatePath)
-                UpdateTemplatesMenuAsync()
-
-                If box.Checked Then
-                    s.StartupTemplate = box.Value
-                    g.SaveSettings()
-                End If
-            End If
-        Else
-            MsgWarn("A template cannot be created after a source file was opened.")
-        End If
+        OpenSaveTemplateDialog()
     End Sub
 
     <Command("Closes the current project.")>
@@ -5852,8 +5870,8 @@ Partial Public Class MainForm
                     Dim temp = i
 
                     Dim menuAction = Sub()
-                                        audioTrack.Remove()
-                                        te.Text = temp
+                                         audioTrack.Remove()
+                                         te.Text = temp
                                      End Sub
 
                     If audioFiles.Count > 10 Then
