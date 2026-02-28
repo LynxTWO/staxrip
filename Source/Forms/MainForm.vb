@@ -3873,6 +3873,8 @@ Partial Public Class MainForm
                 Exit Sub
             End If
             p.Log.Clear()
+            p.TemplateName = path.Base()
+            p.TemplatePath = path
         Else
             g.ProjectPath = path
         End If
