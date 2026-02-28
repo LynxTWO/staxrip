@@ -3108,13 +3108,15 @@ Partial Public Class MainForm
         If p.AutoCropMode = AutoCropMode.DolbyVisionOnly OrElse p.AutoCropMode = AutoCropMode.Always Then
             p.SourceScript.Synchronize(True, True, True)
 
-            If p.HdrDolbyVisionMetadataFile IsNot Nothing AndAlso p.VideoEncoder.IsDolbyVisionSet Then
+            Dim useDvOnly = p.HdrDolbyVisionMetadataFile IsNot Nothing AndAlso p.VideoEncoder.IsDolbyVisionSet AndAlso p.HdrDolbyVisionMetadataFile.Crop <> Padding.Empty
+
+            If useDvOnly Then
                 Dim c = p.HdrDolbyVisionMetadataFile.Crop
                 Dim sm = If(p.AutoCropDolbyVisionSideMode = AutoCropDolbyVisionSideMode.NoOverride, p.AutoCropSideMode, AutoCropSideMode.All)
                 If p.AutoCropDolbyVisionSideMode = AutoCropDolbyVisionSideMode.Horizontal Then sm = AutoCropSideMode.Horizontal
                 If p.AutoCropDolbyVisionSideMode = AutoCropDolbyVisionSideMode.Vertical Then sm = AutoCropSideMode.Vertical
                 g.SetCrop(c.Left, c.Top, c.Right, c.Bottom, sm, p.ForcedOutputModDirection, True)
-            ElseIf p.AutoCropMode = AutoCropMode.Always Then
+            ElseIf p.AutoCropMode <> AutoCropMode.Disabled Then
                 Dim info = p.SourceScript.Info
                 Dim selectionMode = Convert.ToInt32(p.AutoCropFrameSelectionMode)
                 Dim selectionValue = If(p.AutoCropFrameSelectionMode = AutoCropFrameSelectionMode.FrameInterval, p.AutoCropFrameIntervalFrameSelection, p.AutoCropFixedFramesFrameSelection)

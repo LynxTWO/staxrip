@@ -1901,7 +1901,9 @@ Public Class GlobalClass
 
         p.SourceScript.Synchronize(True, True, True)
 
-        If p.HdrDolbyVisionMetadataFile IsNot Nothing AndAlso p.VideoEncoder.IsDolbyVisionSet Then
+        Dim useDvOnly = p.HdrDolbyVisionMetadataFile IsNot Nothing AndAlso p.VideoEncoder.IsDolbyVisionSet AndAlso p.HdrDolbyVisionMetadataFile.Crop <> Padding.Empty
+
+        If useDvOnly Then
             Dim c = p.HdrDolbyVisionMetadataFile.Crop
             Dim sm = If(p.AutoCropDolbyVisionSideMode = AutoCropDolbyVisionSideMode.NoOverride, p.AutoCropSideMode, AutoCropSideMode.All)
             If p.AutoCropDolbyVisionSideMode = AutoCropDolbyVisionSideMode.Horizontal Then sm = AutoCropSideMode.Horizontal
