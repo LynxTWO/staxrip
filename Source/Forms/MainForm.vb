@@ -4098,6 +4098,10 @@ Partial Public Class MainForm
                     <DispName("Audio 1")> audioProfile1 As String,
                     <DispName("Audio 2")> audioProfile2 As String)
 
+        videoProfile = videoProfile.TrimQuotes().Trim()
+        audioProfile1 = audioProfile1.TrimQuotes().Trim()
+        audioProfile2 = audioProfile2.TrimQuotes().Trim()
+
         If videoProfile <> "" Then
             For Each i In s.VideoEncoderProfiles
                 If i.Name = videoProfile Then

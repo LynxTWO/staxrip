@@ -840,6 +840,7 @@ Public Class eac3toForm
                         {"TrueHD/AC3 (Atmos)", "thd"},
                         {"TrueHD/AC3", "thd"},
                         {"TrueHD (Atmos)", "thd"},
+                        {"DTS", "dts"},
                         {"DTS-ES", "dts"},
                         {"DTS Express", "dts"},
                         {"DTS Master Audio", "dtsma"},
