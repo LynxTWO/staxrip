@@ -247,6 +247,8 @@ Public Class SvtAv1EncAppControl
             Select Case selectedIndex
                 Case 0 - offset
                     Dim param = Params.QuantizationParameter
+                    If Params.ConstantQuantizationParameter.Visible Then param = Params.ConstantQuantizationParameter
+                    If Params.ConstantRateFactor.Visible Then param = Params.ConstantRateFactor
                     For Each def In QualityDefinitions
                         Dim p = def.Value & If(Not String.IsNullOrWhiteSpace(def.Text), $": {def.Text}", "")
                         add(p, Sub() SetQuality(selectedIndex, def.Value), param.Value = def.Value, def.Tooltip)
@@ -298,6 +300,7 @@ Public Class SvtAv1EncAppControl
     End Sub
 
     Sub SetQuality(index As Integer, value As Double)
+        Params.ConstantQuantizationParameter.Value = CInt(value)
         Params.ConstantRateFactor.Value = CInt(value)
         Params.QuantizationParameter.Value = CInt(value)
 
@@ -379,7 +382,10 @@ Public Class SvtAv1EncAppControl
 
         lv.Items.Clear()
         If Params.RateControlMode.Value = SvtAv1EncAppRateMode.Quality Then
-            lv.Items.Add(New ListViewItem({"Quality", GetQualityCaption(Params.QuantizationParameter.Value)}))
+            Dim param = Params.QuantizationParameter
+            If Params.ConstantQuantizationParameter.Visible Then param = Params.ConstantQuantizationParameter
+            If Params.ConstantRateFactor.Visible Then param = Params.ConstantRateFactor
+            lv.Items.Add(New ListViewItem({"Quality", GetQualityCaption(param.Value)}))
         End If
         lv.Items.Add(New ListViewItem({"Preset", Params.Preset.OptionText}))
         lv.Items.Add(New ListViewItem({"Tune", Params.Tune.OptionText}))

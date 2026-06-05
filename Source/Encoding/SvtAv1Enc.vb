@@ -305,6 +305,7 @@ Public Class SvtAv1Enc
         enc.Params = newParams
         enc.Params.RateControlMode.Value = SvtAv1EncAppRateMode.Quality
         enc.Params.ConstantRateFactor.Value = enc.Params.CompCheck.Value
+        enc.Params.ConstantQuantizationParameter.Value = enc.Params.CompCheck.Value
         enc.Params.QuantizationParameter.Value = enc.Params.CompCheck.Value
 
         Dim script As New VideoScript
@@ -646,7 +647,7 @@ Public Class SvtAv1EncParams
         .Text = "Tune",
         .Expanded = True,
         .IntegerValue = True,
-        .Options = {"0: VQ", "1: PSNR (default)", "2: SSIM", "3: Image Quality", "4: MS-SSIM/SSIMULACRA2"},
+        .Options = {"0: VQ", "1: PSNR (default)", "2: SSIM", "3: Still Image Quality", "4: MS-SSIM/SSIMULACRA2", "5: VMAF [Video Only]"},
         .Init = 1}
 
     Property AdaptiveFilmGrain As New OptionParam With {
@@ -677,19 +678,36 @@ Public Class SvtAv1EncParams
         .AlwaysOn = True,
         .Value = 0}
 
+    Property ConstantQuantizationParameter As New NumParam With {
+        .HelpSwitch = "--cqp",
+        .Text = "Constant Quantization Parameter",
+        .VisibleFunc = Function() RateControlMode.Value = SvtAv1EncAppRateMode.Quality AndAlso AqMode.Value = 0,
+        .ValueChangedAction = Sub(x)
+                                  'ConstantRateFactor.Value = x
+                                  'QuantizationParameter.Value = CInt(x)
+                              End Sub,
+        .Config = {1, 70, 0.25, 2},
+        .Init = 35}
+
     Property QuantizationParameter As New NumParam With {
         .HelpSwitch = "--qp",
         .Text = "Quantization Parameter",
-        .VisibleFunc = Function() RateControlMode.Value = SvtAv1EncAppRateMode.Quality AndAlso AqMode.Value = 0,
-        .ValueChangedAction = Sub(x) ConstantRateFactor.Value = CInt(x),
+        .VisibleFunc = Function() RateControlMode.Value = SvtAv1EncAppRateMode.Quality AndAlso AqMode.Value = 1,
+        .ValueChangedAction = Sub(x)
+                                  'ConstantQuantizationParameter.Value = x
+                                  'ConstantRateFactor.Value = x
+                              End Sub,
         .Config = {1, 63, 1, 0},
         .Init = 35}
 
     Property ConstantRateFactor As New NumParam With {
        .HelpSwitch = "--crf",
        .Text = "Constant Rate Factor",
-       .VisibleFunc = Function() RateControlMode.Value = SvtAv1EncAppRateMode.Quality AndAlso AqMode.Value <> 0,
-       .ValueChangedAction = Sub(x) QuantizationParameter.Value = CInt(x),
+       .VisibleFunc = Function() RateControlMode.Value = SvtAv1EncAppRateMode.Quality AndAlso AqMode.Value = 2,
+       .ValueChangedAction = Sub(x)
+                                 'ConstantQuantizationParameter.Value = x
+                                 'QuantizationParameter.Value = CInt(x)
+                             End Sub,
        .Config = {1, 70, 0.25, 2},
        .Init = 35}
 
@@ -754,6 +772,14 @@ Public Class SvtAv1EncParams
         .IntegerValue = True,
         .Options = {"0: Off", "1: Variance base using AV1 segments", "2: Deltaq pred efficiency (default)"},
         .Init = 2}
+
+    Property HbdMds As New OptionParam With {
+        .Switch = "--hbd-mds",
+        .Text = "High Bit Depth Mode Decisions",
+        .Expanded = True,
+        .IntegerValue = True,
+        .Options = {"-1: Off (default)", "0: Forces 8-bit", "1: Forces 10-bit", "2: 8/10-bit Hybrid"},
+        .Init = 0}
 
     Property QpScaleCompressStrength As New NumParam With {
         .Switch = "--qp-scale-compress-strength",
@@ -991,6 +1017,14 @@ Public Class SvtAv1EncParams
         .IntegerValue = True,
         .Options = {"0: None", "1: Block Copy + Palette", "2: Content Adaptive (default)", "3: Content Adaptive (Anti-Alias Aware)"},
         .Init = 2}
+
+    Property EnableIntraBC As New OptionParam With {
+        .Switch = "--enable-intrabc",
+        .Text = "Enable Intra Block Copy",
+        .Expanded = True,
+        .IntegerValue = True,
+        .Options = {"0: Off", "1: On (default)"},
+        .Init = 1}
 
     Property FilmGrain As New NumParam With {
         .Switch = "--film-grain",
@@ -1262,10 +1296,10 @@ Public Class SvtAv1EncParams
                     Preset, Profile, Level, Tune, FastDecode, AdaptiveFilmGrain, MaxTxSize
                 )
                 Add("Rate Control",
-                    RateControlMode, ConstantRateFactor, QuantizationParameter, TargetBitrate, MaximumBitrate, MaxQp, MinQp,
+                    RateControlMode, ConstantRateFactor, ConstantQuantizationParameter, QuantizationParameter, TargetBitrate, MaximumBitrate, MaxQp, MinQp,
                     TemporalFilteringStrength, LuminanceQpBias, Sharpness,
                     PassesVBR, PassesCBR,
-                    AqMode, QpScaleCompressStrength, AcBias, RecodeLoop,
+                    AqMode, HbdMds, QpScaleCompressStrength, AcBias, RecodeLoop,
                     EnableQm, QmMax, QmMin
                 )
                 Add("GOP size/type",
@@ -1273,7 +1307,7 @@ Public Class SvtAv1EncParams
                 )
                 Add("AV1 Specific 1",
                     TileRow, TileCol, LoopFilterEnable,
-                    CDEFLevel, EnableRestoration, EnableTPLModel, Mfmv, EnableTF, EnableOverlays, ScreenContentMode,
+                    CDEFLevel, EnableRestoration, EnableTPLModel, Mfmv, EnableTF, EnableOverlays, ScreenContentMode, EnableIntraBC,
                     FilmGrain, FilmGrainDenoise, FGSTable
                 )
                 Add("AV1 Specific 2",
@@ -1397,7 +1431,7 @@ Public Class SvtAv1EncParams
                 Case "ffqsv"
                     Dim crop = If(isCropped, $" -vf ""crop={p.SourceWidth - p.CropLeft - p.CropRight}:{p.SourceHeight - p.CropTop - p.CropBottom}:{p.CropLeft}:{p.CropTop}""", "")
                     Dim pix_fmt = If(p.SourceVideoBitDepth = 10 OrElse script.Info.BitDepth >= 10, "yuv420p10le", "yuv420p")
-                    pipeString = Package.ffmpeg.Path.Escape + " -threads 1 -hwaccel qsv -i " + p.SourceFile.Escape + " -f yuv4mpegpipe -pix_fmt " + pix_fmt + " -strict -1"+ crop + " -loglevel fatal -hide_banner -"
+                    pipeString = Package.ffmpeg.Path.Escape + " -threads 1 -hwaccel qsv -i " + p.SourceFile.Escape + " -f yuv4mpegpipe -pix_fmt " + pix_fmt + " -strict -1" + crop + " -loglevel fatal -hide_banner -"
 
                     sb.Append(pipeString & " | " & Package.Path.Escape)
                 Case "ffdxva"
@@ -1467,6 +1501,10 @@ Public Class SvtAv1EncParams
             If ConstantRateFactor.Visible Then
                 If Not IsCustom(pass, "--crf") AndAlso Not ConstantRateFactor.IsDefaultValue Then
                     sb.Append(" --crf " + ConstantRateFactor.Value.ToString("0.##", CultureInfo.InvariantCulture))
+                End If
+            ElseIf ConstantQuantizationParameter.Visible Then
+                If Not IsCustom(pass, "--cqp") AndAlso Not ConstantQuantizationParameter.IsDefaultValue Then
+                    sb.Append(" --cqp " + ConstantQuantizationParameter.Value.ToString("0.##"))
                 End If
             ElseIf QuantizationParameter.Visible Then
                 If Not IsCustom(pass, "--qp") AndAlso Not QuantizationParameter.IsDefaultValue Then

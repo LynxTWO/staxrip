@@ -553,8 +553,8 @@ Public Class SvtAv1TritiumEncParams
         .Switch = "--preset",
         .Text = "Preset",
         .Expanded = True,
-        .Options = {"-1: Debug Option", "0: Slowest", "1: Extreme Slow", "2: Ultra Slow", "3: Very Slow", "4: Slower (default)", "5: Slow", "6: Medium", "7: Fast", "8: Faster", "9: Very Fast", "10: Mega Fast", "11: Ultra Fast", "12: Extreme Fast", "13: Fastest"},
-        .Values = {"-1", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"},
+        .Options = {"-3: Debug Option", "-2: Debug Option", "-1: Debug Option", "0: Slowest", "1: Extreme Slow", "2: Ultra Slow", "3: Very Slow", "4: Slower (default)", "5: Slow", "6: Medium", "7: Fast", "8: Faster", "9: Very Fast", "10: Mega Fast", "11: Ultra Fast", "12: Extreme Fast", "13: Fastest"},
+        .Values = {"-3", "-2", "-1", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"},
         .ValueChangedAction = Sub(v)
                                   Dim hlv = If(v <= 13, 3, 2)
                                   If HierarchicalLevels.IsDefaultValue Then
@@ -565,7 +565,7 @@ Public Class SvtAv1TritiumEncParams
                                       HierarchicalLevels.ValueChangedUser(HierarchicalLevels.Value)
                                   End If
                               End Sub,
-        .Init = 5}
+        .Init = 7}
 
     '   --------------------------------------------------------
     '   --------------------------------------------------------
@@ -690,6 +690,14 @@ Public Class SvtAv1TritiumEncParams
         .Values = {"32", "64"},
         .Init = 1}
 
+    Property NoiseNormStrength As New OptionParam With {
+        .Switch = "--noise-norm-strength",
+        .Text = "Noise Norm Strength",
+        .Expanded = True,
+        .IntegerValue = True,
+        .Options = {"0", "1 (default)", "2", "3", "4"},
+        .Init = 1}
+
     Property AltSsimTuning As New OptionParam With {
         .Switch = "--alt-ssim-tuning",
         .Text = "Alternative SSIM Calculation Pathway",
@@ -699,13 +707,13 @@ Public Class SvtAv1TritiumEncParams
         .VisibleFunc = Function() {2}.Contains(Tune.Value),
         .Init = 0}
 
-    Property NoiseNormStrength As New OptionParam With {
-        .Switch = "--noise-norm-strength",
-        .Text = "Noise Norm Strength",
+    Property LowMemory As New OptionParam With {
+        .Switch = "--low-memory",
+        .Text = "Low Memory",
         .Expanded = True,
+        .Options = {"0: Off (default)", "1: On"},
         .IntegerValue = True,
-        .Options = {"0", "1 (default)", "2", "3", "4"},
-        .Init = 1}
+        .Init = 0}
 
     '   --------------------------------------------------------
     '   --------------------------------------------------------
@@ -1028,6 +1036,14 @@ Public Class SvtAv1TritiumEncParams
         .Config = {1, 30, 1},
         .Init = 15}
 
+    Property EnableDaala As New OptionParam With {
+        .Switch = "--enable-daala",
+        .Text = "Daala perceptual distortion metric",
+        .Expanded = True,
+        .Options = {"0: Off (default)", "1: Enables Daala for CDEF", "2: Additionally enables Daala for TX Search and MDS3 Selection", "3: Additionally enables Daala for DCT TX", "4: Additionally enables Daala for MDS0 and IFS"},
+        .Values = {"0", "1", "2", "3", "4"},
+        .Init = 0}
+
     Property EnableRestoration As New BoolParam With {
         .Switch = "--enable-restoration",
         .Text = "Loop Restoration Filter",
@@ -1052,7 +1068,15 @@ Public Class SvtAv1TritiumEncParams
         .Text = "ALT-REF Frames",
         .Expanded = True,
         .IntegerValue = True,
-        .Options = {"0: Off", "1: On (default)", "2: Aadaptive"},
+        .Options = {"0: Off", "1: On (default)", "2: Aadaptive", "3: Full"},
+        .Init = 1}
+
+    Property EnableTfKey As New OptionParam With {
+        .Switch = "--enable-kf-tf",
+        .Text = "Enable MCTF for key frames",
+        .Expanded = True,
+        .IntegerValue = True,
+        .Options = {"0: Off", "1: On (default)"},
         .Init = 1}
 
     Property EnableOverlays As New BoolParam With {
@@ -1438,6 +1462,22 @@ Public Class SvtAv1TritiumEncParams
         .Options = {"0: Off", "1: CDEF and Restoration Noise-Adaptive Filtering", "2: Default Tune Behavior (default)", "3: Noise-Adaptive CDEF Only", "4: Noise-Adaptive Restoration Only"},
         .Init = 2}
 
+    Property AltCDEF As New OptionParam With {
+        .Switch = "--enable-alt-cdef",
+        .Text = "Enable Alternative CDEF Biases",
+        .Expanded = True,
+        .IntegerValue = True,
+        .Options = {"0: Off (default)", "1", "2", "3"},
+        .Init = 0}
+
+    Property AltDLF As New OptionParam With {
+        .Switch = "--enable-alt-dlf",
+        .Text = "Enable Alternative DLF Biases",
+        .Expanded = True,
+        .IntegerValue = True,
+        .Options = {"0: Off (default)", "1", "2", "3"},
+        .Init = 0}
+
     Property ComplexHvs As New OptionParam With {
         .Switch = "--complex-hvs",
         .Text = "Complexity HVS Model",
@@ -1468,11 +1508,11 @@ Public Class SvtAv1TritiumEncParams
                     Asm, LevelOfParallelism, PinnedExecution, TargetSocket
                 )
                 Add("Basic",
-                    Preset, Profile, Level, Tune, FastDecode
+                    Preset, Profile, Level, Tune, FastDecode, LowMemory
                 )
                 Add("Rate Control",
                     RateControlMode, ConstantRateFactor, QuantizationParameter, TargetBitrate, MaximumBitrate, MaxQp, MinQp,
-                    TemporalFilteringStrength, LuminanceQpBias, Sharpness,
+                    TemporalFilteringStrength, LuminanceQpBias, Sharpness, AltCDEF, AltDLF,
                     PassesVBR, PassesCBR,
                     AqMode, AutoTiling, RecodeLoop,
                     EnableQm, QmMax, QmMin
@@ -1482,7 +1522,7 @@ Public Class SvtAv1TritiumEncParams
                 )
                 Add("AV1 Specific 1",
                     TileRow, TileCol, LoopFilterEnable,
-                    CDEFLevel, CDEFScaling, EnableRestoration, EnableTPLModel, Mfmv, EnableTF, EnableOverlays, ScreenContentMode,
+                    CDEFLevel, CDEFScaling, EnableDaala, EnableRestoration, EnableTPLModel, Mfmv, EnableTF, EnableTfKey, EnableOverlays, ScreenContentMode,
                     FilmGrain, FilmGrainDenoise, FGSTable
                 )
                 Add("AV1 Specific 2",
