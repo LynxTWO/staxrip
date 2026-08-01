@@ -920,9 +920,9 @@ Public Class SvtAv1EncParams
         .Switch = "--hierarchical-levels",
         .Text = "Hierarchical Levels",
         .Expanded = True,
-        .Options = {"2: 3 temporal layers", "3: 4 temporal layers", "4: 5 temporal layers", "5: 6 temporal layers (default)"},
-        .Values = {"2", "3", "4", "5"},
-        .Init = 3}
+        .Options = {"0: flat", "1: 2 temporal layers", "2: 3 temporal layers", "3: 4 temporal layers", "4: 5 temporal layers (default)", "5: 6 temporal layers"},
+        .Values = {"0", "1", "2", "3", "4", "5"},
+        .Init = 4}
 
     Property PredStructure As New OptionParam With {
         .Switch = "--pred-struct",
@@ -1002,6 +1002,14 @@ Public Class SvtAv1EncParams
         .Expanded = True,
         .IntegerValue = True,
         .Options = {"0: Off", "1: On (default)", "2: Aadaptive"},
+        .Init = 1}
+
+    Property EnableTfKey As New OptionParam With {
+        .Switch = "--enable-kf-tf",
+        .Text = "Enable MCTF for key frames",
+        .Expanded = True,
+        .IntegerValue = True,
+        .Options = {"0: Off", "1: On (default)"},
         .Init = 1}
 
     Property EnableOverlays As New BoolParam With {
@@ -1307,7 +1315,7 @@ Public Class SvtAv1EncParams
                 )
                 Add("AV1 Specific 1",
                     TileRow, TileCol, LoopFilterEnable,
-                    CDEFLevel, EnableRestoration, EnableTPLModel, Mfmv, EnableTF, EnableOverlays, ScreenContentMode, EnableIntraBC,
+                    CDEFLevel, EnableRestoration, EnableTPLModel, Mfmv, EnableTF, EnableTfKey, EnableOverlays, ScreenContentMode, EnableIntraBC,
                     FilmGrain, FilmGrainDenoise, FGSTable
                 )
                 Add("AV1 Specific 2",
