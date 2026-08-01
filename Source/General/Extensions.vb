@@ -1198,7 +1198,7 @@ Module MiscExtensions
 
         If String.IsNullOrWhiteSpace(input) Then Return result
 
-        Dim pattern = "(\d{1,2}([\.,]\d{1,3})?)(""([^""]*)"")?"
+        Const pattern = "(\d{1,2}([\.,]\d{1,3})?)(""([^""]*)"")?"
         Dim matches = Regex.Matches(input, pattern, RegexOptions.IgnoreCase)
 
         If matches.Count = 0 Then Return result
@@ -1209,7 +1209,9 @@ Module MiscExtensions
         If TypeOf p.VideoEncoder Is NVEnc Then
             Dim params = DirectCast(p.VideoEncoder, NVEnc).Params
             qualityConfig = If(params.QVBR.Visible, params.QVBR.Config, qualityConfig)
+            qualityConfig = If(params.QVBRAV1.Visible, params.QVBRAV1.Config, qualityConfig)
             qualityConfig = If(params.QP.Visible, params.QP.Config, qualityConfig)
+            qualityConfig = If(params.QPAV1.Visible, params.QPAV1.Config, qualityConfig)
             qualityConfig = If(params.VbrQuality.Visible, params.VbrQuality.Config, qualityConfig)
         End If
 

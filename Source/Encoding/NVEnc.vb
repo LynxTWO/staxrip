@@ -564,8 +564,15 @@ Public Class NVEncParams
         .Switches = {"--qvbr"},
         .Text = "VBR Quality",
         .Init = 28,
-        .VisibleFunc = Function() Mode.Value = NVEncRateMode.QVBR AndAlso Not (QPAdvanced.Value AndAlso QPAdvanced.Visible),
+        .VisibleFunc = Function() Mode.Value = NVEncRateMode.QVBR AndAlso Codec.Value <> 2 AndAlso Not (QPAdvanced.Value AndAlso QPAdvanced.Visible),
         .Config = {0, 51, 0.5, 1}}
+
+    Property QVBRAV1 As New NumParam With {
+        .Switches = {"--qvbr"},
+        .Text = "VBR Quality",
+        .Init = 28,
+        .VisibleFunc = Function() Mode.Value = NVEncRateMode.QVBR AndAlso Codec.Value = 2 AndAlso Not (QPAdvanced.Value AndAlso QPAdvanced.Visible),
+        .Config = {0, 63, 0.5, 1}}
 
     Property QP As New NumParam With {
         .Switches = {"--cqp"},
@@ -1090,7 +1097,7 @@ Public Class NVEncParams
                     New OptionParam With {.Name = "LevelH264", .Switch = "--level", .Text = "Level", .VisibleFunc = Function() Codec.ValueText = "h264", .Options = {"Auto", "1", "1.1", "1.2", "1.3", "2", "2.1", "2.2", "3", "3.1", "3.2", "4", "4.1", "4.2", "5", "5.1", "5.2"}},
                     New OptionParam With {.Name = "LevelH265", .Switch = "--level", .Text = "Level", .VisibleFunc = Function() Codec.ValueText = "h265", .Options = {"Auto", "1", "2", "2.1", "3", "3.1", "4", "4.1", "5", "5.1", "5.2", "6", "6.1", "6.2"}},
                     New OptionParam With {.Name = "LevelAV1", .Switch = "--level", .Text = "Level", .VisibleFunc = Function() Codec.ValueText = "av1", .Options = {"Auto", "2", "2.1", "3", "3.1", "4", "4.1", "5", "5.1", "5.2", "5.3", "6", "6.1"}},
-                    Bitrate, VbrQuality, QVBR, QPAdvanced, QP, QPAV1, QPI, QPIAV1, QPP, QPPAV1, QPB, QPBAV1)
+                    Bitrate, VbrQuality, QVBR, QVBRAV1, QPAdvanced, QP, QPAV1, QPI, QPIAV1, QPP, QPPAV1, QPB, QPBAV1)
                 Add("Rate Control",
                     New StringParam With {.Switch = "--dynamic-rc", .Text = "Dynamic RC"},
                     New OptionParam With {.Switch = "--multipass", .Text = "Multipass", .Options = {"None", "2Pass-Quarter", "2Pass-Full"}, .VisibleFunc = Function() Mode.Value <> NVEncRateMode.CQP},
@@ -2079,6 +2086,7 @@ Public Class NVEncParams
     Function GetModeArgs() As String
         Select Case Mode.Value
             Case NVEncRateMode.QVBR
+                If Codec.Value = 2 Then Return "--qvbr " & QVBRAV1.Value.ToInvariantString()
                 Return "--qvbr " & QVBR.Value.ToInvariantString()
             Case NVEncRateMode.CQP
                 If Codec.Value = 2 Then Return If(QPAdvanced.Value, $"--cqp {QPIAV1.Value.ToInvariantString()}:{QPPAV1.Value.ToInvariantString()}:{QPBAV1.Value.ToInvariantString()}", $" --cqp {QPAV1.Value.ToInvariantString()}")

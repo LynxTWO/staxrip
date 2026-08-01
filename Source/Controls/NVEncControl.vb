@@ -247,6 +247,7 @@ Public Class NVEncControl
                 Case 0 - offset
                     Dim param As NumParam
                     If Params.QVBR.Visible Then param = Params.QVBR
+                    If Params.QVBRAV1.Visible Then param = Params.QVBRAV1
                     If Params.QP.Visible Then param = Params.QP
                     If Params.QPAV1.Visible Then param = Params.QPAV1
                     If Params.VbrQuality.Visible Then param = Params.VbrQuality
@@ -312,7 +313,9 @@ Public Class NVEncControl
 
     Sub SetQuality(index As Integer, v As Double)
         If Params.QVBR.Visible Then Params.QVBR.Value = v
+        If Params.QVBRAV1.Visible Then Params.QVBRAV1.Value = v
         If Params.QP.Visible Then Params.QP.Value = v
+        If Params.QPAV1.Visible Then Params.QPAV1.Value = v
         If Params.VbrQuality.Visible Then Params.VbrQuality.Value = v
 
         lv.Items(index).SubItems(1).Tag = GetQualityCaption(v)
@@ -388,6 +391,7 @@ Public Class NVEncControl
         If Encoder.QualityMode Then
             Dim val = -1.0
             val = If(Params.QVBR.Visible, Params.QVBR.Value, val)
+            val = If(Params.QVBRAV1.Visible, Params.QVBRAV1.Value, val)
             val = If(Params.QP.Visible, Params.QP.Value, val)
             val = If(Params.QPAV1.Visible, Params.QPAV1.Value, val)
             val = If(Params.VbrQuality.Visible, Params.VbrQuality.Value, val)
