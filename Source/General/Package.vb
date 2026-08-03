@@ -3090,6 +3090,8 @@ Public Class Package
                 If s.Storage Is Nothing OrElse size <> s.Storage.GetInt("x264 size") Then
                     Dim output = ProcessHelp.GetConsoleOutput(filePath, "--version", False)
 
+                    If String.IsNullOrWhiteSpace(output) Then output = ProcessHelp.GetConsoleOutput(filePath, "--version", True)
+
                     If output.Contains("Patman") Then
                         type = x264Type.Patman
                     ElseIf output.Contains("DJATOM") Then
@@ -3118,14 +3120,16 @@ Public Class Package
                 Dim type As x265Type
 
                 If s.Storage Is Nothing OrElse size <> s.Storage.GetInt("x265 size") Then
-                    Dim output = ProcessHelp.GetConsoleOutput(filePath, "--version", True)
+                    Dim output = ProcessHelp.GetConsoleOutput(filePath, "--version", False)
 
-                    If output.Contains("DJATOM") Then
+                    If String.IsNullOrWhiteSpace(output) Then output = ProcessHelp.GetConsoleOutput(filePath, "--version", True)
+
+                    If output.Contains("Patman") Then
+                        type = x265Type.Patman
+                    ElseIf output.Contains("DJATOM") Then
                         type = x265Type.DJATOM
                     ElseIf output.Contains("JPSDR") Then
                         type = x265Type.JPSDR
-                    ElseIf output.Contains("Patman") Then
-                        type = x265Type.Patman
                     Else
                         type = x265Type.Vanilla
                     End If
