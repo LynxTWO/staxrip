@@ -888,10 +888,9 @@ Public Class Package
     Shared Property VSFilterMod As Package = Add(New PluginPackage With {
         .Name = "VSFilterMod",
         .Filename = "VSFilterMod.dll",
-        .Description = "AviSynth and VapourSynth subtitle plugin with support for vobsub srt and ass.",
-        .WebURL = "https://github.com/kedaitinh12/VSFilterMod",
-        .DownloadURL = "https://github.com/kedaitinh12/VSFilterMod/releases",
-        .AvsFilterNames = {"VobSub", "TextSubMod"},
+        .Description = "VSFilterMod with VapourSynth interface added",
+        .WebURL = "https://github.com/Masaiki/VSFilterMod",
+        .DownloadURL = "https://github.com/Masaiki/VSFilterMod/releases",
         .VsFilterNames = {"vsfm.VobSub", "vsfm.TextSubMod"}})
 
     Shared Property SangNom2 As Package = Add(New PluginPackage With {
