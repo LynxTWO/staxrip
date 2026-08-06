@@ -1064,6 +1064,35 @@ Public Class x265Params
         .Config = {0.5, 1.0, 0.1, 1},
         .Init = 1}
 
+    Property FoveaDelta As New NumParam With {
+        .Switch = "--fovea-delta",
+        .Text = "Fovea Delta",
+        .Config = {0.0, Integer.MaxValue, 0.1, 1},
+        .Init = 0}
+
+    Property FoveaGazeX As New NumParam With {
+        .HelpSwitch = "--fovea-gaze",
+        .Text = "Fovea Gaze X",
+        .Config = {-1, Integer.MaxValue, 1.0, 0},
+        .Init = -1}
+
+    Property FoveaGazeY As New NumParam With {
+        .HelpSwitch = "--fovea-gaze",
+        .Text = "Fovea Gaze Y",
+        .Config = {-1, Integer.MaxValue, 1.0, 0},
+        .Init = -1}
+
+    Property FoveaGazeFile As New StringParam With {
+        .Switch = "--fovea-gaze-file",
+        .Text = "Fovea Gaze File",
+        .BrowseFile = True}
+
+    Property FoveaSigma As New NumParam With {
+        .Switch = "--fovea-sigma",
+        .Text = "Fovea Sigma",
+        .Config = {0.0, Integer.MaxValue, 0.1, 1},
+        .Init = 0}
+
     Property Range As New OptionParam With {.Switch = "--range", .Text = "Range", .Options = {"Undefined", "Limited", "Full"}}
     Property ColorPrim As New OptionParam With {.Switch = "--colorprim", .Text = "Colorprim", .Options = {"Undefined", "BT 2020", "BT 470 BG", "BT 470 M", "BT 709", "Film", "SMPTE 170 M", "SMPTE 240 M", "SMPTE 428", "SMPTE 431", "SMPTE 432"}}
     Property Transfer As New OptionParam With {.Switch = "--transfer", .Text = "Transfer", .Options = {"Undefined", "ARIB-STD-B67", "BT 1361 E", "BT 2020-10", "BT 2020-12", "BT 470 BG", "BT 470 M", "BT 709", "IEC 61966-2-1", "IEC 61966-2-4", "Linear", "Log 100", "Log 316", "SMPTE 170 M", "SMPTE 2084", "SMPTE 240 M", "SMPTE 428"}}
@@ -1340,6 +1369,12 @@ Public Class x265Params
         .Weight = 9,
         .VisibleFunc = Function() Package.x265Type = x265Type.DJATOM}
 
+    Property McstfRefRange As New NumParam With {
+        .Switch = "--mcstf-ref-range",
+        .Text = "Maximum number of range for MCSTF",
+        .Init = 2,
+        .Config = {0, 4}}
+
     Property ScreenContentCoding As New OptionParam With {
         .Switch = "--scc",
         .Text = "Screen Content Coding",
@@ -1478,18 +1513,21 @@ Public Class x265Params
                     AQStrength, AQBiasStrength, QPadaptationrange,
                     New BoolParam With {.Switch = "--aq-motion", .Text = "AQ Motion"},
                     New BoolParam With {.Switch = "--sbrc", .NoSwitch = "--no-sbrc", .Text = "Segment based rate control"},
-                    qgSize, CUtree, RcGrain, IPRatio, PBRatio, QComp, qpmin, qpmax, qpstep
+                    qgSize, IPRatio, PBRatio, QComp, qpmin, qpmax, qpstep
                 )
                 Add("Rate Control 4",
-                    ConstVBV,
                     New NumParam With {.Switch = "--cbqpoffs", .Text = "CB QP Offset", .Config = {-12, 12}},
                     New NumParam With {.Switch = "--crqpoffs", .Text = "CR QP Offset", .Config = {-12, 12}},
                     New NumParam With {.Switch = "--qblur", .Text = "Temporally Blur Quants", .Config = {0, 1, 0.05, 2}, .Init = 0.5},
                     New NumParam With {.Switch = "--cplxblur", .Text = "Temporally Blur Complexity", .Config = {0, 100, 0.5, 1}, .Init = 20},
                     New StringParam With {.Switch = "--scaling-list", .Text = "Scaling List"},
+                    New StringParam With {.Switch = "--lambda-file", .Text = "Lambda File", .BrowseFile = True}
+                )
+                Add("Foveated Encoding",
+                    FoveaGazeX, FoveaGazeY, FoveaDelta, FoveaSigma, FoveaGazeFile,
+                    CUtree, RcGrain, ConstVBV,
                     New StringParam With {.Switch = "--zones", .Text = "Zones"},
                     New StringParam With {.Switch = "--zonefile", .Text = "Zone File", .BrowseFile = True},
-                    New StringParam With {.Switch = "--lambda-file", .Text = "Lambda File", .BrowseFile = True},
                     MaxAuSizeFactor
                 )
                 Add("Loop Filter",
@@ -1541,6 +1579,9 @@ Public Class x265Params
                     New BoolParam With {.Switch = "--lowpass-dct", .Text = "Lowpass DCT"},
                     New BoolParam With {.Switch = "--frame-dup", .Text = "Frame Duplication"},
                     New NumParam With {.Switch = "--dup-threshold", .Text = "PSNR Threshold", .Init = 70, .Config = {1, 99}},
+                    New BoolParam With {.Switch = "--mcstf", .NoSwitch = "--no-mcstf", .Text = "GOP-based Temporal Filter", .Init = False, .IntegerValue = False},
+                    McstfRefRange,
+                    New BoolParam With {.Switch = "--selective-mcstf", .NoSwitch = "--no-selective-mcstf", .Text = "Skip MCSTF for GOPs estimated as clean (low noise)", .Init = False, .IntegerValue = False},
                     New BoolParam With {.Switch = "--alpha", .Text = "Alpha channel support", .Help = "Enable alpha channel support", .Init = False, .IntegerValue = True},
                     Format, ScreenContentCoding,
                     New StringParam With {.Switch = "--abr-ladder", .Text = "ABR Ladder File", .BrowseFile = True}
@@ -1837,6 +1878,10 @@ Public Class x265Params
             End If
         End If
 
+        If Not FoveaGazeX.IsDefaultValue OrElse Not FoveaGazeY.IsDefaultValue Then
+            sb.Append($" {FoveaGazeX.HelpSwitch} {FoveaGazeX.Value},{FoveaGazeY.Value}")
+        End If
+
         Dim q = From i In Items Where i.GetArgs <> "" AndAlso Not IsCustom(pass, i.GetSwitches())
 
         If q.Count > 0 Then
@@ -1925,6 +1970,7 @@ Public Class x265Params
         LimitTU.Value = 0
         LookaheadSlices.Value = 8
         MaxCuSize.Value = 0
+        McstfRefRange.Value = 2
         MErange.Value = 57
         MinCuSize.Value = 2
         PBRatio.Value = 1.3
@@ -1948,6 +1994,7 @@ Public Class x265Params
                 LimitRefs.Value = 0
                 MaxCuSize.Value = 1
                 MaxMerge.Value = 2
+                McstfRefRange.Value = 1
                 MinCuSize.Value = 1
                 RCLookahead.Value = 5
                 RD.Value = 2
@@ -2200,6 +2247,7 @@ Public Class x265Params
         LimitTU.DefaultValue = 0
         LookaheadSlices.DefaultValue = 8
         MaxCuSize.DefaultValue = 0
+        McstfRefRange.DefaultValue = 2
         MErange.DefaultValue = 57
         MinCuSize.DefaultValue = 2
         PBRatio.DefaultValue = 1.3
@@ -2223,6 +2271,7 @@ Public Class x265Params
                 LimitRefs.DefaultValue = 0
                 MaxCuSize.DefaultValue = 1
                 MaxMerge.DefaultValue = 2
+                McstfRefRange.DefaultValue = 1
                 MinCuSize.DefaultValue = 1
                 RCLookahead.DefaultValue = 5
                 RD.DefaultValue = 2
