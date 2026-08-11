@@ -6,7 +6,7 @@ Contributions should be small, focused, and easy to verify. Search existing issu
 
 ## Build scope
 
-The procedure below was verified for StaxRip `v2.52.5` on Windows with the `x64` platform. It produces a source build. It does not recreate the complete portable distribution because the repository does not contain the full ignored `Source/bin/Apps` runtime tree.
+The procedure below was verified for StaxRip `v2.52.5` on Windows with the `x64` platform. StaxRip supports x64 builds only, so this guide does not cover the x86 configurations that remain in the project files. It produces a source build. It does not recreate the complete portable distribution because the repository does not contain the full ignored `Source/bin/Apps` runtime tree.
 
 The verification used:
 
@@ -107,7 +107,7 @@ Before opening a pull request:
 1. Rebase or merge the current upstream `master` branch.
 2. Keep the branch limited to one change or one closely related set of changes.
 3. Run the smallest relevant build or check and record its exact configuration and platform.
-4. State what was not tested, especially runtime tools, x86, packaging, and release behavior.
+4. State what was not tested, especially runtime tools, packaging, and release behavior.
 5. Do not include build outputs, restored packages, personal settings, projects, media, or logs. Check for modified tracked AutoCrop binaries after a Release build.
 6. Explain changes to command generation, persisted data, tool selection, cleanup, concurrency, or native interfaces in the pull-request description.
 
