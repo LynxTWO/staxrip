@@ -364,16 +364,17 @@ Public NotInheritable Class SupportReportBuilder
 
         If sensitiveValues IsNot Nothing Then
             For Each value In sensitiveValues.Where(Function(item) Not String.IsNullOrWhiteSpace(item)).OrderByDescending(Function(item) item.Length)
-                ret = Regex.Replace(ret, Regex.Escape(value), "<REDACTED>", RegexOptions.IgnoreCase)
+                ret = Regex.Replace(ret, Regex.Escape(value), "<REDACTED>", RegexOptions.IgnoreCase Or RegexOptions.CultureInvariant)
             Next
         End If
 
-        ret = Regex.Replace(ret, "(?i)\b(?:https?|ftp)://\S+", "<URL>")
-        ret = Regex.Replace(ret, "(?i)(?<![\w.-])[\w.+-]+@[\w.-]+\.[A-Z]{2,}(?![\w.-])", "<EMAIL>")
-        ret = Regex.Replace(ret, "(?i)(--?(?:api[-_]?key|authorization|cookie|key|pass(?:wd|word)|secret|token)\s*[=:]?\s*)(?:(""[^""]*"")|\S+)", "$1<REDACTED>")
-        ret = Regex.Replace(ret, "(?i)\b(Bearer|Basic)\s+[A-Z0-9._~+/=-]+", "$1 <REDACTED>")
-        ret = Regex.Replace(ret, "(?i)""(?:[A-Z]:\\|\\\\)[^""]*""", "<PATH>")
-        ret = Regex.Replace(ret, "(?i)(?<!\S)(?:[A-Z]:\\|\\\\).*?(?=\s+(?:--?[A-Z0-9]|/[A-Z?]|\|)|$)", "<PATH>")
+        Dim invariantIgnoreCase = RegexOptions.IgnoreCase Or RegexOptions.CultureInvariant
+        ret = Regex.Replace(ret, "\b(?:https?|ftp)://\S+", "<URL>", invariantIgnoreCase)
+        ret = Regex.Replace(ret, "(?<![\w.-])[\w.+-]+@[\w.-]+\.[A-Z]{2,}(?![\w.-])", "<EMAIL>", invariantIgnoreCase)
+        ret = Regex.Replace(ret, "(--?(?:api[-_]?key|authorization|cookie|key|pass(?:wd|word)|secret|token)\s*[=:]?\s*)(?:(""[^""]*"")|\S+)", "$1<REDACTED>", invariantIgnoreCase)
+        ret = Regex.Replace(ret, "\b(Bearer|Basic)\s+[A-Z0-9._~+/=-]+", "$1 <REDACTED>", invariantIgnoreCase)
+        ret = Regex.Replace(ret, """(?:[A-Z]:\\|\\\\)[^""]*""", "<PATH>", invariantIgnoreCase)
+        ret = Regex.Replace(ret, "(?<!\S)(?:[A-Z]:\\|\\\\).*?(?=\s+(?:--?[A-Z0-9]|/[A-Z?]|\|)|$)", "<PATH>", invariantIgnoreCase)
         ret = Regex.Replace(ret, "\s+", " ").Trim()
         ret = ret.Replace("```", "'''")
 
@@ -436,7 +437,7 @@ Public NotInheritable Class SupportReportBuilder
     Private Shared Function SafeTechnicalValue(value As String) As String
         If String.IsNullOrWhiteSpace(value) Then Return "Not available"
 
-        If Regex.IsMatch(value, "(?i)(?:[A-Z]:\\|\\\\|/Users/|/home/|\b(?:https?|ftp)://)") Then
+        If Regex.IsMatch(value, "(?:[A-Z]:\\|\\\\|/Users/|/home/|\b(?:https?|ftp)://)", RegexOptions.IgnoreCase Or RegexOptions.CultureInvariant) Then
             Return "Omitted"
         End If
 
