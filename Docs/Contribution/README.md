@@ -6,7 +6,7 @@ Contributions should be small, focused, and easy to verify. Search existing issu
 
 ## Build scope
 
-The procedure below was verified for StaxRip `v2.52.5` on Windows with the `x64` platform. StaxRip supports x64 builds only, so this guide does not cover the x86 configurations that remain in the project files. It produces a source build. It does not recreate the complete portable distribution because the repository does not contain the full ignored `Source/bin/Apps` runtime tree.
+The procedure below was verified for StaxRip `v2.52.5` on Windows with the `x64` platform. StaxRip supports x64 builds only, and the project files now expose x64 configurations only. This guide produces a source build. It does not recreate the complete portable distribution because the repository does not contain the full ignored `Source/bin/Apps` runtime tree.
 
 The verification used:
 
