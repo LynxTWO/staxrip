@@ -1,12 +1,12 @@
 # StaxRip Community Architecture Document (ADD)
 
-Version: 0.1 Draft. Date: 2026-08-13. Authors: LynxTWO and Codex. Status: Confirmed.
+Version: 0.1 Draft. Date: 2026-08-15. Authors: LynxTWO and Codex. Status: Confirmed.
 Companion documents: `ENGINEERING.md`, `DECISION-LOG.md`, and the slice briefs (`SLICE-001` onward).
 
 ## Interview State
 
-- **Last completed:** Phase 2, Architecture
-- **Next:** Phase 4, cross-document completeness audit
+- **Last completed:** Phase 6, final planning audit
+- **Next:** `SLICE-001` M0 discovery
 - **Open questions:** Carried in `../Unknowns/Planning-Unknowns.md`
 - **Statuses pending:** None
 
@@ -35,7 +35,7 @@ Companion documents: `ENGINEERING.md`, `DECISION-LOG.md`, and the slice briefs (
 - **Who it is for:** Primary users configure local video and audio processing jobs. Secondary users follow guided setup, and community contributors maintain the fork.
 - **The core loop:** A user opens source media, StaxRip verifies and probes it, builds the effective processing project, reports whether the project is ready, and lets the user resolve blockers before encoding.
 - **Major pieces:** Desktop shell, source intake, project and profile state, script and filter pipeline, tool orchestration, job engine, FrameServer boundary, diagnostics and support, and AutoCrop.
-- **Current slice:** Planning `SLICE-001`, a read-only source readiness summary at the end of the existing source-opening workflow.
+- **Current slice:** Approved `SLICE-001`, a read-only source readiness summary after approved interactive source opening. Job processing does not activate it.
 - **What this is not:** It is not a new encoder, a cloud service, an installer project, a cross-platform rewrite, or a public-release automation effort.
 
 ## 2. System Context
@@ -61,7 +61,7 @@ DECISION: Product shape and platforms
 
 - **STATUS:** Confirmed
 - **CHOICE:** Preserve the existing portable Windows x64 architecture and external-tool model. Do not begin with a platform rewrite or installer.
-- **BECAUSE:** This reaches current users and preserves upstream compatibility while keeping the slice inside the existing runtime model. The exact post-success integration seam remains U-010 rather than a verified boundary.
+- **BECAUSE:** This reaches current users and preserves upstream compatibility while keeping the slice inside the existing runtime model. The specific post-success integration seam remains U-010 rather than a verified boundary.
 - **OPTIONS CONSIDERED:** Preserve the portable Windows app, lowest compatibility risk. Add an installer, easier onboarding but introduces a release and machine-state boundary. Cross-platform rewrite, wider reach but breaks the present tool and GUI contracts.
 - **REVISIT WHEN:** A measured user need cannot be served by the portable x64 application, or an approved distribution slice establishes a new contract.
 
@@ -320,11 +320,11 @@ DECISION: Architecture guardrails
 
 ## 15. Current Build Boundary
 
-- **Current slice:** Planning candidate `SLICE-001`, source readiness summary. It will derive a typed readiness result only after the existing source-opening flow returns successfully and present facts, warnings, and blockers in the GUI. U-010 must first identify the safe seam.
-- **Modules the slice may touch:** Source intake, project state read models, package requirement readers, the desktop shell or a separately owned Assistant-adjacent readiness presentation, and a deterministic test seam.
+- **Current slice:** Approved `SLICE-001`, source readiness summary, defined in `SLICE-001.md`. It targets five to eight pure post-success checks, explicit refresh, and mandatory invalidation. It will derive a typed result only after an approved interactive source open returns successfully. It does not evaluate or present readiness during `isEncoding = True` or job processing. U-010 and U-013 must first prove the safe activation boundary.
+- **Modules the slice may touch:** Source intake on the approved interactive path, project state read models, package requirement readers, a narrow readiness coordinator, the desktop shell or a separately owned Assistant-adjacent readiness presentation, and a deterministic test seam.
 - **Capabilities excluded rather than stubbed:** Guided repair actions, source-opening stage progress, performance optimization, job recovery, release automation, localization implementation, and new telemetry. The slice contains no partial implementation of them.
-- **Everything else:** Existing behavior remains in place. Implementation does not begin until the Engineering Document, audit, and Slice Brief are approved.
+- **Everything else:** Existing behavior remains in place. Phase 6 passed in `PHASE-6-AUDIT.md`, so M0 discovery may begin. Dependent production implementation waits for the M0 gates.
 
 ---
 
-*Sections filled: 15 of 15. Unknowns carried: 12. See `DECISION-LOG.md` for reasoning.*
+*Sections filled: 15 of 15. Unknown records carried: 14 (12 Open, 2 Closed). See `DECISION-LOG.md` for reasoning.*

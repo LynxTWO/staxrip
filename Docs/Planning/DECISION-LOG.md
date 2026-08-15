@@ -1,6 +1,6 @@
 # StaxRip Community Decision Log
 
-Version: 0.1 Draft. Date: 2026-08-14.
+Version: 0.1 Draft. Date: 2026-08-15.
 Companion documents: `ARCHITECTURE.md`, `ENGINEERING.md`, and the slice briefs (`SLICE-001` onward).
 
 ## Rules
@@ -44,6 +44,13 @@ Companion documents: `ARCHITECTURE.md`, `ENGINEERING.md`, and the slice briefs (
 | D-027 | 2026-08-14 | Source-only operations and cost posture | Confirmed | |
 | D-028 | 2026-08-14 | Definition of done and change control | Confirmed | |
 | D-029 | 2026-08-13 | Remove legacy x86 bootstrapper prerequisites | Confirmed | |
+| D-030 | 2026-08-15 | SLICE-001 shape and timebox | Confirmed | |
+| D-031 | 2026-08-15 | Readiness refresh and invalidation | Confirmed | |
+| D-032 | 2026-08-15 | Initial readiness catalog breadth | Confirmed | |
+| D-033 | 2026-08-15 | SLICE-001 build approval | Confirmed | |
+| D-034 | 2026-08-15 | Conservative Ready authority | Confirmed | |
+| D-035 | 2026-08-15 | Interactive-only readiness activation | Confirmed | |
+| D-036 | 2026-08-15 | Readiness adapter failure boundary | Confirmed | |
 
 ## Entries
 
@@ -657,3 +664,150 @@ Options considered:
 Consequences: Normal Debug and Release x64 builds must remain clean. Publish and bootstrapper behavior is untested and remains blocked by U-009 and the release approval gate.
 
 Revisit when: The release-boundary slice maps and replaces or retires the remaining legacy publish metadata.
+
+## D-030: SLICE-001 shape and timebox
+
+Date: 2026-08-15
+Status: Confirmed
+Area: SLICE-001 sections 1 and 3
+
+Context: The slice growth tally showed that accessibility, privacy, deterministic verification, performance, safe integration, and stale-result prevention had enlarged the original one-summary concept.
+
+Decision: Keep one full end-to-end source-readiness slice with five spike-first milestones and a maximum planning posture of five solo weeks. Reassess scope if the first milestone cannot prove a safe seam, lifecycle, catalog, and fixture protocol.
+
+Because: The slice must prove user value through the real GUI and architecture. A model-only first slice would not test whether users can make a confident proceed-or-correct decision.
+
+Options considered:
+- Full end-to-end proof: strongest central-claim test and the selected option.
+- Split model and GUI: smaller changes, but the first part has no real-user result.
+- One-shot summary only: faster, but creates stale-state and accessibility debt.
+
+Consequences: Discovery spikes close before dependent implementation. The timebox controls scope rather than weakening evidence or crossing protected boundaries.
+
+Revisit when: Milestone M0 cannot prove a safe read-only path within the confirmed constraints.
+
+## D-031: Readiness refresh and invalidation
+
+Date: 2026-08-15
+Status: Confirmed
+Area: SLICE-001 sections 2, 7, and 8
+
+Context: Relevant project and requirement state can change after source opening. A retained `Ready` result can become false unless every input has an invalidation owner.
+
+Decision: Evaluate once after a verified successful source-opening return. Use an explicit `Refresh readiness` command for recomputation. Invalidate or hide the current result on a new open attempt, project replacement, or any mapped input change. Exclude a candidate check when no safe invalidation trigger can be proven. Add no background refresh or worker.
+
+Because: Explicit refresh keeps recomputation predictable while mandatory invalidation prevents a stale ready claim.
+
+Options considered:
+- Explicit refresh plus mandatory invalidation: selected, bounded, and visible.
+- Automatic recomputation on every event: smoother, more coupling and event-order risk.
+- One-shot result: smallest, but can mislead after changes.
+
+Consequences: Q-007 and U-012 close only when the lifecycle spike maps every approved field, project transition, failed later open, and forced stale-result scenario.
+
+Revisit when: A later slice has a typed project-change stream with proven ordering and safe automatic recomputation.
+
+## D-032: Initial readiness catalog breadth
+
+Date: 2026-08-15
+Status: Confirmed
+Area: SLICE-001 sections 3 and 7
+
+Context: The final catalog is unknown, but a broad first catalog would multiply state ownership, invalidation, copy, and verification work.
+
+Decision: Target five to eight pure post-success checks. The mapping spike may shrink the count. Every accepted check needs a stable id, owner, bounded input, severity, precedence, invalidation trigger, and deterministic test. No live probe, process, network, log parse, or mutation enters the catalog.
+
+Because: A small proven catalog can demonstrate the workflow without hiding unsafe checks behind a larger count.
+
+Options considered:
+- Five to eight pure checks: selected balance of usefulness and proof.
+- All available pure facts: more coverage, larger ownership and UI surface.
+- One overall boolean: small, but does not explain warnings or blockers.
+
+Consequences: Q-001 and U-003 remain open until the catalog artifact is approved. Count is not a success metric. At least one retained blocker must be safely reproducible and correctable through an existing StaxRip control so the complete walkthrough is real; every retained check must support the central claim.
+
+Revisit when: User walkthrough evidence identifies a missing fact that can satisfy the same purity and lifecycle rules.
+
+## D-033: SLICE-001 build approval
+
+Date: 2026-08-15
+Status: Confirmed
+Area: SLICE-001 complete brief
+
+Context: The final slice shape has been selected and written into a complete brief. Production implementation still requires the human to approve that exact document as the build boundary.
+
+Decision: Approve `Docs/Planning/SLICE-001.md` as the only active build slice, including its milestones, exclusions, no-stub posture, data subset, acceptance criteria, evidence, stop gates, and human walkthrough requirement.
+
+Because: The brief makes the full cost and boundary reviewable before product files change.
+
+Options considered:
+- Approve the brief: begins M0 discovery only.
+- Revise the brief: keeps planning active until the boundary agrees with user intent.
+- Split or cancel the slice: replaces D-030 through a new decision.
+
+Consequences: While Proposed, no production feature implementation starts. Confirmation authorizes M0 discovery, not later milestones before their named spike gates close.
+
+Revisit when: Repository evidence contradicts the brief or the user changes the selected workflow.
+
+## D-034: Conservative Ready authority
+
+Date: 2026-08-15
+Status: Confirmed
+Area: SLICE-001 sections 1, 7, and 8
+
+Context: Existing encode entry uses requirement verification, Assistant state, disk checks, and events at `Source/Forms/MainForm.vb:4187,4195-4198`. Assistant evaluation also performs script and frame-server work at `Source/Forms/MainForm_Assistant.vb:19-28`. A five-to-eight-check catalog may not observe every authoritative condition without side effects.
+
+Decision: Do not emit overall `Ready` until M0 maps every authoritative condition required by that label and proves each condition is known and satisfied. An excluded, unknown, stale, or unverified authoritative condition prevents `Ready`. If the pure catalog cannot support that rule, stop and revisit D-030 before implementation rather than weakening the label.
+
+Because: A partial catalog must not present a stronger claim than the existing encode gate can support.
+
+Options considered:
+- Conservative `Ready` authority: selected option, honest but may stop the slice in M0.
+- Rename success to `Selected checks passed`: accurate for partial coverage, but does not prove the selected ready-to-encode claim.
+- Emit `Ready` from only the small catalog: simple, but can mislead users.
+
+Consequences: S-017 and the catalog artifact must trace `VerifyRequirements`, Assistant state, disk checks, encode events, and any other mapped authority. No test count substitutes for this coverage record.
+
+Revisit when: The authoritative encode gate becomes a typed side-effect-free contract shared by both workflows.
+
+## D-035: Interactive-only readiness activation
+
+Date: 2026-08-15
+Status: Confirmed
+Area: SLICE-001 sections 2, 6, and 8
+
+Context: Job processing calls the shared source-opening overload with `isEncoding := True` at `Source/General/GlobalClass.vb:561`; the overload starts at `Source/Forms/MainForm.vb:2477`. The first slice is an interactive GUI feature and excludes job execution changes.
+
+Decision: Evaluate and present readiness only for the approved interactive `isEncoding = False` path. On `isEncoding = True` and job-processing paths, snapshot, evaluation, and new summary or details presentation counts stay zero. The only permitted readiness action is a mapped synchronous clear or hide of prior transient state before job processing. Existing job behavior remains unchanged.
+
+Because: Reusing a shared method does not authorize injecting GUI work, latency, or failure handling into the job runner.
+
+Options considered:
+- Interactive-only activation: selected option and smallest job boundary.
+- Evaluate silently during jobs: more reuse, but adds latency and failure behavior without user value.
+- Present readiness during jobs: visible but conflicts with the excluded job-execution scope.
+
+Consequences: M0 maps every call path, names the pre-job clear owner, and approves an isolated synthetic job-path verification protocol with a stopping point before processing, tool launch, or output work. S-018 later proves production branch activation and outcome separately. If no safe protocol exists without changing job behavior, stop for a new decision.
+
+Revisit when: A later job-readiness slice defines non-GUI consumption and processing semantics.
+
+## D-036: Readiness adapter failure boundary
+
+Date: 2026-08-15
+Status: Confirmed
+Area: SLICE-001 sections 3, 8, and 9
+
+Context: Planned snapshot construction runs before the evaluator. Catching evaluator failures alone leaves mapper failure coupled to the current UI exception route registered at `Source/Forms/MainForm.vb:993`, handled at `Source/General/GlobalClass.vb:1650-1655`, and terminated at line 1591 for the mapped non-abort path.
+
+Decision: One narrow readiness coordinator owns snapshot construction and evaluation. A failure from either operation produces the same privacy-safe `Unavailable` state, leaves the loaded project and prior processing contracts unchanged, exposes no exception prose, and adds no log. M0 must approve a deterministic dependency or fault-injection seam that activates both branches without a global switch, environment trigger, or production-only failure.
+
+Because: The feature needs one testable failure boundary around all readiness evaluation work, not a partial catch after mapping has already succeeded. Publication, invalidation, refresh-command wiring, and rendering remain separate presentation paths.
+
+Options considered:
+- Coordinator catches mapper and evaluator failures: selected option, consistent and testable.
+- Catch evaluator failures only: leaves an unowned fatal mapper path.
+- Use the existing global exception path: observable, but can terminate the process and expose private exception text.
+
+Consequences: Q-008 and U-014 close in M0 only after an ignored disposable probe demonstrates the seam design for both fault branches. M2 and L4 own production activation and outcome proof. If the seam needs a package, solution mapping, global flag, or broader harness scope, stop for another decision.
+
+Revisit when: Readiness joins a typed application-wide nonfatal error boundary with equivalent privacy and activation evidence.

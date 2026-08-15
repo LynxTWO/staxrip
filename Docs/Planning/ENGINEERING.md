@@ -1,26 +1,26 @@
 # StaxRip Community Engineering Document (EDD)
 
-Version: 0.1 Draft. Date: 2026-08-14. Authors: LynxTWO and Codex. Status: Confirmed.
+Version: 0.1 Draft. Date: 2026-08-15. Authors: LynxTWO and Codex. Status: Confirmed.
 Companion documents: `ARCHITECTURE.md`, `DECISION-LOG.md`, `../Unknowns/Planning-Unknowns.md`, and the slice briefs (`SLICE-001` onward).
 
 ## Interview State
 
-- **Last completed:** Phase 4, decision completeness audit
-- **Next:** Phase 5, slice selection
-- **Open questions:** Q-001 through Q-003 and Q-007 in section 4.3
+- **Last completed:** Phase 6, final planning audit
+- **Next:** `SLICE-001` M0 discovery
+- **Open questions:** Q-001 through Q-003 and Q-007 through Q-009 in section 4.3
 - **Statuses pending:** None
 
 ## 1. One-Page Overview
 
 StaxRip Community keeps the existing portable Windows x64 application, .NET Framework 4.8 WinForms client, C++17 frame server, project formats, generated scripts and commands, and external-tool contracts. The first delivery slice adds a read-only source-readiness summary after the existing source-opening transaction has succeeded. It does not replace source opening or start encoding.
 
-One pure evaluator receives a bounded immutable snapshot and returns a transient ordered result with stable check ids, typed outcomes, severity, message keys, and safe arguments. It performs no file write, persistence, network request, process launch, download, executable selection, or logging. Expected missing facts are typed results. An unexpected evaluator failure becomes a privacy-safe `Unavailable` presentation state and leaves the loaded project untouched.
+One pure evaluator receives a bounded immutable snapshot and returns a transient ordered result with stable check ids, typed outcomes, severity, message keys, and safe arguments. It performs no file write, persistence, network request, process launch, download, executable selection, or logging. Expected missing facts are typed results. D-036 places snapshot construction and evaluation behind one narrow coordinator failure boundary; either failure becomes a privacy-safe `Unavailable` state and leaves the loaded project untouched. D-031 hides or invalidates a result when mapped state changes and uses an explicit refresh command for first-slice recomputation.
 
-The confirmed GUI prototype target is a compact textual summary near the Assistant with separate ownership, a labeled details button, a menu route, and a read-only details form. Exact placement remains Q-002 until a prototype proves layout and navigation. Keyboard-only use, explicit accessibility properties, UI Automation and Narrator output, visible focus, non-color semantics, high contrast, and 100 through 200 percent DPI are completion gates.
+The confirmed GUI prototype target is a compact textual summary near the Assistant with separate ownership, a labeled details button, a menu route, and a read-only details form. Exact placement remains Q-002 until a prototype proves layout and navigation. D-035 limits activation to the approved interactive source-opening path. During `isEncoding = True` and job processing, snapshot, evaluation, and new summary or details presentation counts stay zero; one mapped synchronous clear or hide of prior transient state is permitted. Keyboard-only use, explicit accessibility properties, UI Automation and Narrator output, visible focus, non-color semantics, high contrast, and 100 through 200 percent DPI are completion gates.
 
 Verification starts with static contract checks and a confirmed standalone .NET Framework 4.8 x64 VB console harness outside `Source/StaxRip.sln`. It continues through direct and solution x64 builds, fixed synthetic source-opening comparisons, GUI evidence, and performance and handle gates. The harness adds no package or solution mapping. Test weakening needs the same review as production weakening.
 
-The slice is source-only, offline, local, manual, and zero-recurring-cost. It adds no backend, database, authentication, telemetry, CI, installer, release automation, migration, or public binary. Q-001, Q-002, Q-003, and Q-007 close through approved catalog, seam and UI-ownership, timing, and lifecycle spikes before dependent implementation. Public branding, legacy publish metadata, portable assembly, and release provenance remain separate unknowns and approval-gated work.
+The slice is source-only, offline, local, manual, and zero-recurring-cost. It adds no backend, database, authentication, telemetry, CI, installer, release automation, migration, or public binary. Q-001, Q-002, Q-003, and Q-007 through Q-009 close through approved catalog, seam and UI ownership, timing, lifecycle, call-path, and fault-injection spikes before dependent implementation. Public branding, legacy publish metadata, portable assembly, and release provenance remain separate unknowns and approval-gated work.
 
 ## 2. Engineering Principles
 
@@ -62,7 +62,7 @@ DECISION: Engineering goal priority
 | ID | Requirement | Acceptance test |
 |---|---|---|
 | R-001 | Existing source-opening behavior remains authoritative | Given each fixed fixture, opening it before and after the slice produces equivalent effective project, script, command, tool, temp, and target state apart from transient readiness UI state |
-| R-002 | A successfully loaded project produces one typed readiness result | Given a loaded fixture, when readiness is evaluated, then one result contains stable check ids, status, severity, ordering, and bounded presentation data |
+| R-002 | A successfully loaded project on the approved interactive path produces one typed readiness result | Given a loaded fixture on that path, when readiness is evaluated, then one result contains stable check ids, status, severity, ordering, and bounded presentation data |
 | R-003 | The GUI distinguishes ready facts, warnings, and blockers | Given a result containing each category, when shown, then every item has visible text and a non-color-only status indicator |
 | R-004 | Readiness evaluation is read-only | Given a serialized project and fixed tool configuration, evaluating readiness leaves persisted and effective processing state unchanged |
 | R-005 | The slice works offline | Given network denial, opening a configured local fixture and showing readiness does not require a remote call |
@@ -87,13 +87,15 @@ DECISION: Engineering goal priority
 
 | ID | Question | Blocks what | Close by |
 |---|---|---|---|
-| Q-001 | Which checks, ids, severities, and precedence form the first readiness catalog? | Readiness model and tests | Source-state mapping spike before implementation |
+| Q-001 | Which checks, ids, severities, precedence, and coverage rule form the first readiness catalog? | Readiness model and tests | D-032 targets five to eight pure checks and one correctable blocker; D-034 requires proof that no `Ready` state hides an unchecked authoritative condition before implementation |
 | Q-002 | Where does the readiness surface live in the existing main-window and Assistant interaction model? | GUI implementation | UI ownership spike and user approval before form edits |
 | Q-003 | Which fixtures and measurement protocol define the source-opening baseline? | Performance acceptance | Timing spike before performance-dependent implementation |
 | Q-004 | Which existing WinForms accessibility pattern should the readiness surface follow? | Closed on 2026-08-14 | D-025 selects an explicitly hardened composite of current layout and control precedents; runtime accessibility remains a completion gate |
 | Q-005 | How will readiness logic tests run without weakening or silently changing solution configuration? | Closed on 2026-08-14 | D-024 approves a standalone source-linked x64 VB harness outside the solution with no package or project reference |
 | Q-006 | Which reviewed steering content should be tracked as the fork's canonical `AGENTS.md`? | Closed on 2026-08-13 | The user confirmed the x64-only project graph; root `AGENTS.md` is tracked with that correction |
-| Q-007 | Which events or explicit actions invalidate and recompute readiness after relevant project state changes? | Adapter and GUI implementation | Lifecycle spike maps each approved snapshot field to mutation owners and proves stale results cannot survive project replacement, failed later open, or relevant setting changes |
+| Q-007 | Which events or explicit actions invalidate and recompute readiness after relevant project state changes? | Adapter and GUI implementation | D-031 lifecycle spike maps each approved snapshot field to mutation owners and proves stale results cannot survive project replacement, failed later open, or relevant setting changes |
+| Q-008 | Which deterministic seam activates snapshot-mapper and evaluator failures at the readiness coordinator? | Adapter failure implementation and L4 evidence | M0 selects a bounded dependency or fault-injection seam and demonstrates its design in an ignored disposable probe, with no global flag, environment trigger, package, solution mapping, or production-only failure; M2 and L4 prove production branches |
+| Q-009 | Which shared source-opening call paths are interactive, job, batch, recovery, or encoding paths? | Adapter activation and invalidation | M0 maps every call site, source-traces the selected hook out of `isEncoding = True` and job processing, identifies the pre-job clear or hide owner, and approves an isolated synthetic job-path protocol that stops before processing, tool launch, or output work; M2 and L3 prove production counts and outcomes |
 
 ## 5. Data Model
 
@@ -123,7 +125,7 @@ ENTITY: `ReadinessResult`
 - **Fields:** Schema version; overall status enum; ordered read-only list of checks.
 - **Constraints:** Overall status derives from checks by one precedence function. Time, duration, culture, rendered strings, and control state are not part of functional equality.
 - **Relations:** Derived from one snapshot. Rendered by one readiness presentation owner.
-- **Deletion rule:** Replace or hide when relevant in-memory project or configured requirement state changes. Never persist it in the first slice. Q-007 and U-012 must identify the trigger owner and stale-result safeguard before adapter implementation.
+- **Deletion rule:** Per D-031, hide or invalidate when relevant in-memory project or configured requirement state changes, and recompute through explicit refresh. Never persist it in the first slice. Q-007 and U-012 must identify the trigger owner and stale-result safeguard before adapter implementation.
 
 DECISION: Readiness data model
 
@@ -218,7 +220,7 @@ DECISION: Readiness privacy posture
 - **Language and typing:** Keep `Option Strict On`, explicit boundary conversions, existing VB.NET and C++ project standards, and C++17 at the native boundary per ADD section 8.2.
 - **Naming:** Preserve repository conventions. New readiness types use full domain names. Stable ids use lowercase ASCII segments with a documented prefix and are not derived from display text.
 - **Functions:** Snapshot mapping, evaluation, precedence, and presentation mapping are separate single-purpose functions. The evaluator receives immutable input and has no access to forms, global mutation, filesystem writes, network, or process launch.
-- **Errors:** Expected readiness outcomes are typed results. Unexpected programmer or boundary errors propagate out of the evaluator to the readiness adapter. D-026 requires that adapter to present `Unavailable`, never a false ready result, without changing the loaded project or copying exception prose.
+- **Errors:** Expected readiness outcomes are typed results. Unexpected evaluator errors propagate to the readiness adapter. D-026 requires `Unavailable`, never a false ready result, without changing the loaded project or copying exception prose. D-036 extends the same narrow boundary to snapshot construction. M0 demonstrates the proposed fault seam in an ignored disposable probe before adapter implementation; M2 and L4 prove production branch activation and outcomes.
 - **Logging:** The evaluator logs nothing by default. Any later diagnostic event requires an allowlist, bounded fields, and a logging-audit update. Never log secrets, raw paths, media titles, scripts, commands, or arbitrary tool output from readiness.
 - **Comments:** Explain ownership, precedence, invalidation, compatibility, privacy, and why a boundary is read-only. Do not narrate obvious statements.
 - **Accessibility:** Interactive elements have accessibility names, keyboard order, visible focus, and text or icon semantics beyond color. Scaling and high-contrast behavior follow existing Windows conventions.
@@ -282,7 +284,7 @@ DECISION: Verification harness and evidence ladder
 - **OPTIONS CONSIDERED:** Standalone source-linked VB harness, smallest deterministic fit. Reflection harness against `StaxRip.exe`, stronger assembly integration but slower and name-brittle. MSTest in the solution, better IDE discovery but adds dependencies and solution mappings before the suite justifies them.
 - **REVISIT WHEN:** Multiple feature suites need shared discovery, coverage reporting, or approved CI integration.
 
-The GUI prototype target is a compact textual summary near the existing Assistant area, owned separately from Assistant evaluation. It shows overall state and counts in text, exposes a `ButtonEx` labeled `View readiness details`, and has a main-menu route for deterministic keyboard entry. The details surface uses `FormBase`, a DPI-scaled `TableLayoutPanel`, a read-only `DataGridViewEx` with Status, Check, and Explanation text columns, and standard close behavior. Every interactive element gets an explicit accessibility name. Final placement remains Q-002 until the ownership spike proves it does not disrupt established layout or navigation.
+The GUI prototype target is a compact textual summary near the existing Assistant area, owned separately from Assistant evaluation. It shows overall state and counts in text, exposes labeled `View readiness details` and `Refresh readiness` commands, and has a main-menu route for deterministic keyboard entry. The details surface uses `FormBase`, a DPI-scaled `TableLayoutPanel`, a read-only `DataGridViewEx` with Status, Check, and Explanation text columns, and standard close behavior. Every interactive element gets an explicit accessibility name. Final placement remains Q-002 until the ownership spike proves it does not disrupt established layout or navigation.
 
 Do not copy the Assistant's script synchronization, frame-server creation, raw script-error, or exception behavior. Do not use `ButtonLabel`, color-only package status, an unverified task dialog, or owner-drawn focus suppression as the sole interaction. The prototype must prove Tab and Shift+Tab traversal, arrow-key rows, Enter or Space activation, Escape and Alt+F4 exit, return focus, non-stealing refresh, Narrator order, high contrast, and StaxRip plus Windows scaling.
 
@@ -315,8 +317,8 @@ The typed `ReadinessResult` is the feature's functional observability. Each item
 - Source, target and temp paths; user and media names; titles; scripts; commands; profile or template names; external output; and exception prose remain outside result, UI Automation, clipboard, and benchmark output.
 - Local verification may report stable fixture ids, aggregate durations, counts, process handles, exit status, and the tested commit.
 - If a later support feature includes readiness, it must use a reviewed field allowlist and explicit user review. It must not scrape existing raw logs.
-- The readiness adapter runs only after the existing source-opening transaction has completed successfully. Expected missing facts are typed outcomes. An unexpected evaluator exception is caught at that adapter, leaves the loaded project untouched, and renders one privacy-safe `Readiness unavailable` state. It never reports `Ready` and does not copy the exception into logs or UI.
-- The forced-unavailable branch needs separate activation and outcome evidence. A later diagnostic event requires a new logging and privacy decision.
+- Under D-035, the readiness coordinator runs only after the approved interactive source-opening transaction has completed successfully. Expected missing facts are typed outcomes. D-036 catches an unexpected snapshot-construction or evaluator exception at that coordinator, leaves the loaded project untouched, and renders one privacy-safe `Readiness unavailable` state. It never reports `Ready` and does not copy the exception into logs or UI.
+- The snapshot-construction and evaluator forced-unavailable branches each need separate activation and outcome evidence. A later diagnostic event requires a new logging and privacy decision.
 
 Existing source-opening logs can contain full paths, media summaries, generated scripts, and arbitrary errors. This is verified context for the strict new boundary, not a claim that existing logging is private or fully audited. A scoped source scan found no telemetry or analytics SDK use in the managed UI candidates; whole-product and runtime absence remain unknown.
 
@@ -327,6 +329,10 @@ DECISION: Readiness observability and failure boundary
 - **BECAUSE:** The user needs inspectable status, but raw logs and the current source-opening exception path carry privacy and recovery risks that the first slice must not inherit.
 - **OPTIONS CONSIDERED:** Typed result with an isolated unavailable state, bounded and recoverable. Reuse existing logs and exception dialogs, easy but private and potentially fatal. Add local or remote telemetry, more trend data but new collection and retention duties.
 - **REVISIT WHEN:** Users need exportable readiness diagnostics and a separate slice defines fields, consent, retention, deletion, and failure handling.
+
+D-036 extends this confirmed evaluator boundary to snapshot construction through one coordinator. Adapter implementation remains blocked until its M0 seam closes.
+
+The D-036 catch ends when evaluation returns a typed result or `Unavailable`. Publication, invalidation, refresh-command wiring, and rendering retain existing application exception behavior. The slice tests their named normal, boundary, stale-state, privacy, and accessibility paths, but does not claim a general nonfatal UI recovery boundary.
 
 ## 14. Operations and Deployment
 
@@ -359,23 +365,25 @@ DECISION: Source-only operations and cost posture
 | ID | Risk | Confidence | Impact | Safeguard and evidence |
 |---|---|---|---|---|
 | RK-001 | The first catalog reads mutable or side-effecting state | inferred | High | Q-001 maps each field to an owner; reject checks that require execution, network, or mutation |
-| RK-002 | GUI wiring enters the existing source-opening transaction or duplicates Assistant logic | verified | High | Q-002 and U-010 map the unknown safe seam and ownership; prove the adapter is not invoked on abort or failure |
+| RK-002 | GUI wiring enters the existing source-opening transaction or duplicates Assistant logic | inferred | High | Q-002 and U-010 map the unknown safe seam and ownership; prove the adapter is not invoked on abort or failure |
 | RK-003 | Added work regresses source-opening latency or leaks handles | unknown | Medium | U-004 closes with fixed stage timings, p95 and median gates, and 50-evaluation handle evidence |
-| RK-004 | A visually clear surface is not keyboard or UI Automation accessible | verified | High | The source scan found no explicit accessibility-property precedent; require explicit names, menu route, keyboard review, Narrator inspection, high contrast, and 100 to 200 percent DPI checks |
-| RK-005 | Private workflow values escape through visible text, accessibility properties, logs, clipboard, or tests | verified | High | Existing logs contain sensitive classes; require typed allowlists, sentinels across every new output, no new log, and manual bounded-output review |
+| RK-004 | A visually clear surface is not keyboard or UI Automation accessible | inferred | High | The source scan found no explicit accessibility-property precedent; require explicit names, menu route, keyboard review, Narrator inspection, high contrast, and 100 to 200 percent DPI checks |
+| RK-005 | Private workflow values escape through visible text, accessibility properties, logs, clipboard, or tests | inferred | High | Existing logs contain sensitive classes; require typed allowlists, sentinels across every new output, no new log, and manual bounded-output review |
 | RK-006 | A source-linked harness passes while application integration fails | inferred | Medium | Pair L1 with direct managed builds, solution builds, fixed runtime fixtures, and GUI evidence |
-| RK-007 | Public release, branding, or legacy publish-metadata work expands the slice | verified | High | U-001, U-006, and U-009 remain open; enforce the source-only stop gate before packaging, publication, bootstrapper cleanup, or branding claims |
-| RK-008 | x86 or Win32 configuration returns through a merge or test addition | verified | Medium | The fork graph is x64-only; L0 asserts configuration declarations and any reintroduction needs a new decision and explicit approval |
+| RK-007 | Public release, branding, or legacy publish-metadata work expands the slice | inferred | High | U-001, U-006, and U-009 remain open; enforce the source-only stop gate before packaging, publication, bootstrapper cleanup, or branding claims |
+| RK-008 | x86 or Win32 configuration returns through a merge or test addition | inferred | Medium | The fork graph is x64-only; L0 asserts configuration declarations and any reintroduction needs a new decision and explicit approval |
 | RK-009 | The summary is correct but does not make the workflow meaningfully clearer | inferred | High | A-001 and U-011 remain open; complete the human walkthrough before Done and rethink the slice if it does not support a confident proceed-or-correct decision |
-| RK-010 | A readiness result remains visible after relevant state or project changes | verified | High | Q-007 and U-012 map every snapshot field to mutation owners and force stale-result tests before adapter and GUI implementation |
+| RK-010 | A readiness result remains visible after relevant state or project changes | inferred | High | Q-007 and U-012 map every snapshot field to mutation owners and force stale-result tests before adapter and GUI implementation |
+| RK-011 | Readiness evaluates or presents a new GUI result during job processing through the shared source-opening overload | inferred | High | D-035, Q-009, and U-013 require zero snapshot, evaluation, and new presentation activation on `isEncoding = True` and job paths; only the mapped pre-job clear or hide is permitted, and L3 uses an isolated protocol |
+| RK-012 | Snapshot mapping fails before the evaluator and reaches the fatal application exception path | inferred | High | D-036, Q-008, and U-014 require one coordinator boundary; M0 demonstrates the fault seam in an ignored probe, then M2 and L4 prove production activation and outcomes |
 
-`../Unknowns/Planning-Unknowns.md` is canonical for unresolved facts. U-003, U-004, U-010, and U-012 block dependent `SLICE-001` work. U-011 blocks value validation and Done. U-001, U-002, U-005, U-006, and U-009 remain outside the slice's source-only completion boundary unless touched scope changes. D-024 closed U-008 by selecting test-harness ownership.
+`../Unknowns/Planning-Unknowns.md` is canonical for unresolved facts. U-003, U-004, U-010, U-012, U-013, and U-014 block dependent `SLICE-001` work. U-011 blocks value validation and Done. U-001, U-002, U-005, U-006, and U-009 remain outside the slice's source-only completion boundary unless touched scope changes. D-024 closed U-008 by selecting test-harness ownership.
 
 ## 17. Definition of Done
 
 `SLICE-001` is done only when all applicable items below have source-bound evidence:
 
-1. The slice brief, architecture, engineering, requirements, decisions, and touched unknowns agree. Q-001 through Q-003 and Q-007 are closed before their dependent implementation.
+1. The slice brief, architecture, engineering, requirements, decisions, and touched unknowns agree. Q-001 through Q-003 and Q-007 through Q-009 are closed before their dependent implementation.
 2. One pure evaluator owns the approved catalog, ids, typed outcomes, precedence, bounds, and deterministic ordering. Forms contain no duplicate readiness rules.
 3. Evaluation occurs after successful source opening and changes no effective or persisted project, settings, template, profile, job, script, command, tool, temp, target, process, or file behavior.
 4. The L1 harness passes fixed, boundary, determinism, privacy, and mutation cases in x64. L4 presentation evidence separately covers forced `Unavailable`, stale-result prevention, rendering, and accessibility behavior.
@@ -409,4 +417,4 @@ DECISION: Definition of done and change control
 
 ---
 
-*Sections filled: 18 of 18. Unknowns carried: 12. See `DECISION-LOG.md` for reasoning.*
+*Sections filled: 18 of 18. Unknown records carried: 14 (12 Open, 2 Closed). See `DECISION-LOG.md` for reasoning.*

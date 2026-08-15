@@ -20,7 +20,7 @@ This is a planning audit. It does not approve production implementation, publish
 | Verification boundaries agree | L1 owns pure model and evaluator checks. L4 owns presentation, `Unavailable`, invalidation, privacy rendering, accessibility, and focus evidence. | Pass |
 | Confidence and coverage governance exists | The Unknowns and Coverage ledgers use `verified`, `inferred`, or `unknown`; risk-ranked coverage names untested boundaries and next owners. | Pass |
 | Hygiene and structure checks pass | `git diff --check`, ASCII scan, unfinished-text scan, required-file checks, assumption links, unknown scheduling, and coverage-confidence validation passed. | Pass |
-| Sections skipped or collapsed | None. All 15 Architecture and 18 Engineering sections are filled for the selected full-depth T2 planning posture. | Pass |
+| Sections skipped or collapsed | No template section is omitted. ADD subsection 8.6 explicitly skips an AI layer because AI is outside the product architecture and roadmap; it records the revisit requirements. All 15 Architecture and 18 Engineering sections are filled for the selected full-depth T2 posture. | Pass |
 
 ## Corrections made during audit
 
