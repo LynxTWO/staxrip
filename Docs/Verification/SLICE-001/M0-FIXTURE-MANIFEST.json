@@ -1,0 +1,639 @@
+{
+  "schema": "staxrip.m0.fixture-evidence",
+  "schema_version": 1,
+  "evidence_scope": {
+    "baseline_commit": "c26e0fa6ae504f44a0cbb8e3e763935940e37641",
+    "observed_on_utc": "2026-08-15",
+    "ignored_fixture_root": "Source/obj/ProjectCheckFixtures",
+    "tracked_recipe": {
+      "path": "Docs/Verification/SLICE-001/M0-FIXTURE-RECIPE.ps1",
+      "byte_length": 7484,
+      "sha256": "DF5FDCF6DADA54CC68AA4619382DFEDE7DD9B06B5E00B248D05A8791A413E051",
+      "confidence": "verified"
+    },
+    "source_evidence_manifest": {
+      "path": "Source/obj/ProjectCheckFixtures/fixture-manifest.json",
+      "tracked": false,
+      "byte_length": 12674,
+      "sha256": "B2F8EDBC80FDD1855DAF8802F26F9AD12682E106338FE390EF67D15D742F194F",
+      "confidence": "verified"
+    },
+    "generated_media_tracked": false,
+    "ignore_evidence": {
+      "rule": ".gitignore:12:/Source/obj",
+      "confidence": "verified"
+    },
+    "privacy": {
+      "confidence": "verified",
+      "facts": [
+        "All stored paths are repository-relative or normalized placeholders.",
+        "All media payloads are synthetic patterns, tones, subtitle text, or fixed malformed bytes.",
+        "No user path, user media name, user template, user setting, or user runtime value is stored."
+      ]
+    }
+  },
+  "toolchain": {
+    "powershell": {
+      "executable": "pwsh.exe",
+      "version": "7.6.4",
+      "byte_length": 301368,
+      "sha256": "DB6DD81183FE57D22E03B911EC9A30A2FD7C40542E97743615355A6FB44F458F",
+      "confidence": "verified"
+    },
+    "ffmpeg": {
+      "executable": "ffmpeg.exe",
+      "version": "ffmpeg version 2025-08-25-git-1b62f9d3ae-full_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+      "byte_length": 194299392,
+      "sha256": "D42F8E3B267045FE82AAD4D2617324C7E0A28E8016BF7BA3B621F5096FEF13CC",
+      "confidence": "verified"
+    },
+    "ffprobe": {
+      "executable": "ffprobe.exe",
+      "version": "ffprobe version 2025-08-25-git-1b62f9d3ae-full_build-www.gyan.dev Copyright (c) 2007-2025 the FFmpeg developers",
+      "byte_length": 194103296,
+      "sha256": "CE76D301DFBB34287F489E144856746C696E751950D819ADF4C1A7BAC099E078",
+      "confidence": "verified"
+    },
+    "mediainfo": {
+      "executable": "MediaInfo.exe",
+      "version": "MediaInfoLib - v25.07",
+      "byte_length": 9162624,
+      "sha256": "867A5F5689AD9B8F1428ED846BFDC4BDB05B2A47820ED627D68F5AC3B2A5532D",
+      "confidence": "verified"
+    }
+  },
+  "generation": {
+    "original_ignored_generator": {
+      "filename": "generate-fixtures.ps1",
+      "byte_length": 3456,
+      "sha256": "61FC6E7E5C343CD330C6AC15C55485445F22997795E6DBE7BD5817930FCA6231",
+      "scope": "FX-MP4-01, FX-MKV-01, and FX-BAD-01 binary outputs",
+      "confidence": "verified"
+    },
+    "tracked_complete_recipe_scope": [
+      "FX-AVS-01.avs",
+      "FX-VPY-01.vpy",
+      "FX-MKV-01.source.srt",
+      "FX-MP4-01.mp4",
+      "FX-MKV-01.mkv",
+      "FX-BAD-01.mp4"
+    ],
+    "runner_argument_array_normalized": [
+      "-NoProfile",
+      "-File",
+      "<repository>/Docs/Verification/SLICE-001/M0-FIXTURE-RECIPE.ps1",
+      "-FfmpegPath",
+      "<resolved-ffmpeg.exe>",
+      "-FixtureRoot",
+      "<repository>/Source/obj/ProjectCheckFixtures"
+    ],
+    "path_normalization_note": "Path-bearing runner values use placeholders. Executable identities, text lines, malformed bytes, and FFmpeg media argument arrays are exact.",
+    "mp4_ffmpeg_argument_array": [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-nostdin",
+      "-y",
+      "-f",
+      "lavfi",
+      "-i",
+      "testsrc2=size=640x360:rate=30:duration=3",
+      "-f",
+      "lavfi",
+      "-i",
+      "sine=frequency=1000:sample_rate=48000:duration=3",
+      "-map",
+      "0:v:0",
+      "-map",
+      "1:a:0",
+      "-map_metadata",
+      "-1",
+      "-map_chapters",
+      "-1",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      "23",
+      "-pix_fmt",
+      "yuv420p",
+      "-r",
+      "30",
+      "-fps_mode",
+      "cfr",
+      "-frames:v",
+      "90",
+      "-g",
+      "60",
+      "-keyint_min",
+      "60",
+      "-sc_threshold",
+      "0",
+      "-x264-params",
+      "threads=1:lookahead_threads=1:sliced_threads=0:scenecut=0:open_gop=0",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "96k",
+      "-ar",
+      "48000",
+      "-ac",
+      "1",
+      "-t",
+      "3",
+      "-fflags",
+      "+bitexact",
+      "-flags:v",
+      "+bitexact",
+      "-flags:a",
+      "+bitexact",
+      "-movflags",
+      "+faststart",
+      "-metadata",
+      "title=",
+      "-metadata",
+      "artist=",
+      "-metadata",
+      "comment=",
+      "FX-MP4-01.mp4"
+    ],
+    "mkv_ffmpeg_argument_array": [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-nostdin",
+      "-y",
+      "-i",
+      "FX-MP4-01.mp4",
+      "-f",
+      "lavfi",
+      "-i",
+      "sine=frequency=880:sample_rate=48000:duration=3",
+      "-f",
+      "srt",
+      "-i",
+      "FX-MKV-01.source.srt",
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a:0",
+      "-map",
+      "1:a:0",
+      "-map",
+      "2:s:0",
+      "-map_metadata",
+      "-1",
+      "-map_chapters",
+      "-1",
+      "-c:v",
+      "copy",
+      "-c:a:0",
+      "copy",
+      "-c:a:1",
+      "aac",
+      "-b:a:1",
+      "96k",
+      "-ar:a:1",
+      "48000",
+      "-ac:a:1",
+      "1",
+      "-c:s",
+      "srt",
+      "-t",
+      "3",
+      "-fflags",
+      "+bitexact",
+      "-flags:a:1",
+      "+bitexact",
+      "-metadata",
+      "title=",
+      "-metadata",
+      "artist=",
+      "-metadata",
+      "comment=",
+      "-metadata:s:a:0",
+      "title=",
+      "-metadata:s:a:1",
+      "title=",
+      "-metadata:s:s:0",
+      "title=",
+      "-disposition:a:0",
+      "default",
+      "-disposition:a:1",
+      "0",
+      "-disposition:s:0",
+      "0",
+      "FX-MKV-01.mkv"
+    ],
+    "reproducibility": {
+      "same_machine_same_toolchain_two_run_byte_match": {
+        "value": true,
+        "confidence": "verified"
+      },
+      "arbitrary_toolchain_byte_match": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "Other FFmpeg, encoder, or PowerShell builds may produce different bytes. Exact hashes require the pinned executable identities."
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "FX-AVS-01",
+      "filename": "FX-AVS-01.avs",
+      "role": "fixture",
+      "byte_length": 124,
+      "sha256": "897C467DFC7F00A1F76A01710607CEF3C7A871213560E03115B282DAB7B0AF5C",
+      "confidence": "verified",
+      "byte_recipe": {
+        "encoding": "UTF-8",
+        "bom": false,
+        "line_ending": "LF",
+        "final_newline": true,
+        "content_lines": [
+          "BlankClip(width=320, height=180, length=120, fps=24000, fps_denominator=1001, pixel_type=\"YV12\", color=$000000).KillAudio()"
+        ]
+      },
+      "expected_bounded_media_facts": {
+        "width": 320,
+        "height": 180,
+        "frame_count": 120,
+        "frame_rate": "24000/1001",
+        "pixel_format": "YV12 (YUV 4:2:0 8-bit)",
+        "audio": false,
+        "fact_basis": "Static declaration inspection"
+      },
+      "expected_script_engine": {
+        "value": "AviSynth",
+        "confidence": "verified",
+        "repository_evidence": [
+          {
+            "commit": "c26e0fa6ae504f44a0cbb8e3e763935940e37641",
+            "path": "Source/General/Misc.vb",
+            "line": 1925
+          },
+          {
+            "commit": "c26e0fa6ae504f44a0cbb8e3e763935940e37641",
+            "path": "Source/Forms/MainForm.vb",
+            "line": 2754
+          }
+        ]
+      },
+      "template_sha256": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "See template_and_runtime_boundaries.template_sha256."
+      }
+    },
+    {
+      "artifact_id": "FX-VPY-01",
+      "filename": "FX-VPY-01.vpy",
+      "role": "fixture",
+      "byte_length": 220,
+      "sha256": "A7298D625B8E4697276B3CAE11FCBADE90758A8BD622FD62B3FB7B36FD8A2C23",
+      "confidence": "verified",
+      "byte_recipe": {
+        "encoding": "UTF-8",
+        "bom": false,
+        "line_ending": "LF",
+        "final_newline": true,
+        "content_lines": [
+          "import vapoursynth as vs",
+          "",
+          "core = vs.core",
+          "clip = core.std.BlankClip(",
+          "    width=320,",
+          "    height=180,",
+          "    length=120,",
+          "    fpsnum=24000,",
+          "    fpsden=1001,",
+          "    format=vs.YUV420P8,",
+          "    color=[16, 128, 128],",
+          ")",
+          "clip.set_output()"
+        ]
+      },
+      "expected_bounded_media_facts": {
+        "width": 320,
+        "height": 180,
+        "frame_count": 120,
+        "frame_rate": "24000/1001",
+        "pixel_format": "YUV420P8",
+        "audio": false,
+        "fact_basis": "Static declaration inspection"
+      },
+      "expected_script_engine": {
+        "value": "VapourSynth",
+        "confidence": "verified",
+        "repository_evidence": [
+          {
+            "commit": "c26e0fa6ae504f44a0cbb8e3e763935940e37641",
+            "path": "Source/General/Misc.vb",
+            "line": 1925
+          },
+          {
+            "commit": "c26e0fa6ae504f44a0cbb8e3e763935940e37641",
+            "path": "Source/Forms/MainForm.vb",
+            "line": 2757
+          }
+        ]
+      },
+      "template_sha256": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "See template_and_runtime_boundaries.template_sha256."
+      }
+    },
+    {
+      "artifact_id": "FX-MKV-01-SRT",
+      "filename": "FX-MKV-01.source.srt",
+      "role": "mux input",
+      "byte_length": 129,
+      "sha256": "4FF6984BF57243DE4377287F140B79C53B26A90E7A7F6027DE92D416B5E393C0",
+      "confidence": "verified",
+      "byte_recipe": {
+        "encoding": "UTF-8",
+        "bom": false,
+        "line_ending": "LF",
+        "final_newline": true,
+        "content_lines": [
+          "1",
+          "00:00:00,250 --> 00:00:01,250",
+          "Synthetic fixture subtitle one.",
+          "",
+          "2",
+          "00:00:01,500 --> 00:00:02,750",
+          "Synthetic fixture subtitle two."
+        ]
+      }
+    },
+    {
+      "artifact_id": "FX-MP4-01",
+      "filename": "FX-MP4-01.mp4",
+      "role": "fixture",
+      "byte_length": 343971,
+      "sha256": "00790155EED0FF25C01857DFB5CDB7FD3927F5EC8D7A4E4AC88A90D562A1EDA4",
+      "confidence": "verified",
+      "byte_recipe": {
+        "kind": "ffmpeg",
+        "argument_array": "generation.mp4_ffmpeg_argument_array"
+      },
+      "expected_bounded_media_facts": {
+        "container": "MPEG-4",
+        "container_duration_ms": 3000,
+        "stream_count": 2,
+        "chapter_count": 0,
+        "checked_descriptive_fields": [
+          "title",
+          "artist",
+          "comment"
+        ],
+        "present_descriptive_fields": [],
+        "structural_or_tool_tags": [
+          "major_brand",
+          "minor_version",
+          "compatible_brands",
+          "language",
+          "handler_name",
+          "vendor_id",
+          "encoder"
+        ],
+        "video": {
+          "codec": "AVC/H.264",
+          "profile": "High@L3",
+          "width": 640,
+          "height": 360,
+          "pixel_format": "YUV 4:2:0 8-bit",
+          "frame_rate_mode": "CFR",
+          "frame_rate": "30/1",
+          "frame_count": 90,
+          "duration_ms": 3000,
+          "decoded_sha256": "fdfd94cb3cefeb34b60a94f0cc795cec9ee49fd2c209f9dd5889238f6e1bf76f"
+        },
+        "audio": [
+          {
+            "codec": "AAC",
+            "sample_rate_hz": 48000,
+            "channels": 1,
+            "duration_ms": 3000
+          }
+        ]
+      },
+      "expected_script_engine": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "Container source engine selection depends on a template, application settings, and installed tools that were outside this evidence run."
+      },
+      "template_sha256": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "See template_and_runtime_boundaries.template_sha256."
+      }
+    },
+    {
+      "artifact_id": "FX-MKV-01",
+      "filename": "FX-MKV-01.mkv",
+      "role": "fixture",
+      "byte_length": 379606,
+      "sha256": "6261F4042942C75FCE1019AE0664AFA6E77273150AE9537321E69FDE3DC27035",
+      "confidence": "verified",
+      "byte_recipe": {
+        "kind": "ffmpeg",
+        "argument_array": "generation.mkv_ffmpeg_argument_array",
+        "inputs": [
+          "FX-MP4-01.mp4",
+          "FX-MKV-01.source.srt"
+        ]
+      },
+      "expected_bounded_media_facts": {
+        "container": "Matroska",
+        "container_duration_ms": 3042,
+        "primary_video_duration_ms": 3000,
+        "stream_count": 4,
+        "chapter_count": 0,
+        "checked_descriptive_fields": [
+          "title",
+          "artist",
+          "comment"
+        ],
+        "present_descriptive_fields": [],
+        "structural_or_tool_tags": [
+          "encoder",
+          "ENCODER",
+          "DURATION"
+        ],
+        "video": {
+          "codec": "AVC/H.264",
+          "profile": "High@L3",
+          "width": 640,
+          "height": 360,
+          "pixel_format": "YUV 4:2:0 8-bit",
+          "frame_rate_mode": "CFR",
+          "frame_rate": "30/1",
+          "frame_count": 90,
+          "decoded_sha256": "fdfd94cb3cefeb34b60a94f0cc795cec9ee49fd2c209f9dd5889238f6e1bf76f"
+        },
+        "audio": [
+          {
+            "codec": "AAC",
+            "sample_rate_hz": 48000,
+            "channels": 1,
+            "duration_ms": 3021
+          },
+          {
+            "codec": "AAC",
+            "sample_rate_hz": 48000,
+            "channels": 1,
+            "duration_ms": 3021
+          }
+        ],
+        "subtitle": {
+          "codec": "SubRip/UTF-8",
+          "event_count": 2,
+          "muxed_events_ms": [
+            [
+              271,
+              1271
+            ],
+            [
+              1521,
+              2771
+            ]
+          ]
+        },
+        "same_decoded_video_as": "FX-MP4-01"
+      },
+      "expected_script_engine": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "Container source engine selection depends on a template, application settings, and installed tools that were outside this evidence run."
+      },
+      "template_sha256": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "See template_and_runtime_boundaries.template_sha256."
+      }
+    },
+    {
+      "artifact_id": "FX-BAD-01",
+      "filename": "FX-BAD-01.mp4",
+      "role": "fixture",
+      "byte_length": 40,
+      "sha256": "45DA0DDE9CB0460106456A0202A30AE526982565A6E39ADD2AE740F87682DE43",
+      "confidence": "verified",
+      "byte_recipe": {
+        "kind": "hex",
+        "hex": "000000186674797069736F6D0000020069736F6D69736F32000000406D646174DEADBEEF00112233"
+      },
+      "expected_bounded_media_facts": {
+        "shape": "24-byte ISO BMFF ftyp box followed by an mdat box that declares 64 bytes but is truncated after 8 payload bytes",
+        "ffprobe_exit_code": 1,
+        "ffprobe_classification": "invalid data",
+        "diagnostic_fragments": [
+          "moov atom not found",
+          "Invalid data found when processing input"
+        ]
+      },
+      "expected_script_engine": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "The application path was not run. FFprobe rejected the bytes before media inspection, but StaxRip engine-selection behavior remains unexercised."
+      },
+      "template_sha256": {
+        "value": null,
+        "confidence": "unknown",
+        "reason": "See template_and_runtime_boundaries.template_sha256."
+      }
+    }
+  ],
+  "template_and_runtime_boundaries": {
+    "template_sha256": {
+      "value": null,
+      "confidence": "unknown",
+      "negative_search_evidence": {
+        "scope": "347 files tracked at the baseline commit",
+        "query": "git ls-files -- *.srip",
+        "matching_file_count": 0,
+        "excluded": "Ignored files, untracked files, and user runtime templates"
+      },
+      "reason": "No tracked template was available, and user runtime state was outside scope."
+    },
+    "avisynth_runtime": {
+      "state": "not_run",
+      "confidence": "unknown",
+      "path_lookup": {
+        "names": [
+          "vspipe",
+          "vspipe.exe",
+          "avs2yuv",
+          "avs2yuv.exe"
+        ],
+        "matching_command_count": 0,
+        "confidence": "verified"
+      },
+      "reason": "Command lookup did not find a standalone script runner. FFmpeg advertises AviSynth support, but no AVS runtime path was executed."
+    },
+    "vapoursynth_runtime": {
+      "state": "not_run",
+      "confidence": "unknown",
+      "path_lookup": {
+        "names": [
+          "vspipe",
+          "vspipe.exe"
+        ],
+        "matching_command_count": 0,
+        "confidence": "verified"
+      },
+      "reason": "Command lookup did not find vspipe, and no VPY runtime path was executed."
+    },
+    "staxrip_source_opening": {
+      "state": "not_run",
+      "confidence": "unknown",
+      "reason": "This evidence set proves fixture identity and bounded media facts only. It does not prove source opening through project-check publication or authorize encoding."
+    }
+  },
+  "verification": {
+    "fixture_hash_and_length_match": {
+      "artifact_count": 6,
+      "confidence": "verified"
+    },
+    "text_and_hex_recipe_match": {
+      "artifact_count": 4,
+      "artifacts": [
+        "FX-AVS-01.avs",
+        "FX-VPY-01.vpy",
+        "FX-MKV-01.source.srt",
+        "FX-BAD-01.mp4"
+      ],
+      "confidence": "verified"
+    },
+    "ffmpeg_argument_array_match": {
+      "mp4_argument_count": 68,
+      "mkv_argument_count": 66,
+      "confidence": "verified"
+    },
+    "container_probe": {
+      "oracles": [
+        "ffprobe",
+        "MediaInfo"
+      ],
+      "container_count": 2,
+      "confidence": "verified"
+    },
+    "decoded_video_identity": {
+      "artifacts": [
+        "FX-MP4-01.mp4",
+        "FX-MKV-01.mkv"
+      ],
+      "decoded_sha256": "fdfd94cb3cefeb34b60a94f0cc795cec9ee49fd2c209f9dd5889238f6e1bf76f",
+      "confidence": "verified"
+    },
+    "malformed_rejection": {
+      "oracle": "ffprobe",
+      "exit_code": 1,
+      "confidence": "verified"
+    },
+    "coverage_limit": "The recipe and manifest cover fixture bytes and bounded static/media facts. They do not cover StaxRip execution, installed script engines, templates, persistence, command construction, encoding, or output publication."
+  }
+}
