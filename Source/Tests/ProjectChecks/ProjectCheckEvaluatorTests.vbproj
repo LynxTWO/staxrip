@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <OutputType>Exe</OutputType>
+    <StartupObject>StaxRip.ProjectCheckEvaluatorTestsProgram</StartupObject>
+    <RootNamespace>StaxRip</RootNamespace>
+    <AssemblyName>ProjectCheckEvaluatorTests</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+    <MyType>Console</MyType>
+    <OptionCompare>Binary</OptionCompare>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <BaseIntermediateOutputPath>..\..\obj\ProjectCheckTests\obj\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Platform)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>..\..\obj\ProjectCheckTests\bin\$(Platform)\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Features\ProjectChecks\ProjectCheckModel.vb">
+      <Link>Features\ProjectChecks\ProjectCheckModel.vb</Link>
+    </Compile>
+    <Compile Include="..\..\Features\ProjectChecks\ProjectCheckCatalog.vb">
+      <Link>Features\ProjectChecks\ProjectCheckCatalog.vb</Link>
+    </Compile>
+    <Compile Include="..\..\Features\ProjectChecks\ProjectCheckEvaluator.vb">
+      <Link>Features\ProjectChecks\ProjectCheckEvaluator.vb</Link>
+    </Compile>
+    <Compile Include="..\..\Features\ProjectChecks\ProjectCheckActivationPolicy.vb">
+      <Link>Features\ProjectChecks\ProjectCheckActivationPolicy.vb</Link>
+    </Compile>
+    <Compile Include="..\..\Features\ProjectChecks\ProjectCheckCoordinator.vb">
+      <Link>Features\ProjectChecks\ProjectCheckCoordinator.vb</Link>
+    </Compile>
+    <Compile Include="..\..\Features\ProjectChecks\ProjectCheckPresentationText.vb">
+      <Link>Features\ProjectChecks\ProjectCheckPresentationText.vb</Link>
+    </Compile>
+    <Compile Include="Program.vb" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+</Project>
