@@ -176,7 +176,7 @@ Partial Public Class MainForm
         'gbAssistant
         '
         Me.gbAssistant.Anchor = CType((((AnchorStyles.Top) Or AnchorStyles.Left) Or AnchorStyles.Right), AnchorStyles)
-        Me.tlpMain.SetColumnSpan(Me.gbAssistant, 4)
+        Me.tlpMain.SetColumnSpan(Me.gbAssistant, 3)
         Me.gbAssistant.Controls.Add(Me.tlpAssistant)
         Me.gbAssistant.Dock = DockStyle.Fill
         Me.gbAssistant.AutoSize = False
@@ -912,7 +912,7 @@ Partial Public Class MainForm
         Me.tlpMain.RowStyles.Add(New RowStyle(SizeType.Absolute, 357.0!))
         Me.tlpMain.RowStyles.Add(New RowStyle(SizeType.Absolute, _filterHeight))
         Me.tlpMain.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-        Me.tlpMain.RowStyles.Add(New RowStyle(SizeType.Absolute, 250.0!))
+        Me.tlpMain.RowStyles.Add(New RowStyle(SizeType.Absolute, 531.0!))
         Me.tlpMain.TabIndex = 61
         '
         'MainForm
@@ -1028,6 +1028,7 @@ Partial Public Class MainForm
             components = New Container()
         End If
 
+        InitializeSourceProjectChecks()
         SetTip()
 
         TargetAspectRatioMenu = New ContextMenuStripEx(components)
@@ -1060,6 +1061,7 @@ Partial Public Class MainForm
         OpenProject(g.StartupTemplatePath)
         CustomMainMenu.AddKeyDownHandler(Me)
         CustomMainMenu.BuildMenu()
+        InstallProjectCheckMenu()
         UpdateAudioMenus()
         UpdateTargetSizeLabel()
         MenuStrip.ResumeLayout()
@@ -1184,6 +1186,7 @@ Partial Public Class MainForm
         Next
 
         pnEncoder.BackColor = theme.General.Controls.ListView.BackColor
+        ProjectChecksSummaryValue?.ApplyTheme(theme)
     End Sub
 
     Sub MenuOpening(sender As Object, tag As Object)
@@ -1717,6 +1720,10 @@ Partial Public Class MainForm
     End Sub
 
     Sub ProjectPropertyChanged(sender As Object, e As PropertyChangedEventArgs)
+        If e.PropertyName = NameOf(Project.TargetFile) Then
+            InvalidateProjectChecks()
+        End If
+
         Assistant()
     End Sub
 
@@ -1746,22 +1753,29 @@ Partial Public Class MainForm
 
             If Not IsLoading AndAlso saveCurrentFirst AndAlso IsSaveCanceled() Then Return False
             If String.IsNullOrWhiteSpace(path) OrElse Not File.Exists(path) Then path = g.StartupTemplatePath
+            BeginProjectCheckClearingMutation()
 
             Try
-                p = SafeSerialization.Deserialize(New Project, path)
-            Catch ex As Exception
-                g.ShowException(ex, "Project file failed to load", "It will be reset to defaults." + BR2 + path)
-                p = New Project()
-                p.Init()
-            End Try
+                Try
+                    p = SafeSerialization.Deserialize(New Project, path)
+                Catch ex As Exception
+                    g.ShowException(ex, "Project file failed to load", "It will be reset to defaults." + BR2 + path)
+                    p = New Project()
+                    p.Init()
+                End Try
 
-            Return OpenProject(p, path)
+                Return OpenProject(p, path)
+            Finally
+                EndProjectCheckClearingMutation()
+            End Try
         Catch ex As Exception
             OpenProject(g.StartupTemplatePath)
         End Try
     End Function
 
     Function OpenProject(proj As Project, Optional path As String = "", Optional markAsPChanged As Boolean = True) As Boolean
+        Dim projectCheckMutationStarted As Boolean
+
         Try
             SetLastModifiedTemplate()
 
@@ -1783,6 +1797,8 @@ Partial Public Class MainForm
                 path = g.StartupTemplatePath
             End If
 
+            BeginProjectCheckClearingMutation()
+            projectCheckMutationStarted = True
             p = If(proj IsNot Nothing, proj, SafeSerialization.Deserialize(New Project(), path))
             Log = p.Log
 
@@ -1866,6 +1882,9 @@ Partial Public Class MainForm
             OpenProject(g.StartupTemplatePath)
         Finally
             SkipAssistant = False
+            If projectCheckMutationStarted Then
+                EndProjectCheckClearingMutation()
+            End If
         End Try
     End Function
 
@@ -2474,30 +2493,54 @@ Partial Public Class MainForm
         OpenVideoSourceFiles(files, demux, False, errorTimeout)
     End Sub
 
+    ' Reserve the whole transaction before save or recovery work can return.
     Sub OpenVideoSourceFiles(files As IEnumerable(Of String), demuxSource As Boolean, isEncoding As Boolean, Optional errorTimeout As Integer = 0)
-        If p.SourceFile = "" Then SetLastModifiedTemplate()
+        BeginProjectCheckClearingMutation()
+        Interlocked.Increment(ProjectCheckSourceOpenDepth)
+        Dim projectAtEntry As Project = Nothing
+        Dim enteredOnUiThread As Boolean
+        Dim jobProcessingAtEntry As Boolean
+        Dim batchModeAtEntry As Boolean
+        Dim startupNoFocusCommandSuppressed As Boolean
+        Dim transactionSucceeded As Boolean
+        Dim remainingSourceOpenDepth As Integer
+        Dim remainingProjectCheckMutationDepth As Integer
+        Dim sourceCompletionGeneration As Long = Long.MinValue
+        Dim processingStarted As Boolean
+        Dim recoverPath As String = Nothing
+        Dim recoverProjectPath As String = Nothing
+        Dim recoverText As String = Nothing
 
-        Dim recoverPath = g.ProjectPath
-        Dim recoverProjectPath = Path.Combine(Folder.Temp, Guid.NewGuid.ToString + ".bin")
-        Dim recoverText = Text
-        Dim saveCurrent = p.SourceFile <> ""
+        Try
+            projectAtEntry = p
+            enteredOnUiThread = IsProjectCheckUiThread()
+            jobProcessingAtEntry = g.IsJobProcessing
+            batchModeAtEntry = projectAtEntry.BatchMode
+            startupNoFocusCommandSuppressed = ProjectCheckStartupNoFocusCommandSuppressed
 
-        If saveCurrent AndAlso Not IsLoading Then
-            If IsSaveCanceled() Then
-                Return
+            If p.SourceFile = "" Then SetLastModifiedTemplate()
+
+            recoverPath = g.ProjectPath
+            recoverProjectPath = Path.Combine(Folder.Temp, Guid.NewGuid.ToString + ".bin")
+            recoverText = Text
+            Dim saveCurrent = p.SourceFile <> ""
+
+            If saveCurrent AndAlso Not IsLoading Then
+                If IsSaveCanceled() Then
+                    Return
+                End If
             End If
-        End If
 
-        Try
-            SafeSerialization.Serialize(p, recoverProjectPath)
-            AddHandler Disposed, Sub() FileHelp.Delete(recoverProjectPath)
-        Catch ex As Exception
-            MsgWarn("Recovery not saved!", $"The recovery project could not be saved at:{BR}{recoverProjectPath}")
-        End Try
+            Try
+                SafeSerialization.Serialize(p, recoverProjectPath)
+                AddHandler Disposed, Sub() FileHelp.Delete(recoverProjectPath)
+            Catch ex As Exception
+                MsgWarn("Recovery not saved!", $"The recovery project could not be saved at:{BR}{recoverProjectPath}")
+            End Try
 
-        SkipAssistant = True
+            SkipAssistant = True
+            processingStarted = True
 
-        Try
             files = files.Select(Function(filePath) New FileInfo(filePath.TrimQuotes()).FullName).OrderBy(Function(filePath) filePath, StringComparer.InvariantCultureIgnoreCase)
 
             If Not g.VerifySource(files) Then
@@ -2868,7 +2911,8 @@ Partial Public Class MainForm
             g.RaiseAppEvent(ApplicationEvent.AfterSourceLoaded)
             g.RaiseAppEvent(ApplicationEvent.AfterProjectOrSourceLoaded)
             Log.Save()
-        Catch ex As AbortException
+            transactionSucceeded = True
+        Catch ex As AbortException When processingStarted
             Log.Save()
             SetSavedProject()
             OpenProject(recoverProjectPath)
@@ -2878,15 +2922,41 @@ Partial Public Class MainForm
             If isEncoding Then
                 Throw New AbortException
             End If
-        Catch ex As Exception
+        Catch ex As Exception When processingStarted
             g.OnException(ex)
             OpenProject("", False)
         Finally
-            SkipAssistant = False
-            If Not isEncoding Then
-                ProcController.Finished()
+            If processingStarted Then
+                SkipAssistant = False
             End If
+
+            Try
+                remainingSourceOpenDepth = Interlocked.Decrement(ProjectCheckSourceOpenDepth)
+                sourceCompletionGeneration = EndProjectCheckClearingMutation()
+                remainingProjectCheckMutationDepth = ProjectCheckMutationDepth
+            Finally
+                If processingStarted AndAlso Not isEncoding Then
+                    ProcController.Finished()
+                End If
+            End Try
         End Try
+
+        Dim activationContext = New ProjectCheckActivationContext(
+            transactionSucceeded,
+            remainingSourceOpenDepth,
+            remainingProjectCheckMutationDepth,
+            isEncoding,
+            enteredOnUiThread,
+            jobProcessingAtEntry,
+            g.IsJobProcessing,
+            batchModeAtEntry,
+            p.BatchMode,
+            startupNoFocusCommandSuppressed,
+            Object.ReferenceEquals(projectAtEntry, p))
+
+        If ProjectCheckActivationPolicy.ShouldEvaluate(activationContext) Then
+            EvaluateProjectChecks(sourceCompletionGeneration)
+        End If
     End Sub
 
     Sub ModifyFilters(Optional timeout As Integer = 0)
@@ -3768,7 +3838,12 @@ Partial Public Class MainForm
 
         If codeLower.Contains("ffvideosource(") OrElse codeLower.Contains("ffms2(") OrElse codeLower.Contains("ffms2.source") Then
             If FileTypes.VideoIndex.Contains(p.SourceFile.Ext) Then
-                p.SourceFile = p.LastOriginalSourceFile
+                BeginProjectCheckInvalidatingMutation()
+                Try
+                    p.SourceFile = p.LastOriginalSourceFile
+                Finally
+                    EndProjectCheckInvalidatingMutation()
+                End Try
                 BlockSourceTextBoxTextChanged = True
                 tbSourceFile.Text = p.SourceFile
                 BlockSourceTextBoxTextChanged = False
@@ -3781,7 +3856,12 @@ Partial Public Class MainForm
             End If
         ElseIf codeLower.Contains("lwlibavvideosource(") OrElse codeLower.Contains("lwlibavsource(") Then
             If FileTypes.VideoIndex.Contains(p.SourceFile.Ext) Then
-                p.SourceFile = p.LastOriginalSourceFile
+                BeginProjectCheckInvalidatingMutation()
+                Try
+                    p.SourceFile = p.LastOriginalSourceFile
+                Finally
+                    EndProjectCheckInvalidatingMutation()
+                End Try
                 BlockSourceTextBoxTextChanged = True
                 tbSourceFile.Text = p.SourceFile
                 BlockSourceTextBoxTextChanged = False
@@ -3810,7 +3890,12 @@ Partial Public Class MainForm
             End If
         ElseIf codeLower.Contains("bsvideosource(") OrElse codeLower.Contains("bs.videosource(") Then
             If FileTypes.VideoIndex.Contains(p.SourceFile.Ext) Then
-                p.SourceFile = p.LastOriginalSourceFile
+                BeginProjectCheckInvalidatingMutation()
+                Try
+                    p.SourceFile = p.LastOriginalSourceFile
+                Finally
+                    EndProjectCheckInvalidatingMutation()
+                End Try
                 BlockSourceTextBoxTextChanged = True
                 tbSourceFile.Text = p.SourceFile
                 BlockSourceTextBoxTextChanged = False
@@ -3843,7 +3928,12 @@ Partial Public Class MainForm
             codeLower.Contains("dss2(") Then
 
             If FileTypes.VideoIndex.Contains(p.SourceFile.Ext) Then
-                p.SourceFile = p.LastOriginalSourceFile
+                BeginProjectCheckInvalidatingMutation()
+                Try
+                    p.SourceFile = p.LastOriginalSourceFile
+                Finally
+                    EndProjectCheckInvalidatingMutation()
+                End Try
                 BlockSourceTextBoxTextChanged = True
                 tbSourceFile.Text = p.SourceFile
                 BlockSourceTextBoxTextChanged = False
@@ -4121,6 +4211,7 @@ Partial Public Class MainForm
     <Command("Dialog to configure the main menu.")>
     Sub ShowMainMenuEditor()
         s.CustomMenuMainForm = CustomMainMenu.Edit()
+        InstallProjectCheckMenu()
         UpdateTemplatesMenuAsync()
         UpdateScriptsMenuAsync()
         UpdateRecentProjectsMenu()
@@ -5014,43 +5105,51 @@ Partial Public Class MainForm
         If String.IsNullOrWhiteSpace(commandLine) Then Exit Sub
 
         Dim args = ParseCommandLine(commandLine)
-        If args.Any() Then
-            Package.LoadConfAll()
-        Else
-            Exit Sub
-        End If
+        Dim priorStartupNoFocusCommandSuppressed = ProjectCheckStartupNoFocusCommandSuppressed
+        ProjectCheckStartupNoFocusCommandSuppressed = args.Any(
+            Function(arg) String.Equals(arg.TrimQuotes(), "-NoFocus", StringComparison.OrdinalIgnoreCase))
 
-        Dim files As New List(Of String)
-        Dim showTemplateSelection = (s.ShowTemplateSelection And (ShowTemplateSelectionMode.Always Or ShowTemplateSelectionMode.CommandLine)) <> 0
-        Dim forcedTemplateLoading = args.Where(Function(s) s.ToLowerInvariant().TrimQuotes().StartsWith("-" & NameOf(LoadTemplate).ToLowerInvariant())).Any()
+        Try
+            If args.Any() Then
+                Package.LoadConfAll()
+            Else
+                Exit Sub
+            End If
 
-        For Each arg In args.Skip(1)
-            Try
-                If Not arg.FileExists() AndAlso files.Count > 0 Then
-                    Dim files2 As New List(Of String)(files)
-                    Refresh()
-                    If Not showTemplateSelection AndAlso Not forcedTemplateLoading Then OpenProject(g.LastModifiedTemplate)
-                    OpenAnyFile(files2, showTemplateSelection AndAlso Not forcedTemplateLoading)
-                    files.Clear()
-                End If
+            Dim files As New List(Of String)
+            Dim showTemplateSelection = (s.ShowTemplateSelection And (ShowTemplateSelectionMode.Always Or ShowTemplateSelectionMode.CommandLine)) <> 0
+            Dim forcedTemplateLoading = args.Where(Function(s) s.ToLowerInvariant().TrimQuotes().StartsWith("-" & NameOf(LoadTemplate).ToLowerInvariant())).Any()
 
-                If arg.FileExists() Then
-                    files.Add(arg)
-                Else
-                    If Not CommandManager.ProcessCommandLineArgument(arg) Then
-                        Throw New Exception
+            For Each arg In args.Skip(1)
+                Try
+                    If Not arg.FileExists() AndAlso files.Count > 0 Then
+                        Dim files2 As New List(Of String)(files)
+                        Refresh()
+                        If Not showTemplateSelection AndAlso Not forcedTemplateLoading Then OpenProject(g.LastModifiedTemplate)
+                        OpenAnyFile(files2, showTemplateSelection AndAlso Not forcedTemplateLoading)
+                        files.Clear()
                     End If
-                End If
-            Catch ex As Exception
-                MsgWarn("Error parsing argument:" + BR2 + arg + BR2 + ex.Message)
-            End Try
-        Next
 
-        If files.Count > 0 Then
-            Refresh()
-            If Not showTemplateSelection AndAlso Not forcedTemplateLoading Then OpenProject(g.LastModifiedTemplate)
-            OpenAnyFile(files, showTemplateSelection AndAlso Not forcedTemplateLoading)
-        End If
+                    If arg.FileExists() Then
+                        files.Add(arg)
+                    Else
+                        If Not CommandManager.ProcessCommandLineArgument(arg) Then
+                            Throw New Exception
+                        End If
+                    End If
+                Catch ex As Exception
+                    MsgWarn("Error parsing argument:" + BR2 + arg + BR2 + ex.Message)
+                End Try
+            Next
+
+            If files.Count > 0 Then
+                Refresh()
+                If Not showTemplateSelection AndAlso Not forcedTemplateLoading Then OpenProject(g.LastModifiedTemplate)
+                OpenAnyFile(files, showTemplateSelection AndAlso Not forcedTemplateLoading)
+            End If
+        Finally
+            ProjectCheckStartupNoFocusCommandSuppressed = priorStartupNoFocusCommandSuppressed
+        End Try
     End Sub
 
     <Command("Sets the project option 'Hide dialogs asking to demux, source filter etc.'")>

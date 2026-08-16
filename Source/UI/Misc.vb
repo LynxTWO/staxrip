@@ -13,6 +13,7 @@ Namespace UI
         Private DefaultWidthScale As Single
         Private DefaultHeightScale As Single
         Protected SaveAndLoadSize As Boolean = True
+        Protected Property RememberPosition As Boolean = True
 
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Shadows Property FontHeight As Integer
@@ -147,7 +148,7 @@ Namespace UI
             End If
 
             If Not DesignHelp.IsDesignMode Then
-                If Not (ModifierKeys.HasFlag(Keys.Control Or Keys.Shift)) Then
+                If RememberPosition AndAlso Not (ModifierKeys.HasFlag(Keys.Control Or Keys.Shift)) Then
                     s.WindowPositions?.RestorePosition(Me)
                 End If
             End If
@@ -158,7 +159,7 @@ Namespace UI
         Protected Overrides Sub OnFormClosing(args As FormClosingEventArgs)
             MyBase.OnFormClosing(args)
 
-            If s.WindowPositions IsNot Nothing Then
+            If RememberPosition AndAlso s.WindowPositions IsNot Nothing Then
                 s.WindowPositions.Save(Me)
             End If
 

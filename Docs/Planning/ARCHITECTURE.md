@@ -5,8 +5,8 @@ Companion documents: `ENGINEERING.md`, `DECISION-LOG.md`, and the slice briefs (
 
 ## Interview State
 
-- **Last completed:** Phase 6, final planning audit
-- **Next:** `SLICE-001` M0 discovery
+- **Last completed:** `SLICE-001` M4 paired source-open, stale-state, refresh, and handle verification
+- **Next:** Run remaining production accessibility and branch checks and the human walkthrough
 - **Open questions:** Carried in `../Unknowns/Planning-Unknowns.md`
 - **Statuses pending:** None
 
@@ -33,9 +33,9 @@ Companion documents: `ENGINEERING.md`, `DECISION-LOG.md`, and the slice briefs (
 
 - **What it is:** StaxRip Community is a public, portable Windows x64 video and audio processing front end. It improves the existing StaxRip workflow while preserving projects, settings, templates, scripts, commands, native interfaces, external-tool behavior, and user-owned files.
 - **Who it is for:** Primary users configure local video and audio processing jobs. Secondary users follow guided setup, and community contributors maintain the fork.
-- **The core loop:** A user opens source media, StaxRip verifies and probes it, builds the effective processing project, reports whether the project is ready, and lets the user resolve blockers before encoding.
+- **The core loop:** A user opens source media, StaxRip verifies and probes it, builds the effective processing project, exposes bounded project checks, and then applies its existing Add Job and encode-time authority.
 - **Major pieces:** Desktop shell, source intake, project and profile state, script and filter pipeline, tool orchestration, job engine, FrameServer boundary, diagnostics and support, and AutoCrop.
-- **Current slice:** Approved `SLICE-001`, a read-only source readiness summary after approved interactive source opening. Job processing does not activate it.
+- **Current slice:** Approved `SLICE-001`, read-only Source project checks after approved interactive source opening. `Selected checks passed` covers only the selected catalog. Job, batch, encoding, and nested source-opening contexts do not activate it.
 - **What this is not:** It is not a new encoder, a cloud service, an installer project, a cross-platform rewrite, or a public-release automation effort.
 
 ## 2. System Context
@@ -46,7 +46,7 @@ Companion documents: `ENGINEERING.md`, `DECISION-LOG.md`, and the slice briefs (
 - **External systems:** The Windows filesystem, Registry, process APIs, PowerShell, AviSynth+, VapourSynth, Python, encoders, muxers, demuxers, media probes, plugins, and GitHub release endpoints.
 - **Boundary statement:** StaxRip Community owns the desktop workflow, project state, settings, templates, generated scripts, generated command lines, job coordination, diagnostics, and adapters to external tools. External tools own codec and container processing. Users own their paths, media, scripts, profiles, settings, projects, and outputs. The fork will not reimplement encoders, frame-server runtimes, or media containers.
 
-Current evidence comes from `Source/StaxRip.vbproj`, `Source/FrameServer/FrameServer.vcxproj`, `Source/Tools/AutoCrop/AutoCrop.vbproj`, the bounded source-flow inspection named below, and `../Architecture/Coverage-Ledger.md`. No separate system-map artifact is claimed.
+Current evidence comes from `Source/StaxRip.vbproj`, `Source/FrameServer/FrameServer.vcxproj`, `Source/Tools/AutoCrop/AutoCrop.vbproj`, the bounded source-flow evidence in `../Verification/SLICE-001/M0-SYSTEM-MAP.md`, and `../Architecture/Coverage-Ledger.md`.
 
 ## 3. Product Shape and Platforms
 
@@ -61,7 +61,7 @@ DECISION: Product shape and platforms
 
 - **STATUS:** Confirmed
 - **CHOICE:** Preserve the existing portable Windows x64 architecture and external-tool model. Do not begin with a platform rewrite or installer.
-- **BECAUSE:** This reaches current users and preserves upstream compatibility while keeping the slice inside the existing runtime model. The specific post-success integration seam remains U-010 rather than a verified boundary.
+- **BECAUSE:** This reaches current users and preserves upstream compatibility while keeping the slice inside the existing runtime model. The strict ignored x64 model, production source checks, and bounded production-control probe close U-010 for placement design; complete MainForm and operating-system presentation remain L4 evidence.
 - **OPTIONS CONSIDERED:** Preserve the portable Windows app, lowest compatibility risk. Add an installer, easier onboarding but introduces a release and machine-state boundary. Cross-platform rewrite, wider reach but breaks the present tool and GUI contracts.
 - **REVISIT WHEN:** A measured user need cannot be served by the portable x64 application, or an approved distribution slice establishes a new contract.
 
@@ -115,7 +115,7 @@ The source-opening flow is a long transaction inside `MainForm.OpenVideoSourceFi
 - **Slow paths:** Media probing, demuxing, metadata extraction, filter or script validation, AutoCrop, AutoResize, and compression checks. Existing dialogs, processing surfaces, the Assistant, and the log provide mixed progress feedback.
 - **Abort recovery:** Expected aborts reload the serialized recovery project and restore the project path and window text.
 - **Unexpected failure:** For a non-abort exception, the global handler attempts recovery and diagnostics and then terminates the process. The following blank-project call is not a verified recovery outcome. Retained or persisted state across failure routes remains U-005.
-- **Required first-slice seam:** Evaluate readiness only after the whole source-opening transaction returns successfully. Existing source-loaded and project events are not assumed to prove that boundary. U-010 must map a safe owner and call site before form edits.
+- **Required first-slice seam:** Evaluate project checks only after the whole source-opening transaction returns successfully, its initial-generation capability is current, both source and project-check mutation depths are zero, and the pure activation policy passes. Existing source-loaded and project events are not assumed to prove that boundary. The mapped shared-entry and project-replacement owners clear prior state. Static production, product-assembly, and reviewed production-equivalent source-opening activation evidence passes; exact `Application.Run` and operating-system presentation remain required.
 
 Evidence: `Source/Forms/MainForm.vb:2289-2342` and `Source/Forms/MainForm.vb:2469-2889`.
 
@@ -217,7 +217,7 @@ DECISION: Build and distribution path
 | External system | Purpose | Direction | Failure behavior |
 |---|---|---|---|
 | Windows filesystem and Registry | Portable state, user paths, temp data, outputs, and settings-location selection | Both | Stop the affected action, preserve prior owned state where possible, and identify the path class without exposing unrelated user data |
-| MediaInfo | Probe containers and streams | Read | The existing source-opening path reports probe failure. After a successful open, readiness uses only retained bounded facts and does not invent media facts. |
+| MediaInfo | Probe containers and streams | Read | The existing source-opening path reports probe failure. After a successful open, project checks use only final-catalog bounded facts and do not invent media facts. |
 | AviSynth+ and plugins | Scripted frame processing | Both | Keep the project recoverable, show the bounded engine or script error, and do not start dependent tools |
 | VapourSynth, Python, and plugins | Scripted frame processing | Both | Keep the project recoverable, show the bounded engine or script error, and do not start dependent tools |
 | Encoders, muxers, demuxers, and support tools | Perform media transformations | Both | Mark the requirement or operation unavailable; do not substitute a different tool silently |
@@ -231,19 +231,19 @@ DECISION: Build and distribution path
 
 | Future capability | Connects at | What exists now | What is deliberately absent |
 |---|---|---|---|
-| Source readiness summary | End of source intake and Assistant refresh | Source facts, requirement checks, project state, dialogs, and logs | One typed readiness result and one consistent GUI presentation |
-| Guided blocker repair | Readiness result plus package and project owners | Existing requirement dialogs and package verification | Automatic setting, tool, template, or project mutations |
+| Source project checks | End of source intake and explicit refresh | Typed transient result, pure evaluator, mapper, coordinator, lifecycle hooks, explicit refresh, summary, details, and fixed menu route | Add Job or encode authority, persistence, automatic repair, and completed workflow or human evidence |
+| Guided blocker repair | Project-check result plus project owners | Existing controls and requirement dialogs | Automatic setting, tool, template, or project mutations |
 | Source-opening progress model | Source intake stages and processing UI | Mixed dialogs, logs, task execution, and processing surfaces | One stage model with measured timing and cancellation ownership |
 | Workflow performance evidence | Source intake and diagnostics | Existing timestamps and logs in selected paths | Privacy-safe stage metrics and a regression baseline |
 | Job recovery improvements | Job engine, project persistence, and process control | Existing recovery projects and job files | New retry, concurrency, or publication semantics |
 
-The first three likely expansions are readiness summary, guided blocker repair, and source-opening progress. They remain seams, not committed feature scope.
+The current Source project checks seam is the active slice. Likely later expansions include guided blocker repair, source-opening progress, and privacy-safe workflow performance evidence. They are candidates, not committed feature scope.
 
 ## 11. Scale and Performance Posture
 
 - **Load expectations:** One interactive user and one active project per process. Multiple input files and queued jobs remain supported, but the first slice does not add parallel source-opening work.
-- **Measurement rule:** Establish a fixed synthetic fixture baseline before optimizing. Separate existing source-opening time from time added by readiness evaluation and rendering.
-- **Performance targets:** Readiness evaluation and rendering add no more than 100 ms at the 95th percentile on the agreed local fixture set. The median full source-opening time must not regress by more than 5 percent or 100 ms, whichever allowance is larger. Fifty repeated readiness evaluations of an unchanged loaded project must show no net process-handle growth.
+- **Measurement rule:** Establish a fixed synthetic fixture baseline before optimizing. Separate existing source-opening time from time added by project-check evaluation and rendering.
+- **Performance targets:** Project-check evaluation and rendering add no more than 100 ms at the 95th percentile on the agreed local fixture set. The median full source-opening time must not regress by more than 5 percent or 100 ms, whichever allowance is larger. Fifty repeated project-check evaluations of an unchanged loaded project must show no net process-handle growth.
 - **Scaling approach:** Optimize only stages with measured cost. Cache immutable probe facts only when ownership and invalidation are explicit. Do not add concurrency until cancellation, recovery, and shared-resource behavior are mapped and tested.
 
 DECISION: Performance targets
@@ -271,40 +271,40 @@ DECISION: Deployment posture
 
 ## 13. Failure and Degraded Modes
 
-This table is the target posture for touched paths. It does not claim every current path already behaves this way. Failures that abort source opening remain owned by the existing source-opening UI and produce no first-slice readiness result. Q-001 decides which post-success rows can enter the bounded readiness catalog without execution or mutation.
+This table is the target posture for touched paths. It does not claim every current path already behaves this way. Failures that abort source opening remain owned by the existing source-opening UI and produce no first-slice project-check result. The approved three-check catalog includes only post-success rows that map without execution or mutation.
 
 | Failure | User sees | System does | Recovery |
 |---|---|---|---|
-| Missing, inaccessible, or unsupported source | The existing source-opening error tied to the selected source | Does not invoke the first-slice readiness adapter, invent media facts, or retain a ready claim | User selects another source or corrects access |
-| Media probe failure | The existing probe error and bounded failure category | Does not invoke the first-slice readiness adapter or invent media facts | Retry after tool, file, or format correction |
+| Missing, inaccessible, or unsupported source | The existing source-opening error tied to the selected source | Does not invoke the first-slice project-check adapter, invent media facts, or retain a current result | User selects another source or corrects access |
+| Media probe failure | The existing probe error and bounded failure category | Does not invoke the first-slice project-check adapter or invent media facts | Retry after tool, file, or format correction |
 | Missing frame-server runtime or required tool | Missing requirement and affected workflow stage | Does not substitute another engine or executable silently | User repairs configuration or explicitly selects a supported alternative |
-| Script or FrameServer open failure | Bounded engine or script error with a route to diagnostics | Does not publish a preview or ready state | User edits the script, filter, runtime, or source choice |
+| Script or FrameServer open failure | Bounded engine or script error with a route to diagnostics | Does not publish a preview or current project-check result | User edits the script, filter, runtime, or source choice |
 | Temp path unavailable or storage exhausted | Temp or capacity blocker without unrelated path disclosure | Stops before dependent tool work and preserves prior owned state | User selects a valid temp location or frees space |
-| Demuxer or helper-process failure | Tool name, stage, and bounded exit status | Keeps partial outputs non-authoritative and does not advance readiness | User reviews diagnostics and retries after correction |
-| User cancellation | Canceled state, not a failure claim | Stops at a defined boundary and does not mark the project ready | User restarts source opening |
+| Demuxer or helper-process failure | Tool name, stage, and bounded exit status | Keeps partial outputs non-authoritative and does not advance project-check presentation | User reviews diagnostics and retries after correction |
+| User cancellation | Canceled state, not a failure claim | Stops at a defined boundary and clears prior project-check presentation | User restarts source opening |
 | Recovery snapshot cannot be written | Warning that rollback protection is unavailable | Current behavior continues only under the existing source-opening contract; the first slice does not change this decision | A later recovery slice defines whether opening must stop |
-| Unexpected source-opening exception | Existing exception and diagnostic route | For a non-abort exception, the global handler attempts recovery and diagnostics and terminates the process; the first-slice readiness adapter is not invoked | Later failure-injection work must establish the retained-state and recovery contract |
+| Unexpected source-opening exception | Existing exception and diagnostic route | For a non-abort exception, the global handler attempts recovery and diagnostics and terminates the process; the first-slice project-check adapter is not invoked | Later failure-injection work must establish the retained-state and recovery contract |
 | GitHub or network unavailable | Optional update information is unavailable | Local configured workflows continue | Automatic or user-triggered retry later |
 | Diagnostic content contains private values | Preview and review warning | New reports use an explicit allowlist and bounded redaction; raw logs are not attached automatically | User edits the preview before sharing |
 
 DECISION: Failure and recovery posture
 
 - **STATUS:** Confirmed
-- **CHOICE:** The readiness slice observes and explains existing outcomes. It does not change recovery, cancellation, temp-file, process, or cleanup semantics.
+- **CHOICE:** The project-check slice observes and explains selected existing state. It does not change recovery, cancellation, temp-file, process, or cleanup semantics.
 - **BECAUSE:** Those behaviors cross protected ownership and failure boundaries. A read-only result can improve clarity without changing what source opening commits or rolls back.
 - **OPTIONS CONSIDERED:** Observe and report only, smallest safe slice. Repair selected failures in the same slice, more value but mixed recovery behavior. Rewrite source opening as a transaction first, broad risk and delayed user value.
-- **REVISIT WHEN:** The readiness summary identifies one frequent blocker with a deterministic recovery harness and separate approval.
+- **REVISIT WHEN:** The project-check summary identifies one frequent blocker with a deterministic recovery harness and separate approval.
 
 ## 14. Architecture Guardrails
 
 1. Do not silently change generated commands, scripts, project files, settings, templates, profiles, jobs, temp rules, or output behavior.
-2. Do not parse UI text, localized text, logs, or exception prose to determine readiness.
-3. Readiness facts use stable ids, typed values, and an explicit severity and ownership model.
+2. Do not parse UI text, localized text, logs, or exception prose to determine project-check outcomes.
+3. Project checks use stable ids, typed values, and an explicit severity and ownership model.
 4. The first slice does not save new persisted state or rewrite existing persisted state.
 5. The first slice does not download, replace, select, or execute a different external tool.
 6. The first slice does not delete, move, overwrite, publish, or repair user-owned files.
 7. New diagnostics use allowlisted fields, synthetic fixtures, bounded lengths, and culture-invariant handling.
-8. A form consumes one readiness result. It does not reproduce source, package, script, or encoder checks in event handlers.
+8. A form consumes one project-check result. It does not reproduce project rules in event handlers.
 9. A touched external boundary has one owner or adapter. New direct provider calls do not spread across forms.
 10. No new concurrency, retries, cancellation policy, or background worker enters the first slice.
 11. Existing source-opening recovery remains unchanged until branch activation and retained-state behavior are deterministically tested.
@@ -315,16 +315,16 @@ DECISION: Architecture guardrails
 - **STATUS:** Confirmed
 - **CHOICE:** Make the first slice a typed, read-only interpretation and presentation layer over existing post-open state.
 - **BECAUSE:** This isolates user-visible improvement from persistence, command, native, tool, cleanup, concurrency, and release behavior.
-- **OPTIONS CONSIDERED:** Read-only slice, narrowest compatibility surface. Readiness plus automatic repair, more immediate help but mutates protected state. Broad source-opening refactor, cleaner target structure but too many unverified branches.
+- **OPTIONS CONSIDERED:** Read-only slice, narrowest compatibility surface. Project checks plus automatic repair, more immediate help but mutates protected state. Broad source-opening refactor, cleaner target structure but too many unverified branches.
 - **REVISIT WHEN:** The read-only slice has evidence and a later brief selects one guarded boundary for expansion.
 
 ## 15. Current Build Boundary
 
-- **Current slice:** Approved `SLICE-001`, source readiness summary, defined in `SLICE-001.md`. It targets five to eight pure post-success checks, explicit refresh, and mandatory invalidation. It will derive a typed result only after an approved interactive source open returns successfully. It does not evaluate or present readiness during `isEncoding = True` or job processing. U-010 and U-013 must first prove the safe activation boundary.
-- **Modules the slice may touch:** Source intake on the approved interactive path, project state read models, package requirement readers, a narrow readiness coordinator, the desktop shell or a separately owned Assistant-adjacent readiness presentation, and a deterministic test seam.
+- **Current slice:** Approved `SLICE-001`, Source project checks, defined in `SLICE-001.md`. It targets the final small pure catalog, explicit refresh, and mandatory invalidation. It derives a typed result only after an approved outermost interactive source open returns successfully and the entry-plus-completion activation policy passes. `Selected checks passed` does not authorize Add Job or encoding. Revised S-018 uses the complete static caller map, pure policy vectors, and focused clear-owner checks instead of successful real-job runtime equivalence.
+- **Modules the slice may touch:** Source intake on the approved interactive path, approved project-state read models, a narrow project-check coordinator, the desktop shell or a separately owned Assistant-adjacent project-check presentation, the default-preserving `FormBase.RememberPosition` guard, and a deterministic test seam.
 - **Capabilities excluded rather than stubbed:** Guided repair actions, source-opening stage progress, performance optimization, job recovery, release automation, localization implementation, and new telemetry. The slice contains no partial implementation of them.
-- **Everything else:** Existing behavior remains in place. Phase 6 passed in `PHASE-6-AUDIT.md`, so M0 discovery may begin. Dependent production implementation waits for the M0 gates.
+- **Everything else:** Existing behavior remains in place. Phase 6 passed in `PHASE-6-AUDIT.md`, and D-037 is Confirmed. The revised M0 gates, M1 through M3 deterministic gates, and M4 paired compatibility, performance, stale-state, and handle gates are closed. Complete MainForm, operating-system accessibility, remaining branch, and human-value gates remain open.
 
 ---
 
-*Sections filled: 15 of 15. Unknown records carried: 14 (12 Open, 2 Closed). See `DECISION-LOG.md` for reasoning.*
+*Sections filled: 15 of 15. Unknown records carried: 14 (6 Open, 8 Closed). See `DECISION-LOG.md` for reasoning.*

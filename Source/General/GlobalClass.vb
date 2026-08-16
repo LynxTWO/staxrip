@@ -1203,19 +1203,25 @@ Public Class GlobalClass
 
     Sub LoadVideoEncoder(profile As Profile)
         Dim currentMuxer = p.VideoEncoder.Muxer
-        p.VideoEncoder = DirectCast(ObjectHelp.GetCopy(profile), VideoEncoder)
+        MainForm.BeginProjectCheckInvalidatingMutation()
 
-        If currentMuxer.IsSupported(p.VideoEncoder.OutputExt) Then
-            p.VideoEncoder.Muxer = currentMuxer
-        Else
-            p.VideoEncoder.Muxer.Init()
-        End If
+        Try
+            p.VideoEncoder = DirectCast(ObjectHelp.GetCopy(profile), VideoEncoder)
 
-        p.VideoEncoder.SetMetaData(p.LastOriginalSourceFile)
-        p.VideoEncoder.OnStateChange()
-        p.VideoEncoder.UpdateTargetFile(p.VideoEncoder.OverridesTargetFileName)
-        MainForm.RecalcBitrate()
-        MainForm.Assistant()
+            If currentMuxer.IsSupported(p.VideoEncoder.OutputExt) Then
+                p.VideoEncoder.Muxer = currentMuxer
+            Else
+                p.VideoEncoder.Muxer.Init()
+            End If
+
+            p.VideoEncoder.SetMetaData(p.LastOriginalSourceFile)
+            p.VideoEncoder.OnStateChange()
+            p.VideoEncoder.UpdateTargetFile(p.VideoEncoder.OverridesTargetFileName)
+            MainForm.RecalcBitrate()
+            MainForm.Assistant()
+        Finally
+            MainForm.EndProjectCheckInvalidatingMutation()
+        End Try
     End Sub
 
     Sub LoadAudioProfile(profile As Profile, index As Integer)

@@ -44,13 +44,14 @@ Companion documents: `ARCHITECTURE.md`, `ENGINEERING.md`, and the slice briefs (
 | D-027 | 2026-08-14 | Source-only operations and cost posture | Confirmed | |
 | D-028 | 2026-08-14 | Definition of done and change control | Confirmed | |
 | D-029 | 2026-08-13 | Remove legacy x86 bootstrapper prerequisites | Confirmed | |
-| D-030 | 2026-08-15 | SLICE-001 shape and timebox | Confirmed | |
+| D-030 | 2026-08-15 | SLICE-001 shape and timebox | Superseded | D-037 |
 | D-031 | 2026-08-15 | Readiness refresh and invalidation | Confirmed | |
 | D-032 | 2026-08-15 | Initial readiness catalog breadth | Confirmed | |
 | D-033 | 2026-08-15 | SLICE-001 build approval | Confirmed | |
-| D-034 | 2026-08-15 | Conservative Ready authority | Confirmed | |
+| D-034 | 2026-08-15 | Conservative Ready authority | Superseded | D-037 |
 | D-035 | 2026-08-15 | Interactive-only readiness activation | Confirmed | |
 | D-036 | 2026-08-15 | Readiness adapter failure boundary | Confirmed | |
+| D-037 | 2026-08-15 | M0 source-project-check pivot | Confirmed | |
 
 ## Entries
 
@@ -668,7 +669,7 @@ Revisit when: The release-boundary slice maps and replaces or retires the remain
 ## D-030: SLICE-001 shape and timebox
 
 Date: 2026-08-15
-Status: Confirmed
+Status: Superseded by D-037
 Area: SLICE-001 sections 1 and 3
 
 Context: The slice growth tally showed that accessibility, privacy, deterministic verification, performance, safe integration, and stale-result prevention had enlarged the original one-summary concept.
@@ -694,7 +695,7 @@ Area: SLICE-001 sections 2, 7, and 8
 
 Context: Relevant project and requirement state can change after source opening. A retained `Ready` result can become false unless every input has an invalidation owner.
 
-Decision: Evaluate once after a verified successful source-opening return. Use an explicit `Refresh readiness` command for recomputation. Invalidate or hide the current result on a new open attempt, project replacement, or any mapped input change. Exclude a candidate check when no safe invalidation trigger can be proven. Add no background refresh or worker.
+Decision: Evaluate once after a verified successful source-opening return. Use an explicit `Refresh project checks` command for recomputation. Invalidate or hide the current result on a new open attempt, project replacement, or any mapped input change. Exclude a candidate check when no safe invalidation trigger can be proven. Add no background refresh or worker. D-037 supplies the renamed feature contract; the lifecycle semantics in this entry remain active.
 
 Because: Explicit refresh keeps recomputation predictable while mandatory invalidation prevents a stale ready claim.
 
@@ -752,7 +753,7 @@ Revisit when: Repository evidence contradicts the brief or the user changes the 
 ## D-034: Conservative Ready authority
 
 Date: 2026-08-15
-Status: Confirmed
+Status: Superseded by D-037
 Area: SLICE-001 sections 1, 7, and 8
 
 Context: Existing encode entry uses requirement verification, Assistant state, disk checks, and events at `Source/Forms/MainForm.vb:4187,4195-4198`. Assistant evaluation also performs script and frame-server work at `Source/Forms/MainForm_Assistant.vb:19-28`. A five-to-eight-check catalog may not observe every authoritative condition without side effects.
@@ -808,6 +809,35 @@ Options considered:
 - Catch evaluator failures only: leaves an unowned fatal mapper path.
 - Use the existing global exception path: observable, but can terminate the process and expose private exception text.
 
-Consequences: Q-008 and U-014 close in M0 only after an ignored disposable probe demonstrates the seam design for both fault branches. M2 and L4 own production activation and outcome proof. If the seam needs a package, solution mapping, global flag, or broader harness scope, stop for another decision.
+Consequences: Q-008 and U-014 close in M0 only after an ignored disposable probe demonstrates the seam design for both fault branches. M2 owns deterministic production composition and L4 owns loaded GUI outcome proof. `../Verification/SLICE-001/M2-INTEGRATION.md` now records the M2 result. If the seam needs a package, solution mapping, global flag, or broader harness scope, stop for another decision.
 
 Revisit when: Readiness joins a typed application-wide nonfatal error boundary with equivalent privacy and activation evidence.
+
+## D-037: M0 source-project-check pivot
+
+Date: 2026-08-15
+Status: Confirmed
+Area: SLICE-001 M0 stop findings
+
+Context: M0 found three source-backed contradictions in the approved brief. First, a pure post-open catalog cannot know the later `BeforeJobAdding` PowerShell and command result, live package status, free disk space, persisted job state, or output collisions. D-034 therefore forbids `Ready`. Second, the real `ProcessJob` source-open route can perform package, demux, metadata, muxer, and process work before `BeforeProcessing`, so current S-018 cannot run a successful production job path and also stop before all tool or output work. Third, every `FormBase` persists window placement, so the planned details form would add settings state. Evidence: `../Verification/SLICE-001/M0-AUTHORITY-STOP.md`, `../Verification/SLICE-001/M0-ACTIVATION-LIFECYCLE.md`, and `../Verification/SLICE-001/M0-UI-AND-VERIFICATION.md`.
+
+Decision:
+
+1. Rename the slice and feature to `Source project checks`. Replace overall `Ready` with `Selected checks passed`. The summary must state that Add Job and encode-time checks still run later. No result authorizes encoding.
+2. Retain typed fact, warning, blocker, unknown, not-applicable, unavailable, and refresh-required behavior for only the approved pure catalog. Every accepted field still needs a complete invalidation owner.
+3. Replace S-018 successful real-job runtime proof with the complete static caller map, a source-linked pure activation-policy test, and production checks at the mapped project-replacement and source-entry clear owners. Do not claim successful `ProcessJob` runtime equivalence. A later isolated tool-boundary approval owns that evidence.
+4. Add a protected `FormBase.RememberPosition As Boolean = True` guard around existing position restore and save. Set it to `False` only in the new details form. Existing forms retain current persistence behavior; the new form writes no placement state.
+5. Keep generated fixture bytes under an ignored isolated verification root. Track their manifest, generator recipe, byte length, SHA-256, generator identity, expected media facts, script engine, and template hash. Record that arbitrary generator builds may not reproduce identical bytes.
+
+Because: This keeps a useful, truthful, accessible workflow summary without duplicating side-effecting encode authority, touching a real user queue, or silently persisting readiness state.
+
+Options considered:
+
+- Bounded source project checks: smallest safe continuation and the recommended choice.
+- Build a shared side-effect-free encode preflight: preserves `Ready`, but must own packages, Assistant, disk policy, events, jobs, outputs, freshness, and every encode entry. It exceeds this first slice.
+- Move the result to action time after existing Add Job gates: observes more authority, but is too late for the selected post-source correction loop and crosses persistence and event boundaries.
+- Stop this direction and select another workflow slice: avoids a weaker success label but discards the mapped UI and pure-model work.
+
+Consequences: D-030 and D-034 are Superseded. The Slice Brief central claim, S-016, S-017, and S-018 use the bounded contract in this entry. `../Verification/SLICE-001/M0-CATALOG.md` closes Q-001, Q-007, U-003, and U-012 for design with three pure checks and exact repository-owned invalidation owners. `../Verification/SLICE-001/M0-UI-PROBE.md` closes Q-002 for design. At confirmation time, Q-003 and U-004 still needed isolated runtime and measurements. The later reviewed v6 paired matrix closes both under `../Verification/SLICE-001/M0-RUNTIME-PLAN.md`. Completed M0 through M4 evidence is indexed at `../Verification/SLICE-001/README.md`. The `FormBase.RememberPosition` guard is approved only for preserving existing behavior and opting the new details form out of placement persistence.
+
+Revisit when: A shared side-effect-free preflight with freshness tokens becomes the canonical authority for every Add Job and Start Encoding path.
