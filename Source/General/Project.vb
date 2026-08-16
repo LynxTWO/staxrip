@@ -293,8 +293,15 @@ Public Class Project
                     Exit Property
                 End If
 
-                TargetFileValue = value
-                NotifyPropertyChanged()
+                Dim projectCheckOwner = If(Me Is p, g.MainForm, Nothing)
+                projectCheckOwner?.BeginProjectCheckInvalidatingMutation()
+
+                Try
+                    TargetFileValue = value
+                    NotifyPropertyChanged()
+                Finally
+                    projectCheckOwner?.EndProjectCheckInvalidatingMutation()
+                End Try
             End If
         End Set
     End Property

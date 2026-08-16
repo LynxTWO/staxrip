@@ -150,6 +150,15 @@
     <Import Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Features\ProjectChecks\ProjectCheckModel.vb" />
+    <Compile Include="Features\ProjectChecks\ProjectCheckCatalog.vb" />
+    <Compile Include="Features\ProjectChecks\ProjectCheckEvaluator.vb" />
+    <Compile Include="Features\ProjectChecks\ProjectCheckActivationPolicy.vb" />
+    <Compile Include="Features\ProjectChecks\ProjectCheckCoordinator.vb" />
+    <Compile Include="Features\ProjectChecks\ProjectCheckPresentationText.vb" />
+    <Compile Include="Controls\ProjectChecksSummaryControl.vb">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Controls\NVEncControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
@@ -208,6 +217,9 @@
     <Compile Include="Forms\SupportReportForm.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\ProjectChecksDetailsForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\CodeForm.Designer.vb">
       <DependentUpon>CodeForm.vb</DependentUpon>
     </Compile>
@@ -215,6 +227,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\MainForm_Assistant.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MainForm_SourceProjectChecks.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\MainForm_ShowOptions.vb">
