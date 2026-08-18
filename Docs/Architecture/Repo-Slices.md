@@ -33,10 +33,10 @@ This ledger breaks the current application and the portability target into revie
 - **Exit criteria:** One explicit FFprobe version range and resolver are approved; argv and output schemas have golden fixtures; hostile paths and malformed output pass; cancellation leaves no process; no project or output file is written; Windows comparison records agreed facts.
 - **Verification capability ids:** V01, V02, V04, V05, V06, V08, V09, V10, V11, V12, V14, V17, V18
 - **Confidence-ladder level:** 3
-- **Exact gate or next check:** Map current MediaInfo and FFprobe fact authority before selecting the adapter
+- **Exact gate or next check:** Fact-authority map complete at `Docs/Architecture/Media-Inspection-Map.md`. Next: draft the agreed-facts list and the adapter-selection decision from its section "What the adapter selection must decide"
 - **Invalidated by:** Probe executable/version, schema, resolver, process runner, path policy, or media-fact contract changes
 - **Next pass:** 02 architecture map
-- **Status:** open
+- **Status:** in progress
 
 ### S-PORT-03: Portable workflow representation
 
