@@ -7,6 +7,7 @@ This file defines how AI-assisted work happens in this repository. Keep changes 
 ## Product promises
 
 - Preserve StaxRip's role as a configurable Windows video and audio processing front end.
+- Preserve the current Windows x64 application while cross-platform behavior is added behind explicit contracts and platform adapters.
 - Do not silently change generated command lines, project or settings compatibility, template behavior, temp-file handling, or bundled-tool contracts.
 - Treat user-selected paths, jobs, profiles, scripts, and encoder settings as user-owned data.
 - Keep documentation honest about supported versions, tools, and operating systems.
@@ -24,6 +25,8 @@ Legacy code is not defective merely because it is old. Record an unknown when in
 - Native component: C++17 `Source/FrameServer/FrameServer.vcxproj` using the Visual Studio v143 toolset and Windows SDK.
 - Supporting executable: VB.NET `Source/Tools/AutoCrop/AutoCrop.vbproj`.
 - Supported application build platform: x64 only. The project and solution files expose x64 configurations only. Do not require x86 as a contributor verification gate. Reintroducing x86 or Win32 configurations requires separate approval and verification.
+- Additive portability work: C# .NET 10 projects under root-level `CrossPlatform/`. Linux x64 is the first runtime target. macOS is deferred until Linux contracts stabilize and a real macOS runner exists. Keep this subtree outside `Source/` because the legacy build scripts recursively scan selected files below `Source/`.
+- Portability client shape: a loopback-only engine host and first-party web shell come first. The current WinForms client remains supported. A native cross-platform client is a later, separate slice.
 - Runtime model: a portable GUI generates scripts and command lines and coordinates external encoders, muxers, frame servers, and support tools.
 - Documentation: `README.md`, `Docs/`, and the changelogs.
 - Ownership: no `CODEOWNERS` file is currently present. Contributor guidance lives in `Docs/Contribution/README.md`. Treat code ownership as unknown unless Git history or maintainer review establishes it.
@@ -53,6 +56,13 @@ Treat comments that affect compilation, project metadata, resources, encodings, 
 - Do not install or update dependencies automatically because a suggested verification command needs them.
 - Run the cheapest relevant check first. Keep successful output compact and preserve a bounded failure packet for failures.
 - Record the exact configuration and platform for build evidence. A Debug x64 build does not verify Release x64.
+- Keep current Windows and additive cross-platform build evidence separate. A cross-platform build does not verify the legacy application, and a WSL run does not verify an independent Linux or macOS host.
+- Do not treat executable presence as tool compatibility. A support claim needs an approved version, source, invocation, fixture, and failure-path result.
+- New cross-platform process plans use executable identity and separate argv. Do not make a shell command string the portable source of truth.
+- A verifier that launches a process must register ownership before readiness, cap output while reading it, bind cleanup to revalidated PID, start time, executable, and exact arguments, and prove exit plus task-state removal before recording success or retention fields. Final evidence must reject stale task roots.
+- An evidence producer must invalidate the prior pass pair under the shared writer lease before its first protected mutation. If child producers cannot borrow that lease, keep an atomic workflow marker for the full mutable window and make the final auditor reject it at every closeout.
+- Treat a registry content hash, a raw package archive digest, a package signature, and extracted-file identity as separate claims. Bind every accepted archive payload to a safe extracted path, length, and digest, and recompute that binding independently before publication.
+- On Windows, enumerate task and marker names case-insensitively, reject case drift or collisions, and then require the one canonical entry to be safe and empty.
 - Separate branch activation evidence from outcome evidence for retries, fallbacks, concurrency, and external-tool invocation.
 
 ## Approval-gated areas
@@ -66,7 +76,8 @@ Document the finding and smallest proposed edit, then obtain explicit human appr
 - tool download, update, provenance, executable selection, or command-line escaping;
 - native frame-server ABI, registration, inter-process, AviSynth, or VapourSynth boundaries;
 - privileged CI or automation if it is added later;
-- auth, secrets, cryptography, billing, regulated data, migrations, or repair tooling if any enters scope.
+- auth, secrets, cryptography, billing, regulated data, migrations, or repair tooling if any enters scope;
+- any listener beyond loopback, remote control, state-changing HTTP endpoint, upload, arbitrary plugin execution, or browser session weakening;
 
 ## Sensitive data
 
@@ -109,6 +120,7 @@ End each pull request with a short record of:
 - Persistence and job execution: project, settings, template, and job code under `Source/General/` and `Source/Forms/`.
 - Native boundary: `Source/FrameServer/`.
 - Release boundary: the solution and PowerShell build or packaging scripts under `Source/`.
+- Portability boundary: `CrossPlatform/`, its local HTTP security policy, platform adapters, future portable persistence, and any cross-platform artifact assembly.
 - Documentation and user-visible contracts: `README.md`, `Docs/`, and both changelogs.
 
 Keep this file as the canonical steering document unless the repository later adopts tool-specific instruction files.

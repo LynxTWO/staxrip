@@ -1,6 +1,6 @@
 # StaxRip Community Decision Log
 
-Version: 0.1 Draft. Date: 2026-08-15.
+Version: 0.2 Draft. Date: 2026-08-16.
 Companion documents: `ARCHITECTURE.md`, `ENGINEERING.md`, and the slice briefs (`SLICE-001` onward).
 
 ## Rules
@@ -20,17 +20,17 @@ Companion documents: `ARCHITECTURE.md`, `ENGINEERING.md`, and the slice briefs (
 | D-003 | 2026-08-13 | Planning mode | Confirmed | |
 | D-004 | 2026-08-13 | Initial workflow direction | Confirmed | |
 | D-005 | 2026-08-13 | Privacy depth | Confirmed | |
-| D-006 | 2026-08-13 | Product shape and platforms | Confirmed | |
+| D-006 | 2026-08-13 | Product shape and platforms | Superseded | D-038 |
 | D-007 | 2026-08-13 | Interface and compatibility posture | Confirmed | |
-| D-008 | 2026-08-13 | Client technology | Confirmed | |
-| D-009 | 2026-08-13 | Implementation languages | Confirmed | |
-| D-010 | 2026-08-13 | Backend approach | Confirmed | |
+| D-008 | 2026-08-13 | Client technology | Superseded | D-039 |
+| D-009 | 2026-08-13 | Implementation languages | Superseded | D-039 |
+| D-010 | 2026-08-13 | Backend approach | Superseded | D-039 |
 | D-011 | 2026-08-13 | Storage approach | Confirmed | |
-| D-012 | 2026-08-13 | Authentication | Confirmed | |
+| D-012 | 2026-08-13 | Authentication | Superseded | D-040 |
 | D-013 | 2026-08-13 | Notification channels | Confirmed | |
-| D-014 | 2026-08-13 | Build and distribution path | Confirmed | |
+| D-014 | 2026-08-13 | Build and distribution path | Superseded | D-041 |
 | D-015 | 2026-08-13 | Performance targets | Confirmed | |
-| D-016 | 2026-08-13 | Deployment posture | Confirmed | |
+| D-016 | 2026-08-13 | Deployment posture | Superseded | D-041 |
 | D-017 | 2026-08-13 | Failure and recovery posture | Confirmed | |
 | D-018 | 2026-08-13 | Architecture guardrails | Confirmed | |
 | D-019 | 2026-08-13 | Engineering goal priority | Confirmed | |
@@ -52,6 +52,13 @@ Companion documents: `ARCHITECTURE.md`, `ENGINEERING.md`, and the slice briefs (
 | D-035 | 2026-08-15 | Interactive-only readiness activation | Confirmed | |
 | D-036 | 2026-08-15 | Readiness adapter failure boundary | Confirmed | |
 | D-037 | 2026-08-15 | M0 source-project-check pivot | Confirmed | |
+| D-038 | 2026-08-16 | Additive Linux and macOS platform expansion | Confirmed | |
+| D-039 | 2026-08-16 | Cross-platform engine and first clients | Confirmed | |
+| D-040 | 2026-08-16 | Local HTTP security boundary | Confirmed | |
+| D-041 | 2026-08-16 | SLICE-002 build and artifact boundary | Confirmed | |
+| D-042 | 2026-08-16 | Native desktop client posture | Confirmed | |
+| D-043 | 2026-08-16 | Portability evidence and anti-dark-code feedback | Confirmed | |
+| D-044 | 2026-08-16 | Isolated subtree and Linux runtime-pack restore | Confirmed | |
 
 ## Entries
 
@@ -164,7 +171,7 @@ Revisit when: The diagnostic data boundary materially shrinks or expands.
 ## D-006: Product shape and platforms
 
 Date: 2026-08-13
-Status: Confirmed
+Status: Superseded by D-038
 Area: ADD 3
 
 Context: The existing product is a portable Windows desktop application that coordinates native and external processing tools.
@@ -206,7 +213,7 @@ Revisit when: A mapped seam prevents a slice from being tested or extended witho
 ## D-008: Client technology
 
 Date: 2026-08-13
-Status: Confirmed
+Status: Superseded by D-039
 Area: ADD 8.1
 
 Context: The current GUI, controls, serialization, and Windows integration use VB.NET Windows Forms on .NET Framework 4.8.
@@ -227,7 +234,7 @@ Revisit when: A supported platform, toolchain, or measured UI need cannot be ser
 ## D-009: Implementation languages
 
 Date: 2026-08-13
-Status: Confirmed
+Status: Superseded by D-039
 Area: ADD 8.2
 
 Context: VB.NET owns the app and AutoCrop, C++17 owns FrameServer, and PowerShell is a user extension surface.
@@ -248,7 +255,7 @@ Revisit when: A bounded component has verification and a measured need the curre
 ## D-010: Backend approach
 
 Date: 2026-08-13
-Status: Confirmed
+Status: Superseded by D-039
 Area: ADD 8.3
 
 Context: The current product is portable, offline-capable, and local-first.
@@ -290,7 +297,7 @@ Revisit when: A confirmed feature needs transactions or queries existing formats
 ## D-012: Authentication
 
 Date: 2026-08-13
-Status: Confirmed
+Status: Superseded by D-040
 Area: ADD 8.5
 
 Context: There is no product backend or multi-user data store.
@@ -332,7 +339,7 @@ Revisit when: In-app completion and failure signals prove insufficient for real 
 ## D-014: Build and distribution path
 
 Date: 2026-08-13
-Status: Confirmed
+Status: Superseded by D-041
 Area: ADD 8.8
 
 Context: X64 source builds are verified, while packaging inputs and checked-in release scripts retain unresolved machine-specific and destructive behavior.
@@ -374,7 +381,7 @@ Revisit when: A representative baseline covers fast local media, slow storage, m
 ## D-016: Deployment posture
 
 Date: 2026-08-13
-Status: Confirmed
+Status: Superseded by D-041
 Area: ADD 12
 
 Context: Source builds are verified. Portable assembly, bundled-tool provenance, machine-specific release scripts, artifact publication, and downgrade behavior retain open contracts.
@@ -841,3 +848,157 @@ Options considered:
 Consequences: D-030 and D-034 are Superseded. The Slice Brief central claim, S-016, S-017, and S-018 use the bounded contract in this entry. `../Verification/SLICE-001/M0-CATALOG.md` closes Q-001, Q-007, U-003, and U-012 for design with three pure checks and exact repository-owned invalidation owners. `../Verification/SLICE-001/M0-UI-PROBE.md` closes Q-002 for design. At confirmation time, Q-003 and U-004 still needed isolated runtime and measurements. The later reviewed v6 paired matrix closes both under `../Verification/SLICE-001/M0-RUNTIME-PLAN.md`. Completed M0 through M4 evidence is indexed at `../Verification/SLICE-001/README.md`. The `FormBase.RememberPosition` guard is approved only for preserving existing behavior and opting the new details form out of placement persistence.
 
 Revisit when: A shared side-effect-free preflight with freshness tokens becomes the canonical authority for every Add Job and Start Encoding path.
+
+## D-038: Additive Linux and macOS platform expansion
+
+Date: 2026-08-16
+Status: Confirmed
+Area: ADD 1 through 4 and portability roadmap
+
+Context: The user requested a Linux port now and a macOS port later. The architecture pass found that current StaxRip behavior is bound to .NET Framework WinForms, UI-owned global state, Windows process and registry APIs, BinaryFormatter persistence, and a COM frame server. Several important external tools have upstream Linux and macOS support, so an adapter-based port is feasible without replacing the current application first.
+
+Decision: Preserve the supported Windows x64 application and add a separate cross-platform architecture. Target Linux x64 first. Target macOS after the Linux contracts and adapters are stable. Do not rewrite or migrate the Windows application as a prerequisite.
+
+Because: An additive boundary gives the port a clean runtime and test surface while preserving current projects, settings, scripts, commands, and native behavior. Linux evidence can close the largest platform gaps before scarce macOS runtime and distribution work begins.
+
+Options considered:
+- Additive platform engine beside the current application: selected; preserves compatibility and permits small verified slices.
+- Rewrite the complete application before shipping any Linux work: one codebase in theory, but too many unmapped persistence, process, UI, and native contracts at once.
+- Run the Windows binary through Wine only: useful as a compatibility experiment, but not a Linux product architecture.
+
+Consequences: D-006 is Superseded. The current supported application remains Windows x64 until a later release slice says otherwise. Platform support claims require real runtime evidence. `Docs/Architecture/Portability-System-Map.md` and `Docs/Architecture/Repo-Slices.md` own the staged boundary.
+
+Revisit when: A verified portable contract cannot preserve a required Windows behavior, or user evidence changes the Linux-first order.
+
+## D-039: Cross-platform engine and first clients
+
+Date: 2026-08-16
+Status: Confirmed
+Area: ADD 4 and 8.1 through 8.3
+
+Context: The user proposed a backend and web UI similar in operating shape to ComfyUI, alongside a future native GUI. The existing VB.NET WinForms application cannot run natively on Linux. The installed .NET 10 SDK can build a separate supported cross-platform host without changing the legacy project.
+
+Decision: Add an isolated C# .NET 10 contracts, core, and local host subtree. Serve a first-party web shell as the first Linux client. Keep the API and core UI-neutral so the current WinForms app and a later native cross-platform client can become peers. Use the ComfyUI comparison only for local startup, browser access, visible work state, and extensibility boundaries; do not adopt arbitrary code nodes or a remote service.
+
+Because: The server boundary exposes engine work early on Linux, supports deterministic contracts, and lets UI progress without putting workflow rules into another form layer. A separate subtree avoids a framework migration and leaves rollback as a bounded deletion.
+
+Options considered:
+- Local engine plus web shell, then native client: selected; fastest useful Linux surface and reusable contract.
+- Native client first: better desktop integration, but delays proof of engine separation and makes UI framework choice an early dependency.
+- Web-only replacement: smaller client count, but rejects the requested native-GUI direction and current Windows compatibility.
+- Shared remote backend: enables multi-host control but adds authentication, TLS, privacy, operations, and cost outside current scope.
+
+Consequences: D-008, D-009, and D-010 are Superseded. VB.NET, C++17, and PowerShell retain their current owners. C# owns only the new cross-platform subtree. The local host is an application boundary, not an Internet service. D-011 remains active; no database is added.
+
+Revisit when: The capability and media-inspection slices reveal that the HTTP boundary cannot express required local workflows safely, or the native client needs a contract change.
+
+## D-040: Local HTTP security boundary
+
+Date: 2026-08-16
+Status: Confirmed
+Area: ADD 8.5 and SLICE-002
+
+Context: A browser can issue requests to loopback services from an unrelated page. A local service that later reads media or starts encoders would act with the user's filesystem and process authority. Product accounts are not needed for a single-user offline host, but the browser-to-host edge still needs request authentication and cross-site controls.
+
+Decision: Add no user account or remote authentication. Bind the first host to an unused IPv4 loopback port. Treat exactly the printed `http://127.0.0.1:<actual-port>` authority as valid. Establish a manual 256-bit process-local token through a per-instance HttpOnly SameSite cookie; do not use ASP.NET authentication or Data Protection. Require an exact first-party client header for API requests. Reject malformed, multiple, null, or mismatched Host and Origin values. Enable no CORS. Keep state-changing endpoints absent in SLICE-002.
+
+Because: These controls make browser requests intentional without creating credentials, account recovery, a database, or a remote control plane. An HttpOnly cookie keeps the token out of URLs and JavaScript-readable storage.
+
+Options considered:
+- Process-local browser session and loopback checks: selected; bounded local protection without accounts.
+- No session because the listener is loopback: simpler, but local cross-site requests remain an avoidable edge.
+- Token in the startup URL: easy bootstrap, but URLs leak through history, logs, screenshots, and referrers.
+- User accounts and TLS: needed for a future remote service, not for this local capability-only host.
+
+Consequences: D-012 is Superseded. This session is not a user identity and grants no remote access. It protects the browser edge but does not defend against a hostile local process already running as the same user. Tokens, raw requests, paths, environment, commands, and exception text cannot enter logs or API output. Any LAN, remote, state-changing, upload, plugin, or multi-user capability requires a new threat model and approval.
+
+Revisit when: A client cannot use the cookie model, a state-changing endpoint enters scope, or any listener leaves loopback.
+
+## D-041: SLICE-002 build and artifact boundary
+
+Date: 2026-08-16
+Status: Confirmed
+Area: ADD 8.8, 12, and 15
+
+Context: The user explicitly authorized Linux build work alongside Windows work. The Windows host has .NET 10, and local WSL Ubuntu can execute a self-contained Linux artifact without a dependency install. The independent Ubuntu peer is online but currently refuses SSH. Existing build, package, and release scripts are protected and do not define this new artifact.
+
+Decision: Approve `SLICE-002-LINUX-ENGINE-BOOTSTRAP.md` as the active additive portability build. Add a separate cross-platform solution under root-level `CrossPlatform/`. Build and test it on Windows, create an ignored self-contained local-test `linux-x64` publish output, and execute the exact output in WSL. Do not edit current solutions or projects, run protected package or release scripts, distribute a public artifact, publish media output, or claim Linux product support. Repeat the artifact on the independent Ubuntu host when P-007 is resolved.
+
+Update 2026-08-17: The peer became reachable over Tailscale SSH and ran the artifact, passing 27 checks, though only while a host mitigation was temporarily relaxed and then restored; under its normal configuration the gate fails before the application starts. The blocker is now R-S2-039, an environment limitation, not access. The repeat instruction becomes: repeat the artifact on an independent host whose unprivileged user units can obtain a private network namespace. The context and decision above are preserved as written on the decision date; this dated note carries the later evidence, because a decision cannot be informed by evidence from the following day.
+
+Because: This proves the runtime, HTTP, browser, and platform seams now while preserving every current Windows build and user-data boundary. Self-contained output avoids installing a Linux SDK or runtime solely for the test.
+
+Options considered:
+- Separate source and local-test artifact: selected; isolated and directly testable.
+- Add new projects to `Source/StaxRip.sln`: easier discovery, but changes the protected current build graph before the port earns that coupling.
+- Install a Linux SDK in WSL: workable, but unnecessary for the first runtime proof and not authorized as an automatic dependency change.
+- Publish a preview release: faster feedback, but provenance, support, signing, update, branding, and rollback remain open.
+
+Consequences: D-014 and D-016 are Superseded. Existing Windows build evidence remains distinct. The Linux output is a disposable local verification artifact below ignored paths. Public release remains blocked by U-001, U-006, U-009, and P-009.
+
+Revisit when: The bootstrap passes WSL and independent-host gates and a media-inspection slice needs a repeatable contributor build or CI runner.
+
+## D-042: Native desktop client posture
+
+Date: 2026-08-16
+Status: Confirmed
+Area: Portability roadmap and S-PORT-08
+
+Context: The user wants the backend and web shell alongside a main GUI port. .NET MAUI does not officially target Linux. Avalonia documents Windows, macOS, and Linux desktop support, but Linux display-server maturity, accessibility, packaging, and the StaxRip workflow fit need runtime evidence.
+
+Decision: Preserve the WinForms client, build the web shell first, and keep a native cross-platform desktop client in the roadmap. Keep engine contracts UI-neutral. Treat Avalonia as the first candidate for a later representative-workflow prototype, not as a selected dependency today.
+
+Because: A deferred framework choice keeps the Linux engine moving and prevents a UI toolkit from becoming the new rule authority before media inspection and workflow contracts exist.
+
+Options considered:
+- Web shell first with later Avalonia proof: selected; early Linux value and an evidence-based native decision.
+- Avalonia immediately: possible, but adds display, accessibility, packaging, and design work before the engine can perform a useful media flow.
+- .NET MAUI: official platform set does not include Linux.
+- Keep only the web shell: simpler, but does not meet the requested long-term native-client direction.
+
+Consequences: The bootstrap adds no desktop UI dependency. S-PORT-08 must verify one representative workflow on real Linux and Windows hosts before selection. macOS proof follows on actual macOS hardware.
+
+Revisit when: Portable media inspection is stable enough to drive a representative accessible desktop workflow.
+
+## D-043: Portability evidence and anti-dark-code feedback
+
+Date: 2026-08-16
+Status: Confirmed
+Area: Verification and maintenance
+
+Context: Porting exposes hidden operating-system, process, persistence, tool, native, and UI contracts. The user wants those lessons to improve the anti-dark-code workflow rather than remain one-off review notes.
+
+Decision: Keep repository-specific portability invariants, gates, coverage, findings, and replay references in a calibrated local anti-dark-code skill. Record general lessons as upstream candidates with concrete StaxRip evidence. Do not copy product-specific paths or unproven rules into the shared skill automatically.
+
+Because: Local calibration makes repeat work cheaper and more consistent. A reviewed candidate queue separates reusable workflow improvements from StaxRip-specific facts.
+
+Options considered:
+- Local calibration plus evidence-backed upstream candidates: selected; reusable and reviewable.
+- Change only shared instructions: loses repository binding and risks overgeneralizing one codebase.
+- Keep lessons only in PR prose: low setup cost, but difficult to replay or measure.
+
+Consequences: SLICE-002 close-out includes calibrated gates and an upstream candidate review. Shared-skill changes remain a separate bounded edit with their own tests.
+
+Revisit when: A candidate is reproduced in another repository or a shared-skill test can express the rule without StaxRip-specific assumptions.
+
+## D-044: Isolated subtree and Linux runtime-pack restore
+
+Date: 2026-08-16
+Status: Confirmed
+Area: SLICE-002 build preflight
+
+Context: The adversarial pass found two build assumptions that needed correction. First, `Source/Build.ps1`, `Source/BuildAndPack.ps1`, and `Source/Release.ps1` recursively inspect selected files below `Source/`; a nested cross-platform solution or PowerShell script would enter the current build preflight. Second, the installed Windows SDK and NuGet cache do not contain Linux x64 .NET and ASP.NET Core runtime and host packs, while WSL has no .NET runtime.
+
+Decision: Put the port in root-level `CrossPlatform/`, outside the current `Source/` build tree. Allow the approved Linux publish to restore only required Microsoft .NET 10 Linux x64 runtime and host packs from the scoped official NuGet source into ignored `CrossPlatform/artifacts/nuget/`. Require signed packages, map only `Microsoft.*` to the sole `nuget.org` source, pin the independently reviewed Microsoft author certificate fingerprint, and explicitly verify every retained archive against that fingerprint. Add no project `PackageReference`. Derive the final package closure from the exact five reviewed `project.assets.json` files and five matching `packages.lock.json` files, not from a package allowlist alone. Keep the NuGet registry `contentHash`, raw archive SHA-256 and SHA-512, signature identity, and extracted disk identity as separate fields. Record package ids, versions, source, five-project membership, exact download ranges, author fingerprint, verified archive count, and a canonical complete extracted disk inventory digest, count, and total bytes. Install no SDK or runtime into WSL or the operating system.
+
+Because: The root-level subtree removes a verified legacy-build coupling. A repository-local pack cache makes the necessary cross-publish dependency visible, disposable, and separate from the user's global NuGet cache.
+
+Options considered:
+- Root subtree plus scoped repository-local runtime-pack restore: selected; smallest current-build and host-state impact.
+- Keep the subtree below `Source/`: superficially tidy, but current build scripts inspect it.
+- Install .NET in WSL: enables framework-dependent output, but changes the test host and adds an unnecessary system dependency.
+- Call the publish offline or package-free: contradicted by the missing Linux runtime packs.
+
+Consequences: The first uncached Linux publish uses the network and is not hermetic. The evaluated SLICE-002 closure is exactly `Microsoft.AspNetCore.App.Runtime.linux-x64`, `Microsoft.NETCore.App.Host.linux-x64`, and `Microsoft.NETCore.App.Runtime.linux-x64` at 10.0.11. The five reviewed asset files must expose only `net10.0` and `net10.0/linux-x64`, project-only transitive libraries, and those exact three `PackageDownload` ranges at `[10.0.11, 10.0.11]`; the five lock files must match that project-only policy. All three archives are retained in the ignored cache and pass Microsoft author signature verification against fingerprint `566A31882BE208BE4422F7CFD66ED09F5D4524A5994F50CCC8B05EC0528C1353`. Static checks allow only this closure and trust shape. Dependency schema v2 stores the distinct registry hash, raw archive digests and length, signature identity, archive-to-extraction binding, and canonical complete disk inventory SHA-256, file count, and total bytes. Canonical inventory rows sort ordinal relative paths and encode `path<TAB>decimal-length<TAB>lowercase-sha256<LF>` as UTF-8 without BOM. The final auditor recomputes the graph and disk inventory rather than trusting Restore's summary. A future signer, pack, project input, target, or inventory change fails closed and requires review; no alternate historical fingerprint is trusted in advance. `NuGetAudit=false` keeps this fixed restore surface deterministic, so the slice makes no vulnerability-audit claim. The cache and publish output stay ignored and can be removed without changing user or system state. Public artifact provenance remains unresolved under P-009.
+
+Revisit when: The SDK feature band, reviewed project set, target or RID, pack version, source, package id, Microsoft signer, archive layout, or extracted-inventory contract changes; the build moves to a pinned runner image with the required packs already present; or public release work defines a stronger dependency mirror, audit, and provenance contract.
