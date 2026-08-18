@@ -1002,3 +1002,76 @@ Options considered:
 Consequences: The first uncached Linux publish uses the network and is not hermetic. The evaluated SLICE-002 closure is exactly `Microsoft.AspNetCore.App.Runtime.linux-x64`, `Microsoft.NETCore.App.Host.linux-x64`, and `Microsoft.NETCore.App.Runtime.linux-x64` at 10.0.11. The five reviewed asset files must expose only `net10.0` and `net10.0/linux-x64`, project-only transitive libraries, and those exact three `PackageDownload` ranges at `[10.0.11, 10.0.11]`; the five lock files must match that project-only policy. All three archives are retained in the ignored cache and pass Microsoft author signature verification against fingerprint `566A31882BE208BE4422F7CFD66ED09F5D4524A5994F50CCC8B05EC0528C1353`. Static checks allow only this closure and trust shape. Dependency schema v2 stores the distinct registry hash, raw archive digests and length, signature identity, archive-to-extraction binding, and canonical complete disk inventory SHA-256, file count, and total bytes. Canonical inventory rows sort ordinal relative paths and encode `path<TAB>decimal-length<TAB>lowercase-sha256<LF>` as UTF-8 without BOM. The final auditor recomputes the graph and disk inventory rather than trusting Restore's summary. A future signer, pack, project input, target, or inventory change fails closed and requires review; no alternate historical fingerprint is trusted in advance. `NuGetAudit=false` keeps this fixed restore surface deterministic, so the slice makes no vulnerability-audit claim. The cache and publish output stay ignored and can be removed without changing user or system state. Public artifact provenance remains unresolved under P-009.
 
 Revisit when: The SDK feature band, reviewed project set, target or RID, pack version, source, package id, Microsoft signer, archive layout, or extracted-inventory contract changes; the build moves to a pinned runner image with the required packs already present; or public release work defines a stronger dependency mirror, audit, and provenance contract.
+
+## D-045: S-PORT-02 inspection adapter and the first tool-execution authority
+
+Date: 2026-08-18
+Status: Proposed
+Area: S-PORT-02 media inspection; P-003 process semantics; P-004 tool matrix, ffprobe row
+
+Context: The fact-authority map (`../Architecture/Media-Inspection-Map.md`) established
+that the current Windows application reads media facts from MediaInfo.dll at 135
+literal-parameter call sites over 36 unique parameters, with user policy fused into the
+stream getters, and consumes ffprobe only through a regex over its human-readable stderr
+banner invoked with a string-interpolated command line. The agreed-facts list
+(`../Architecture/Media-Inspection-Agreed-Facts.md`) defines the exposed fact set,
+canonicalization, and accepted divergences. The portable bootstrap currently starts no
+external tool by verified design; S-PORT-02 is the slice whose scope includes FFprobe
+execution, bounded progress, and cancellation.
+
+Decision: Adopt one out-of-process JSON authority for portable inspection, selected at
+ratification between the two finalists below; the execution bounds in this decision are
+tool-agnostic and hold for either. The drafted recommendation is ffprobe's JSON
+interface, `-print_format json -show_format -show_streams -show_chapters`; the named
+alternate is the MediaInfo CLI with `--Output=JSON`, which trades schema stability and
+stack alignment for near-zero naming divergence against the Windows facts.
+Retain MediaInfo on Windows unchanged, as comparison baseline only. Do not port the
+banner regex, the string-interpolated invocation, the policy fusion, the silent
+defaults, or the identifier synthesis; each is recorded in the agreed-facts list as an
+accepted divergence or a deliberate non-port. Grant the portable server its first
+external-process authority under these bounds: the executable is resolved from an
+explicit configured path against the P-004 ffprobe version matrix, never from PATH
+search; arguments are an argv vector with the media path as a single argument, never an
+interpolated string; the child runs with bounded captured output, a hard timeout, and
+kill-on-cancel with process-group termination; readiness of the feature is reported
+through the existing capability contract and remains `unavailable` until the resolver,
+matrix row, and gates exist; no file is written, no network is touched, and the API
+surface stays read-only behind the existing session model.
+
+Because: Out-of-process probing keeps an untrusted-media parser outside the server
+process, the JSON interface is the machine contract the current code never adopted, and
+a single external tool with a pinned version range is the smallest possible first
+execution authority, matching the P-004 plan that already names FFprobe first.
+
+Options considered:
+- ffprobe JSON with MediaInfo comparison baseline: recommended; schema engineered as a
+  machine API, aligns with the ffmpeg-family stack the encoding slices will need anyway,
+  honest divergence ledger.
+- MediaInfo CLI with JSON output, out of process: the named alternate, viable on every
+  target platform per the upstream download matrix the maintainer cited. Same trust
+  boundary as ffprobe, near-zero naming divergence against the 36 Windows facts, so the
+  comparison corpus becomes same-authority-both-sides. Costs: its JSON is a serialization
+  of display fields whose names shift more between versions than ffprobe's API schema,
+  it emits `UniqueID`-class identifiers that the existing privacy rule must filter, and
+  it adds a second tool family to the version matrix before the first one lands.
+- Port a MediaInfo binding in process: parameter parity, but moves an untrusted-media
+  native parser into the server process; dominated by the CLI option and rejected.
+- Both authorities on both platforms: maximal comparability, double the surface and the
+  version matrix before a single fact ships.
+- Defer execution and expose only Windows-imported facts over HTTP: no new authority,
+  but the Linux server would present facts it cannot produce, which misstates capability.
+
+Consequences: The portable server gains a process-execution boundary that did not exist,
+and every SLICE-002 claim of the form "starts no external tool" becomes scoped to the
+tested workload of that slice rather than the server forever; the affected sentences in
+the SLICE-002 records stay true as written because they describe that slice's verified
+workload. The exit criteria of S-PORT-02 bind the new boundary: golden argv and output
+fixtures, hostile-path and malformed-output corpora, cancellation leaving no process, and
+a Windows comparison recording agreed facts. The verification harness gains a
+port-inspection gate before any UI presents a fact. R-S2-039 is unaffected; inspection
+runs in the ordinary server sandbox that already passes.
+
+Revisit when: The selected tool's version range or JSON schema changes; a fact is
+needed that the selected authority cannot supply and the other can; the
+execution framework generalizes beyond one tool; or encoding slices need write authority,
+which this decision does not grant.
