@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en" data-engine-state="connecting">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="staxrip-shell" content="linux-engine-bootstrap">
+  <title>StaxRip Community - Local Engine</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body data-app-marker="staxrip-local-engine-shell" data-engine-state="connecting">
+  <a class="skip-link" href="#main-content">Skip to engine details</a>
+
+  <div class="shell" id="engine-shell" data-testid="engine-shell" data-engine-state="connecting">
+    <header class="brand-bar">
+      <a class="brand" href="/" aria-label="StaxRip Community local engine home">
+        <span class="brand-mark" aria-hidden="true"><span>S</span><span>R</span></span>
+        <span class="brand-copy">
+          <strong>StaxRip</strong>
+          <small>Community / local engine</small>
+        </span>
+      </a>
+
+      <div class="engine-summary" aria-label="Local engine connection">
+        <span class="platform-badge" id="platform-badge">Platform pending</span>
+        <span class="engine-state" id="engine-state" data-testid="engine-status" data-status="connecting" aria-live="polite">
+          <span class="state-light" aria-hidden="true"></span>
+          <span id="engine-state-label">Connecting locally</span>
+        </span>
+      </div>
+    </header>
+
+    <div class="workbench">
+      <aside class="workflow-rail" aria-labelledby="workflow-title">
+        <div class="rail-heading">
+          <p class="eyebrow">Future workflow</p>
+          <h2 id="workflow-title">Encode path</h2>
+        </div>
+
+        <nav aria-label="Encoding workflow preview">
+          <ol class="workflow-steps">
+            <li>
+              <button type="button" disabled aria-disabled="true">
+                <span class="step-index">01</span>
+                <span class="step-label"><strong>Source</strong><small>Unavailable</small></span>
+              </button>
+            </li>
+            <li>
+              <button type="button" disabled aria-disabled="true">
+                <span class="step-index">02</span>
+                <span class="step-label"><strong>Inspect</strong><small>Unavailable</small></span>
+              </button>
+            </li>
+            <li>
+              <button type="button" disabled aria-disabled="true">
+                <span class="step-index">03</span>
+                <span class="step-label"><strong>Configure</strong><small>Unavailable</small></span>
+              </button>
+            </li>
+            <li>
+              <button type="button" disabled aria-disabled="true">
+                <span class="step-index">04</span>
+                <span class="step-label"><strong>Encode</strong><small>Unavailable</small></span>
+              </button>
+            </li>
+          </ol>
+        </nav>
+
+        <div class="rail-note">
+          <span class="rail-note-mark" aria-hidden="true">i</span>
+          <p>This foundation preview cannot open or encode media.</p>
+        </div>
+      </aside>
+
+      <main id="main-content" tabindex="-1">
+        <section class="hero" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">Linux foundation preview</p>
+            <h1 id="page-title">The StaxRip engine is taking shape.</h1>
+            <p class="hero-copy">This local shell proves a portable, private foundation. Media workflows remain deliberately locked until their contracts and safety boundaries are verified.</p>
+          </div>
+          <div class="hero-emblem" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </section>
+
+        <p class="connection-result" id="connection-result" data-testid="connection-result" data-result="pending" aria-live="polite">Waiting for the local capability contract.</p>
+
+        <section class="capability-section" id="capabilities" data-testid="capability-panel" data-load-state="loading" aria-labelledby="capabilities-title" aria-busy="true">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Engine contract</p>
+              <h2 id="capabilities-title">Capability boundary</h2>
+            </div>
+            <span class="section-tag">API v1</span>
+          </div>
+
+          <div class="capability-grid">
+            <article class="capability-card system-card">
+              <div class="card-heading">
+                <h3>Local runtime</h3>
+                <span class="availability availability-pending" id="runtime-state">Pending</span>
+              </div>
+              <dl class="fact-list">
+                <div><dt>Engine</dt><dd id="engine-version">Not reported</dd></div>
+                <div><dt>Platform</dt><dd id="platform-value">Not reported</dd></div>
+                <div><dt>Architecture</dt><dd id="architecture-value">Not reported</dd></div>
+                <div><dt>Runtime</dt><dd id="runtime-value">Not reported</dd></div>
+                <div><dt>Logical processors</dt><dd id="processor-value">Not reported</dd></div>
+              </dl>
+            </article>
+
+            <article class="capability-card feature-card" data-feature-id="local-engine">
+              <div class="card-heading"><h3>Local engine</h3><span class="availability availability-pending">Pending</span></div>
+              <p>The bounded engine host serves this session on IPv4 loopback only.</p>
+            </article>
+            <article class="capability-card feature-card" data-feature-id="web-shell">
+              <div class="card-heading"><h3>Web shell</h3><span class="availability availability-pending">Pending</span></div>
+              <p>This first-party shell reads the versioned local capability contract.</p>
+            </article>
+            <article class="capability-card feature-card" data-feature-id="media-inspection">
+              <div class="card-heading"><h3>Media inspection</h3><span class="availability availability-off">Unavailable</span></div>
+              <p>Source probing and metadata reads are outside this bootstrap.</p>
+            </article>
+            <article class="capability-card feature-card" data-feature-id="encoding">
+              <div class="card-heading"><h3>Encoding</h3><span class="availability availability-off">Unavailable</span></div>
+              <p>No encoder, muxer, script host, or external process can run.</p>
+            </article>
+            <article class="capability-card feature-card" data-feature-id="persistence">
+              <div class="card-heading"><h3>Projects and settings</h3><span class="availability availability-off">Unavailable</span></div>
+              <p>The preview does not read or write projects, jobs, profiles, or settings.</p>
+            </article>
+            <article class="capability-card feature-card" data-feature-id="remote-access">
+              <div class="card-heading"><h3>Remote access</h3><span class="availability availability-off">Unavailable</span></div>
+              <p>The engine is restricted to this machine and its IPv4 loopback address.</p>
+            </article>
+            <article class="capability-card feature-card" data-feature-id="plugins">
+              <div class="card-heading"><h3>Plugins</h3><span class="availability availability-off">Unavailable</span></div>
+              <p>No arbitrary extension, node, script, or downloadable component is loaded.</p>
+            </article>
+            <article class="capability-card feature-card" data-feature-id="project-import">
+              <div class="card-heading"><h3>Project import</h3><span class="availability availability-off">Unavailable</span></div>
+              <p>Legacy project compatibility remains isolated from the local API.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="tools-section" aria-labelledby="tools-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Fixed catalog</p>
+              <h2 id="tools-title">Video tool horizon</h2>
+            </div>
+            <span class="section-tag">No probing</span>
+          </div>
+          <p class="section-intro">These integrations identify the intended ecosystem. The preview does not search for, execute, or validate any tool.</p>
+          <ul class="tool-catalog" id="tool-catalog" aria-label="Tool compatibility catalog">
+            <li data-tool-id="ffmpeg"><span class="tool-glyph" aria-hidden="true">FF</span><strong>FFmpeg</strong><span class="tool-state">Unverified</span></li>
+            <li data-tool-id="ffprobe"><span class="tool-glyph" aria-hidden="true">FP</span><strong>FFprobe</strong><span class="tool-state">Unverified</span></li>
+            <li data-tool-id="mkvtoolnix"><span class="tool-glyph" aria-hidden="true">MK</span><strong>MKVToolNix</strong><span class="tool-state">Unverified</span></li>
+            <li data-tool-id="vapoursynth"><span class="tool-glyph" aria-hidden="true">VS</span><strong>VapourSynth</strong><span class="tool-state">Unverified</span></li>
+            <li data-tool-id="avisynth-plus"><span class="tool-glyph" aria-hidden="true">AV</span><strong>AviSynth+</strong><span class="tool-state">Unverified</span></li>
+            <li data-tool-id="nvenc"><span class="tool-glyph" aria-hidden="true">NV</span><strong>NVEncC</strong><span class="tool-state">Unverified</span></li>
+          </ul>
+        </section>
+
+        <section class="activity-section" aria-labelledby="activity-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Activity</p>
+              <h2 id="activity-title">Quiet by design</h2>
+            </div>
+            <span class="activity-count" aria-label="Zero operations">00</span>
+          </div>
+          <div class="activity-empty">
+            <span class="activity-line" aria-hidden="true"></span>
+            <div>
+              <strong>No work ran.</strong>
+              <p id="activity-message">This shell only asked the local engine for its bounded capability contract. No media, path, project, command, or tool was touched.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer>
+      <span>StaxRip Community</span>
+      <span>Local-only session / no telemetry</span>
+    </footer>
+  </div>
+</body>
+</html>

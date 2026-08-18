@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <RootNamespace>StaxRip.Server</RootNamespace>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StaxRip.Platform\StaxRip.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Web\index.html" LogicalName="StaxRip.Server.Web.index.html" />
+    <EmbeddedResource Include="Web\app.css" LogicalName="StaxRip.Server.Web.app.css" />
+    <EmbeddedResource Include="Web\app.js" LogicalName="StaxRip.Server.Web.app.js" />
+  </ItemGroup>
+
+</Project>

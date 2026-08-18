@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/StaxRip.Contracts/StaxRip.Contracts.csproj" />
+    <ProjectReference Include="../../src/StaxRip.Core/StaxRip.Core.csproj" />
+    <ProjectReference Include="../../src/StaxRip.Platform/StaxRip.Platform.csproj" />
+    <ProjectReference Include="../../src/StaxRip.Server/StaxRip.Server.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

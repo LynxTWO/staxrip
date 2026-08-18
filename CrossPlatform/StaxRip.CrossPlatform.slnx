@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/StaxRip.Contracts/StaxRip.Contracts.csproj" />
+    <Project Path="src/StaxRip.Core/StaxRip.Core.csproj" />
+    <Project Path="src/StaxRip.Platform/StaxRip.Platform.csproj" />
+    <Project Path="src/StaxRip.Server/StaxRip.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StaxRip.ContractTests/StaxRip.ContractTests.csproj" />
+  </Folder>
+</Solution>

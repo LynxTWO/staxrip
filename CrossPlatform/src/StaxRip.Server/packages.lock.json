@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "staxrip.contracts": {
+        "type": "Project"
+      },
+      "staxrip.core": {
+        "type": "Project",
+        "dependencies": {
+          "StaxRip.Contracts": "[1.0.0, )"
+        }
+      },
+      "staxrip.platform": {
+        "type": "Project",
+        "dependencies": {
+          "StaxRip.Core": "[1.0.0, )"
+        }
+      }
+    },
+    "net10.0/linux-x64": {}
+  }
+}
