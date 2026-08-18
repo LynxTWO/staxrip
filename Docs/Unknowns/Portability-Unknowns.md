@@ -51,7 +51,7 @@ This file records unresolved Linux and macOS port questions found during the por
 - **Evidence found so far:** Current package discovery is Windows-oriented. A generic `StaxRip.Platform` host-facts adapter now reports bounded operating-system and process-architecture facts. Primary upstream sources document Linux support for FFmpeg, VapourSynth, AviSynth+, NVEncC, and MKVToolNix, but the repository has no Linux tool manifest or tool adapter.
 - **Confidence:** inferred
 - **Likely owner:** Tool-adapter maintainer
-- **Next best check:** Create a versioned matrix for FFprobe first, then verify path discovery and machine-readable version output on two Linux hosts without installing or updating it automatically.
+- **Next best check:** Create a versioned matrix for the MediaInfo CLI first, per the D-045 ratification that made it the primary inspection authority, then verify path discovery and machine-readable version output on two Linux hosts without installing or updating it automatically. The FFprobe row follows when its backup activation or the ffmpeg family arrives.
 - **Risk level:** high
 - **Status:** in progress
 - **Notes:** Bootstrap feature availability uses only `available` or `unavailable`. Every fixed tool-catalog compatibility row remains `unverified`; the bootstrap must not claim compatibility.

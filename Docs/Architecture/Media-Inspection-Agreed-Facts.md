@@ -1,6 +1,6 @@
 # Media Inspection Agreed Facts
 
-Version: 0.1 Draft for approval. Date: 2026-08-18. Base: `0e495746`.
+Version: 0.2 Ratified under D-045. Date: 2026-08-18. Base: `e265c45b`.
 
 This is the agreed-facts list S-PORT-02's exit criteria require: for each fact the
 portable inspection will expose, the Windows source and its rule, the proposed portable
@@ -8,13 +8,19 @@ source and its rule, and the accepted divergence. It is grounded in the fact-aut
 map (`Media-Inspection-Map.md`) and a mechanical extraction of every literal-parameter
 `MediaInfo` read: 135 call sites over 36 unique parameters, dominated by nine HDR and
 color parameters consumed about ten times each across every encoder. Nothing here grants
-execution authority; the adapter decision is D-045, which names two finalists. The
-portable-source column below is written against the drafted recommendation, ffprobe
-JSON. If the maintainer ratifies the MediaInfo CLI alternate instead, the column
-collapses to the same parameter names as the Windows source, most spelling divergences
-disappear, and the remaining rows to re-derive are the absence-class rows and the
-privacy filter for `UniqueID`-class identifiers, which the CLI output includes and the
-existing redaction rule must strip.
+execution authority; the adapter decision is D-045, ratified 2026-08-18: the MediaInfo
+CLI with `--Output=JSON` is the primary portable authority, and ffprobe JSON is the
+named backup with activation triggers recorded in the decision.
+
+Under the ratified primary, the portable source for every row below is the same
+MediaInfo parameter name delivered through the CLI JSON track fields, so the primary
+divergence class is `none` or `structure` for nearly all rows, and the ground rules
+carry the remaining real divergences: the absence rules still apply because the silent
+defaults and identifier synthesis live in the Windows wrapper code, not in MediaInfo
+itself, and the privacy rule is load-bearing because the CLI JSON includes
+`UniqueID`-class fields that must be stripped at the adapter boundary with a
+self-tested guard. The tables keep their third column as written: it is the BACKUP
+mapping to ffprobe JSON, which is exactly what a backup activation needs already agreed.
 
 ## Ground rules
 
@@ -47,7 +53,7 @@ Windows defaults).
 
 ### Container
 
-| Fact | Windows source (MediaInfo) | Portable source (ffprobe JSON) | Divergence |
+| Fact | Windows source (MediaInfo) | Backup source (ffprobe JSON) | Backup divergence |
 |---|---|---|---|
 | Container format | `General/Format` | `format.format_name` | spelling |
 | Duration | `General/Duration` | `format.duration` | structure; ms integer vs seconds decimal |
@@ -57,7 +63,7 @@ Windows defaults).
 
 ### Video stream
 
-| Fact | Windows source | Portable source | Divergence |
+| Fact | Windows source | Backup source (ffprobe JSON) | Backup divergence |
 |---|---|---|---|
 | Codec | `Video/Format`, `MPEG Video` renamed `MPEG` (`MediaInfo.vb:310-318`) | `streams[].codec_name` | spelling |
 | Profile | `Video/Format_Profile` | `profile` + `level` | structure; Windows fuses profile and level in one string |
@@ -81,7 +87,7 @@ Windows defaults).
 These nine are the most-consumed facts in the application and the comparison bar for any
 future encoding slice. S-PORT-02 exposes them read-only.
 
-| Fact | Windows source | Portable source | Divergence |
+| Fact | Windows source | Backup source (ffprobe JSON) | Backup divergence |
 |---|---|---|---|
 | Transfer characteristics | `Video/transfer_characteristics` | `color_transfer` | spelling |
 | Color primaries | `Video/colour_primaries` | `color_primaries` | spelling |
@@ -96,7 +102,7 @@ future encoding slice. S-PORT-02 exposes them read-only.
 
 ### Audio stream
 
-| Fact | Windows source | Portable source | Divergence |
+| Fact | Windows source | Backup source (ffprobe JSON) | Backup divergence |
 |---|---|---|---|
 | Codec | `Audio/Format`, layer names rewritten MP2, MP3 (`MediaInfo.vb:380-388`) | `codec_name` | spelling |
 | Profile | `Audio/Format_Profile`, SBR flag from `Format/String` (`MediaInfo.vb:88,92`) | `profile` | structure |
@@ -112,7 +118,7 @@ future encoding slice. S-PORT-02 exposes them read-only.
 
 ### Subtitle stream
 
-| Fact | Windows source | Portable source | Divergence |
+| Fact | Windows source | Backup source (ffprobe JSON) | Backup divergence |
 |---|---|---|---|
 | Format | `Text/Format`, `Codec/String` fallback (`MediaInfo.vb:185-191`) | `codec_name` | spelling |
 | Language, Title | as audio | as audio | spelling |

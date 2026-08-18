@@ -30,10 +30,10 @@ This ledger breaks the current application and the portability target into revie
 - **Classification:** owned-risky, approval-gated
 - **Related runtime units or flows:** Source selection, path validation, FFprobe execution, bounded progress, cancellation, media-fact rendering
 - **Blockers:** P-001, P-003, and the FFprobe row of P-004
-- **Exit criteria:** One explicit FFprobe version range and resolver are approved; argv and output schemas have golden fixtures; hostile paths and malformed output pass; cancellation leaves no process; no project or output file is written; Windows comparison records agreed facts.
+- **Exit criteria:** One explicit version range and resolver for the ratified primary authority, the MediaInfo CLI (D-045), are approved; argv and output schemas have golden fixtures; hostile paths and malformed output pass; cancellation leaves no process; no project or output file is written; Windows comparison records agreed facts; the identifier-stripping privacy guard has a self-test that fails if the stripping is removed.
 - **Verification capability ids:** V01, V02, V04, V05, V06, V08, V09, V10, V11, V12, V14, V17, V18
 - **Confidence-ladder level:** 3
-- **Exact gate or next check:** Fact-authority map complete at `Docs/Architecture/Media-Inspection-Map.md`. Next: draft the agreed-facts list and the adapter-selection decision from its section "What the adapter selection must decide"
+- **Exact gate or next check:** Map, agreed-facts list, and D-045 ratification complete. Next: the MediaInfo CLI row of the P-004 version matrix, then the adapter contract with the swappable-authority boundary D-045 requires
 - **Invalidated by:** Probe executable/version, schema, resolver, process runner, path policy, or media-fact contract changes
 - **Next pass:** 02 architecture map
 - **Status:** in progress

@@ -1006,7 +1006,8 @@ Revisit when: The SDK feature band, reviewed project set, target or RID, pack ve
 ## D-045: S-PORT-02 inspection adapter and the first tool-execution authority
 
 Date: 2026-08-18
-Status: Proposed
+Status: Confirmed. Ratified by the maintainer on 2026-08-18: MediaInfo CLI selected as
+the primary portable authority, ffprobe JSON retained as the named backup.
 Area: S-PORT-02 media inspection; P-003 process semantics; P-004 tool matrix, ffprobe row
 
 Context: The fact-authority map (`../Architecture/Media-Inspection-Map.md`) established
@@ -1019,12 +1020,22 @@ canonicalization, and accepted divergences. The portable bootstrap currently sta
 external tool by verified design; S-PORT-02 is the slice whose scope includes FFprobe
 execution, bounded progress, and cancellation.
 
-Decision: Adopt one out-of-process JSON authority for portable inspection, selected at
-ratification between the two finalists below; the execution bounds in this decision are
-tool-agnostic and hold for either. The drafted recommendation is ffprobe's JSON
-interface, `-print_format json -show_format -show_streams -show_chapters`; the named
-alternate is the MediaInfo CLI with `--Output=JSON`, which trades schema stability and
-stack alignment for near-zero naming divergence against the Windows facts.
+Decision: Adopt the MediaInfo CLI with `--Output=JSON`, out of process, as the sole
+implemented portable fact authority for S-PORT-02, under the execution bounds below,
+which are tool-agnostic. The maintainer selected it over the drafted ffprobe
+recommendation for near-zero naming divergence against the 36 Windows facts, making the
+comparison corpus same-authority-both-sides. ffprobe JSON is the named backup, with a
+precise meaning: it is not implemented in version 1, no dual-authority code ships, and
+it activates only when one of three triggers fires: a required fact MediaInfo cannot
+supply; a MediaInfo version or schema break that the pinned range cannot absorb; or the
+arrival of the ffmpeg family in an encoding slice, at which point ffprobe becomes the
+second authority for cross-checking rather than a replacement. The adapter contract must
+keep the authority swappable behind the typed fact payload, so a backup activation
+changes the adapter, not the API. Because the CLI JSON serializes display fields, the
+existing privacy rule is load-bearing at the adapter boundary: `UniqueID`,
+`Encoded_Library_Settings`, and equivalent identifier fields are stripped before any
+payload leaves the adapter, and a self-test proves the stripping the same way the
+SLICE-002 redaction guards do.
 Retain MediaInfo on Windows unchanged, as comparison baseline only. Do not port the
 banner regex, the string-interpolated invocation, the policy fusion, the silent
 defaults, or the identifier synthesis; each is recorded in the agreed-facts list as an
