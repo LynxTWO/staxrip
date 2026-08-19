@@ -150,3 +150,21 @@ After restoration both configurations returned to `cases=37 assertions=486`, and
 orphaned child processes remained. All six policing pins moved in the same commit as
 the cases: manifest, test source, wrapper counts, audit counts, and both reviewed id
 lists.
+
+**The boundary law, amended deliberately, not eroded.** The validation sweep stopped on
+the bootstrap's boundary ban: product source may not use process APIs, and the
+primitive exists to use them. That collision is the ratified D-045 decision meeting the
+gate that predates it, and the resolution follows the adapter contract's own words for
+D-046: the rule is replaced deliberately. The static gate now sanctions process APIs in
+exactly one named product file, the primitive, which keeps every other ban including
+all filesystem access except the single `File.Exists` its no-search rule requires. The
+carve-out resolver fails when the named file is absent, so the exemption cannot outlive
+the file. Four proofs, run and restored:
+
+- With the primitive present, the amended gate passes: `PASS port-static checks=210`.
+- A `Process.Start(` token added to a Core file stops the gate via the Core layer rule,
+  which fires before the product ban.
+- The same token added to a Server file, which no layer rule covers, stops the gate via
+  the product ban itself, naming the file.
+- An `HttpClient` token added to the primitive stops the gate naming the primitive,
+  proving the narrowed ban inside the sanctioned file is load bearing.

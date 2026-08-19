@@ -1773,8 +1773,18 @@ foreach ($rule in $layerRules) {
 }
 
 $productBanPattern = '\b(?:System\.Diagnostics\.)?Process(?:StartInfo)?\b|\bProcess\.Start\s*\(|\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\b(?:File|Directory|FileInfo|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
+# D-045 amends the boundary deliberately, not erodes it: process execution is
+# sanctioned in exactly one product file, the bounded-execution primitive, which every
+# adapter calls instead of spawning on its own. The primitive keeps every other ban,
+# including all filesystem access except the single File.Exists its no-search rule
+# requires, so a second execution path anywhere in product source, or a scope creep
+# inside the primitive itself, still stops this gate. The resolver fails when the
+# named file is absent, so the carve-out cannot outlive the file it names.
+$boundedPrimitivePath = Resolve-SafeCrossPlatformLeaf 'BoundedProcess.cs' (Join-Path $crossPlatformRoot 'src\StaxRip.Platform') 'BoundedProcess.cs'
+$boundedPrimitiveBanPattern = '\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\bFile\.(?!Exists\b)\w+|\b(?:Directory|FileInfo|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
 foreach ($file in $sourceFiles) {
-    if ((Read-Text $file.FullName) -cmatch $productBanPattern) {
+    $banPattern = if ($file.FullName -eq $boundedPrimitivePath) { $boundedPrimitiveBanPattern } else { $productBanPattern }
+    if ((Read-Text $file.FullName) -cmatch $banPattern) {
         Stop-Gate -Message "Product source crosses the bootstrap process, filesystem, external-network, serialization, or physical-asset boundary: $(Get-CrossPlatformRelativePath $file.FullName)"
     }
 }
