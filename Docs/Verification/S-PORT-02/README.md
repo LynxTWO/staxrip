@@ -168,3 +168,23 @@ the file. Four proofs, run and restored:
   the product ban itself, naming the file.
 - An `HttpClient` token added to the primitive stops the gate naming the primitive,
   proving the narrowed ban inside the sanctioned file is load bearing.
+
+## Unit 2 validation sweep
+
+Run against committed head `8f40096a` on 2026-08-19, all six gates in order:
+
+```
+PASS port-static        checks=200 -> 210 under the amended boundary law
+PASS port-verify        checks=981
+PASS port-http-windows  checks=4554
+PASS port-browser       checks=694
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=63962
+```
+
+Audit record `evidence-audit.json` sha256
+`a497f35788e408df8a1a53141f60f3c1171ea4aec918ed4700a381cf75e53645`. Green on the third
+attempt; the two failed attempts were the static gate naming the non-ASCII fixture
+literal and the boundary crossing, both recorded above with their resolutions. This
+section postdates the audited set by construction; it records the audit, it is not
+covered by it.
