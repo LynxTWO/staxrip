@@ -104,3 +104,49 @@ green on its fifth attempt; the four failed attempts were each stopped by a gate
 a real defect, and every catch and repair is recorded above. This section postdates the
 audited set by construction, since the audit hashed this document as it stood at
 `313979bb`; the section records the audit, it is not covered by it.
+
+## Unit 2: the bounded-execution primitive
+
+The one process-execution path of the cross-platform tree, in `StaxRip.Platform`,
+implementing the D-045 bounds the adapter contract requires: explicit fully qualified
+executable path with no search, argv vector with no shell, hard wall-clock timeout,
+per-stream output byte caps, and kill-the-tree-then-reap on every failure path. The
+ownership receipt crosses as data: the typed exception carries the killed process id,
+never in its message, and the reason classes are the ratified vocabulary. A nonzero
+exit code is a result, not an error; that judgment belongs to the caller.
+
+**Red first.** CT-023 through CT-028 were written against a throwing stub and observed
+failing: `FAIL port-contract case=CT-023 type=NotImplementedException`, exit 1. The
+cases drive the primitive through this test binary re-invoked as a controllable child,
+which keeps the corpus deterministic with no external tool dependency.
+
+**Green, with one honest failure on the way.** The first implementation run failed
+CT-023 on the unicode argument: a redirected console child writes the platform codepage
+by default while the capture contract is UTF-8, so the child fixture now declares UTF-8
+explicitly, which is also what the real tool emits. Both configurations then pass:
+`PASS port-contract cases=37 assertions=486 failures=0`.
+
+**A design flaw found by the mutation exercise, not by the tests.** The second
+mutation, neutralizing the kill, did not turn the harness red on the first attempt; it
+hung it. The emit child blocked forever writing to a full pipe, and the reap was an
+unbounded wait, so a silently failed kill would wedge the caller behind a child that
+never exits. The reap is now bounded at fifteen seconds and a surviving child surfaces
+as typed `reap-failed`, the one reason class whose receipt names a process that may
+still be alive. The bound is unreachable after a successful tree kill; it exists for
+exactly the failure the mutation simulated.
+
+**Mutation proofs, each observed against the committed baseline and restored by
+checkout, per the unit 1 rule.**
+
+- Overflow bound neutralized: `FAIL case=CT-025, overflow must throw typed,
+  expected BoundedProcessException actual no exception`.
+- Kill neutralized: `FAIL case=CT-025, overflow reason class, expected output-overflow
+  actual reap-failed`, red in fifteen seconds where the unbounded reap had hung.
+- Path rejection neutralized: `FAIL case=CT-028, bare name reason class, expected
+  executable-path-not-absolute actual executable-missing`, proving the no-search rule
+  rejects before the filesystem is consulted.
+
+After restoration both configurations returned to `cases=37 assertions=486`, and no
+orphaned child processes remained. All six policing pins moved in the same commit as
+the cases: manifest, test source, wrapper counts, audit counts, and both reviewed id
+lists.
