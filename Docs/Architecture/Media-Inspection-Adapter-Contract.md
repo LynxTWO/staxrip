@@ -39,7 +39,10 @@ at all.
 
 The adapter strips, before anything leaves it: `UniqueID` and every `UniqueID/*`
 variant, `Encoded_Library_Settings`, `Encoded_Application` command-line style strings,
-and any field whose value embeds a filesystem path other than the probed path itself.
+`File_Created_Date`, `File_Created_Date_Local`, `File_Modified_Date`,
+`File_Modified_Date_Local`, and any field whose value embeds a filesystem path other
+than the probed path itself. The file-date fields entered the list from captured
+evidence: 26.05 emits them and they describe the user's filesystem, not the media.
 The guard is a named function with a self-test that feeds a synthetic raw document
 containing every stripped field and fails if any survives, and the self-test is wired
 into the contract test harness so reverting the guard turns the harness red. That is the

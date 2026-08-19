@@ -33,7 +33,7 @@ This ledger breaks the current application and the portability target into revie
 - **Exit criteria:** One explicit version range and resolver for the ratified primary authority, the MediaInfo CLI (D-045), are approved; argv and output schemas have golden fixtures; hostile paths and malformed output pass; cancellation leaves no process; no project or output file is written; Windows comparison records agreed facts; the identifier-stripping privacy guard has a self-test that fails if the stripping is removed.
 - **Verification capability ids:** V01, V02, V04, V05, V06, V08, V09, V10, V11, V12, V14, V17, V18
 - **Confidence-ladder level:** 3
-- **Exact gate or next check:** Map, agreed-facts list, D-045 ratification, tool-matrix row, and adapter contract complete. Next: maintainer ratifies D-046 path policy and approves tool acquisition, then fixture capture and the Contracts payload under the port-inspection gate plan
+- **Exact gate or next check:** D-046 ratified, tools acquired at both range ends, eight goldens captured and committed with range stability verified. Next: the Contracts typed payload and the normalization layer, test-first against the committed goldens, then the port-inspection gate
 - **Invalidated by:** Probe executable/version, schema, resolver, process runner, path policy, or media-fact contract changes
 - **Next pass:** 02 architecture map
 - **Status:** in progress

@@ -1090,7 +1090,10 @@ which this decision does not grant.
 ## D-046: Path acceptance policy for read-only inspection
 
 Date: 2026-08-18
-Status: Proposed
+Status: Confirmed. Ratified by the maintainer on 2026-08-19 together with tool
+acquisition approval for the comparison harness and the range-first resolution of the
+version skew: pin `[24.01, 26.05]` and prove schema stability with fixtures from both
+ends before considering the upstream-parity alternative.
 Area: S-PORT-02 media inspection; the server's request boundary
 
 Context: The bootstrap's confirmed security rules include that the server accepts no
