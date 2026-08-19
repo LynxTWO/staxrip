@@ -229,3 +229,22 @@ first flag-drift attempt bound both replacement strings to one parameter through
 stray list comma, and the missed-anchor guard refused to run a proof that would have
 mutated nothing, which is exactly the check-that-cannot-fail rule applied to the proof
 machinery itself.
+
+## Unit 3 validation sweep
+
+Run against committed head `c10823e6` on 2026-08-19, all six gates in order, green on
+the first attempt, the first sweep of this slice with no gate catch:
+
+```
+PASS port-static        checks=219
+PASS port-verify        checks=1009
+PASS port-http-windows  checks=4554
+PASS port-browser       checks=694
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64104
+```
+
+Audit record `evidence-audit.json` sha256
+`7bd650ce608a3c1f9744c57e1c933c75cafa0b94a7a93f967e56f9679ef89971`. This section
+postdates the audited set by construction; it records the audit, it is not covered by
+it.
