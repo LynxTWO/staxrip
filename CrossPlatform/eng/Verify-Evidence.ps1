@@ -3417,7 +3417,7 @@ try {
         'CT-008', 'CT-009', 'CT-010', 'CT-011', 'CT-012', 'CT-013', 'CT-014',
         'CT-015', 'CT-016', 'CT-017', 'CT-018', 'CT-019', 'CT-020', 'CT-021',
         'CT-022', 'CT-023', 'CT-024', 'CT-025', 'CT-026', 'CT-027', 'CT-028',
-        'CT-029', 'CT-030', 'CT-031', 'CT-032', 'CT-033', 'CT-034', 'CT-035',
+        'CT-029', 'CT-030', 'CT-031', 'CT-032', 'CT-033', 'CT-034', 'CT-035', 'CT-036',
         'ST-001', 'ST-002', 'ST-003', 'ST-004', 'ST-005', 'ST-006', 'ST-007',
         'ST-008', 'ST-009'
     )
@@ -3959,10 +3959,10 @@ try {
             $stepFields = Assert-JsonObjectShape -Element $stepItems[$index] -ExpectedNames @(
                 'id', 'exit', 'cases', 'assertions') -Id 'summary-contract-step-shape'
             Confirm-Check (
-                (Get-JsonIntegerField -Fields $stepFields -Name 'cases' -Id 'summary-contract-cases') -eq 44) `
+                (Get-JsonIntegerField -Fields $stepFields -Name 'cases' -Id 'summary-contract-cases') -eq 45) `
                 'summary-contract-cases-value'
             Confirm-Check (
-                (Get-JsonIntegerField -Fields $stepFields -Name 'assertions' -Id 'summary-contract-assertions') -eq 522) `
+                (Get-JsonIntegerField -Fields $stepFields -Name 'assertions' -Id 'summary-contract-assertions') -eq 527) `
                 'summary-contract-assertions-value'
         }
         elseif ($expectedStepId -ceq 'port-contract-failure') {

@@ -1773,17 +1773,22 @@ foreach ($rule in $layerRules) {
 }
 
 $productBanPattern = '\b(?:System\.Diagnostics\.)?Process(?:StartInfo)?\b|\bProcess\.Start\s*\(|\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\b(?:File|Directory|FileInfo|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
-# D-045 amends the boundary deliberately, not erodes it: process execution is
-# sanctioned in exactly one product file, the bounded-execution primitive, which every
-# adapter calls instead of spawning on its own. The primitive keeps every other ban,
-# including all filesystem access except the single File.Exists its no-search rule
-# requires, so a second execution path anywhere in product source, or a scope creep
-# inside the primitive itself, still stops this gate. The resolver fails when the
-# named file is absent, so the carve-out cannot outlive the file it names.
+# D-045 and D-046 amend the boundary deliberately, not erode it: each crossing is
+# sanctioned in exactly one named product file with a narrowed ban of its own, the
+# resolver fails when a named file is absent so no carve-out outlives its file, and
+# every other product file keeps the full ban. The bounded-execution primitive may use
+# process APIs and the single File.Exists its no-search rule requires; the media file
+# probe may read file metadata through FileInfo and nothing else, and process APIs
+# stay banned inside it. A second execution path, a second filesystem reader, or scope
+# creep inside either named file still stops this gate.
 $boundedPrimitivePath = Resolve-SafeCrossPlatformLeaf 'BoundedProcess.cs' (Join-Path $crossPlatformRoot 'src\StaxRip.Platform') 'BoundedProcess.cs'
 $boundedPrimitiveBanPattern = '\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\bFile\.(?!Exists\b)\w+|\b(?:Directory|FileInfo|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
+$mediaProbePath = Resolve-SafeCrossPlatformLeaf 'MediaFileProbe.cs' (Join-Path $crossPlatformRoot 'src\StaxRip.Platform') 'MediaFileProbe.cs'
+$mediaProbeBanPattern = '\b(?:System\.Diagnostics\.)?Process(?:StartInfo)?\b|\bProcess\.Start\s*\(|\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\bFile\.\w+|\b(?:Directory|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
 foreach ($file in $sourceFiles) {
-    $banPattern = if ($file.FullName -eq $boundedPrimitivePath) { $boundedPrimitiveBanPattern } else { $productBanPattern }
+    $banPattern = if ($file.FullName -eq $boundedPrimitivePath) { $boundedPrimitiveBanPattern }
+    elseif ($file.FullName -eq $mediaProbePath) { $mediaProbeBanPattern }
+    else { $productBanPattern }
     if ((Read-Text $file.FullName) -cmatch $banPattern) {
         Stop-Gate -Message "Product source crosses the bootstrap process, filesystem, external-network, serialization, or physical-asset boundary: $(Get-CrossPlatformRelativePath $file.FullName)"
     }
@@ -1886,7 +1891,7 @@ if (Test-Path -LiteralPath $testManifestPath -PathType Leaf) {
         'CT-008', 'CT-009', 'CT-010', 'CT-011', 'CT-012', 'CT-013', 'CT-014',
         'CT-015', 'CT-016', 'CT-017', 'CT-018', 'CT-019', 'CT-020', 'CT-021',
         'CT-022', 'CT-023', 'CT-024', 'CT-025', 'CT-026', 'CT-027', 'CT-028',
-        'CT-029', 'CT-030', 'CT-031', 'CT-032', 'CT-033', 'CT-034', 'CT-035',
+        'CT-029', 'CT-030', 'CT-031', 'CT-032', 'CT-033', 'CT-034', 'CT-035', 'CT-036',
         'ST-001', 'ST-002', 'ST-003', 'ST-004', 'ST-005', 'ST-006', 'ST-007',
         'ST-008', 'ST-009'
     )
