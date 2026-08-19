@@ -306,3 +306,38 @@ Audit record `evidence-audit.json` sha256
 `7f7ccf48073944eece9220f78090a0864d984095bf4b0b6fd9d888a6b3cc5641`. This section
 postdates the audited set by construction; it records the audit, it is not covered by
 it.
+
+## Unit 4b, first half: the regular-file probe and the second sanctioned crossing
+
+The filesystem half of D-046: a path the pure policy admitted must also name an
+existing ordinary file. The probe is the boundary law's second named crossing,
+narrowed to file-metadata reading and nothing else; process APIs and every File static
+stay banned inside it. Proven in four directions against the committed baseline and
+restored: the gate passes at 230 checks with both crossings present; a `FileInfo`
+token in a Server file stops the gate naming that file; a `Process` token and a
+`File.ReadAllText` token inside the probe each stop the gate naming the probe.
+
+**Red first.** `FAIL port-contract case=CT-036 type=NotImplementedException`, exit 1.
+CT-036 drives the probe from the committed fixture tree, nothing created or deleted:
+the media fixture is the file, the fixture directory is the directory, an impossible
+child of a file is the through-a-file shape.
+
+**Two equivalent mutants, and what they taught.** The first two mutation attempts,
+removing the existence check and removing a directory-attribute refusal, both
+survived: every case stayed green. Diagnosis, not dismissal: `FileInfo.Exists` is
+false for a directory, so the separate directory branch was unreachable dead code; and
+a missing file reads its attributes as all bits set, so the reparse refusal also
+refuses absence. The false verdicts were real but flowed through different branches
+than the code claimed. The probe was rewritten to say what is true, the dead branch
+removed and the two refusal mechanisms documented at the check that owns them. The
+surviving proof is the verdict flip: `FAIL case=CT-036, committed media fixture must
+be a regular file, expected True actual False`, red then restored green at
+`cases=45 assertions=527` in both configurations.
+
+**A process failure repeated, and its rule now absolute.** The first proof attempt ran
+gate mutations while the probe was still untracked; checkout could not restore it and
+both mutation comments accumulated, caught by inspecting the file. This is the unit 1
+lesson recurring at the first opportunity: revert-mutation proofs run against
+committed state only, with no exception for one-line comment probes. The reparse
+refusal remains gate-proven territory: the contract corpus cannot produce a junction,
+and the port-inspection gate can and will.
