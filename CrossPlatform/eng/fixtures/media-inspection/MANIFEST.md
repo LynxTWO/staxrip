@@ -15,7 +15,10 @@ name, or user identifier appears in any document, verified by scan before commit
   package download and user-prefix extraction with no system installation and no root.
   Binary SHA-256 `a802f414b80dc1abc437a918d8849bb390538bc6f520632c7e9a6a56fcda99d6`.
 - Invocation, both ends: `mediainfo --Output=JSON <relative-filename>` from the media
-  directory, path as one argv element.
+  directory, path as one argv element. Committed documents are normalized to a single
+  trailing newline per the repository whitespace rule; the capture pipeline emitted a
+  trailing blank line that carries no fixture meaning, and re-captures must apply the
+  same normalization.
 
 ## Media provenance
 
