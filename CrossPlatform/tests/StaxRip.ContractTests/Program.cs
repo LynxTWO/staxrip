@@ -10,15 +10,18 @@ internal static class Program
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
-        // The bounded-process cases re-invoke this binary as a controllable child;
-        // the sentinel dispatches before any test machinery runs.
+        // The bounded-process cases re-invoke this binary as a controllable child, and
+        // the adapter cases re-invoke it as the impersonated tool; both sentinels
+        // dispatch before any test machinery runs.
         if (args.Length >= 2 && args[0] == "--bounded-child")
             return BoundedChild.Run(args[1..]);
+        if (args.Length >= 1 && args[0] == "--Output=JSON")
+            return FakeMediaInfo.Run(args);
 
         bool selfTestFailure = args.Contains("--self-test-failure", StringComparer.Ordinal);
         TestCase[] cases = selfTestFailure
             ? [new TestCase("HARNESS-FAILURE", "forced harness failure", static context => context.Equal(1, 2, "forced failure did not fail"))]
-            : ContractCases.All.Concat(MediaFactsCases.All).Concat(BoundedProcessCases.All).Concat(ServerCases.All).ToArray();
+            : ContractCases.All.Concat(MediaFactsCases.All).Concat(BoundedProcessCases.All).Concat(MediaInfoCliCases.All).Concat(ServerCases.All).ToArray();
 
         var stopwatch = Stopwatch.StartNew();
         int assertions = 0;

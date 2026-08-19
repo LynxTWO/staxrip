@@ -16,3 +16,17 @@ public interface IMediaFactAuthority
 // document; the normalizer owns everything after this point, including the privacy
 // strip, so an adapter cannot accidentally publish an unstripped payload.
 public sealed record MediaFactAuthorityDocument(string AuthorityName, string RawJson);
+
+// Raised when the authority could not answer, the third outcome of the ratified error
+// contract. The message is a fixed reason class only: resolver-failure, timeout,
+// output-overflow, nonzero-exit, execution-failure. It never carries tool output, an
+// argument, or a path, which is what makes it safe to surface through the typed error
+// shape. Cancellation is not an error and travels as the runtime's cancellation
+// exception instead.
+public sealed class MediaFactAuthorityException : Exception
+{
+    public MediaFactAuthorityException(string reasonClass)
+        : base(reasonClass)
+    {
+    }
+}

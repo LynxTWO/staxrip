@@ -334,6 +334,9 @@ internal static class FixtureFiles
     public static string Read(string name) =>
         File.ReadAllText(Path.Combine(Root.Value, name));
 
+    public static string PathOf(string name) =>
+        Path.Combine(Root.Value, name);
+
     private static string LocateRoot()
     {
         string? current = AppContext.BaseDirectory;
