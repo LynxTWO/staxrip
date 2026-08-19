@@ -341,3 +341,22 @@ lesson recurring at the first opportunity: revert-mutation proofs run against
 committed state only, with no exception for one-line comment probes. The reparse
 refusal remains gate-proven territory: the contract corpus cannot produce a junction,
 and the port-inspection gate can and will.
+
+## Unit 4b first-half validation sweep
+
+Run against committed head `30cfcc0c` on 2026-08-19, all six gates in order, green on
+the first attempt, the third consecutive no-catch sweep:
+
+```
+PASS port-static        checks=230
+PASS port-verify        checks=1063
+PASS port-http-windows  checks=4554
+PASS port-browser       checks=694
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64374
+```
+
+Audit record `evidence-audit.json` sha256
+`764acad45366d6ef32e9072d272dfefded73b6006df4c2372c0cd81b7ac201d1`. This section
+postdates the audited set by construction; it records the audit, it is not covered by
+it.
