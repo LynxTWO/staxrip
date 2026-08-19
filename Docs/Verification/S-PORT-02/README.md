@@ -188,3 +188,44 @@ attempt; the two failed attempts were the static gate naming the non-ASCII fixtu
 literal and the boundary crossing, both recorded above with their resolutions. This
 section postdates the audited set by construction; it records the audit, it is not
 covered by it.
+
+## Unit 3: the MediaInfo CLI adapter
+
+The primary implementation of the authority port, in `StaxRip.Platform`, owning
+exactly two things: the recorded invocation shape, one flag and the media path as a
+single argv element per the committed fixture manifest, and the mapping from execution
+outcomes to the ratified reason classes. It executes only through the bounded
+primitive. The typed error, `MediaFactAuthorityException` beside the port in core,
+carries a reason class alone: resolver-failure, timeout, output-overflow, nonzero-exit,
+execution-failure. A child killed on cancellation surfaces as cancellation, not as an
+error, because the kill and reap already happened and the caller asked for it.
+
+**Red first.** `FAIL port-contract case=CT-029 type=NotImplementedException`, exit 1.
+
+**Hermetic corpus.** CT-029 through CT-033 spawn this test binary as the impersonated
+tool: it answers only the exact recorded invocation, one flag and one path, and rejects
+anything else with a diagnostic exit. That rejection is what makes the invocation shape
+load bearing rather than asserted. The golden pass-through case feeds the adapter's
+verbatim document to the real normalizer and asserts known golden facts, so the
+adapter-to-normalizer seam is exercised, not assumed. Exact reason-class equality is
+the sanitization proof: the fake writes detail to its error stream that must never
+surface. The real tool never runs in these cases; that integration belongs to the
+port-inspection gate. Green in both configurations:
+`PASS port-contract cases=42 assertions=500 failures=0`.
+
+**Mutation proofs, each observed against the committed baseline and restored.**
+
+- Invocation flag drifted to `--Output=XML`: `FAIL case=CT-029`, the impersonated tool
+  rejects the drifted shape and the case fails on the resulting typed error.
+- Nonzero-exit mapping removed: `FAIL case=CT-030, nonzero exit must throw typed,
+  expected MediaFactAuthorityException actual no exception`.
+- Cancellation collapsed into an error class: `FAIL case=CT-032`, the case demands the
+  runtime's cancellation exception and receives the typed error instead.
+
+After restoration both configurations returned to `cases=42 assertions=500`, no
+orphaned children. All six policing pins moved in the same commit as the cases. One
+proof-harness slip is recorded because the guard that caught it earned its keep: the
+first flag-drift attempt bound both replacement strings to one parameter through a
+stray list comma, and the missed-anchor guard refused to run a proof that would have
+mutated nothing, which is exactly the check-that-cannot-fail rule applied to the proof
+machinery itself.
