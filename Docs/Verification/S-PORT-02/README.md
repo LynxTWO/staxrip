@@ -53,3 +53,14 @@ re-recorded; the eight added cases are additive.
 - The platform adapter and any process execution remain unimplemented; the port
   interface exists, and the gates are its only caller until D-046 enforcement code
   ships with the endpoint.
+
+**A second process failure, caught before the sweep.** The unit's local builds ran
+without `--no-restore`, and the implicit restore silently rewrote all five
+`packages.lock.json` files, dropping the `net10.0/linux-x64` target sections the
+dependency audit derives its closure from, and the damaged locks were committed. The
+repair restored the audited-good locks, validated them through the reviewed locked-mode
+restore gate, which passed its full 398 checks without rewriting them, and re-ran both
+test configurations under `--no-restore`. The rule this teaches, now binding for local
+work in this repository: a build is not a neutral act where lock files are audited
+evidence; every local build runs `--no-restore`, and restore happens only through the
+reviewed gate.
