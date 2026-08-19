@@ -975,12 +975,12 @@ if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
     Stop-Gate -Message 'Contract case manifest is missing.' -Step 'contract'
 }
 $manifestCaseCount = @([System.IO.File]::ReadAllLines($manifestPath) | Where-Object { $_ -ne '' -and -not $_.StartsWith('#', [System.StringComparison]::Ordinal) }).Count
-if ($manifestCaseCount -ne 23) {
-    Stop-Gate -Message "Contract case manifest count differs from the reviewed baseline of 23: $manifestCaseCount" -Step 'contract'
+if ($manifestCaseCount -ne 31) {
+    Stop-Gate -Message "Contract case manifest count differs from the reviewed baseline of 31: $manifestCaseCount" -Step 'contract'
 }
 
 $contractCounts = @{}
-$contractPattern = '^PASS port-contract cases=(23) assertions=(309) failures=0 elapsed_ms=[0-9]+\s*$'
+$contractPattern = '^PASS port-contract cases=(31) assertions=(455) failures=0 elapsed_ms=[0-9]+\s*$'
 foreach ($configuration in @('Debug', 'Release')) {
     $step = "contract-$($configuration.ToLowerInvariant())"
     $arguments = @(
@@ -995,8 +995,8 @@ foreach ($configuration in @('Debug', 'Release')) {
     $match = [regex]::Match($result.StdOut.TrimEnd([char[]]"`r`n"), $contractPattern)
     $caseCount = [int]$match.Groups[1].Value
     $assertionCount = [int]$match.Groups[2].Value
-    if ($caseCount -ne $manifestCaseCount -or $assertionCount -ne 309) {
-        Stop-Gate -Message "Contract $configuration counts do not match the reviewed 23-case, 309-assertion baseline." -Output $result.StdOut -Step $step
+    if ($caseCount -ne $manifestCaseCount -or $assertionCount -ne 455) {
+        Stop-Gate -Message "Contract $configuration counts do not match the reviewed 31-case, 455-assertion baseline." -Output $result.StdOut -Step $step
     }
     $contractCounts[$configuration] = [pscustomobject]@{ Cases = $caseCount; Assertions = $assertionCount }
     $steps.Add([ordered]@{ id = "port-contract-$($configuration.ToLowerInvariant())"; exit = 0; cases = $caseCount; assertions = $assertionCount })
