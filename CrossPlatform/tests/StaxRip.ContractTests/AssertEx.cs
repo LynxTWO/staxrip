@@ -42,6 +42,22 @@ internal sealed class TestContext
 
         throw new TestFailureException(message, typeof(TException).Name, "no exception");
     }
+
+    public async Task<TException> ThrowsAsync<TException>(Func<Task> action, string message)
+        where TException : Exception
+    {
+        AssertionCount++;
+        try
+        {
+            await action().ConfigureAwait(false);
+        }
+        catch (TException exception)
+        {
+            return exception;
+        }
+
+        throw new TestFailureException(message, typeof(TException).Name, "no exception");
+    }
 }
 
 internal sealed class TestFailureException : Exception
