@@ -83,3 +83,24 @@ being noticed. The fixtures were restored from their committed originals and all
 hashes re-verified against the manifest. The rule this teaches: a fix targets exactly
 the set the gate names, because a wider sweep re-derives the gate's file classification
 without its exclusions, and binary artifacts under a text rule are mutated every time.
+
+## Unit 1 validation sweep
+
+Run against committed head `313979bb` on 2026-08-19, all six gates in order, each
+against the same committed state:
+
+```
+PASS port-static        checks=200
+PASS port-verify        checks=919
+PASS port-http-windows  checks=4554
+PASS port-browser       checks=694
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=63818
+```
+
+Audit record `evidence-audit.json` sha256
+`0d823e32cde9c43785d062e82279cb441c4dd4d757956194a0320ffbc052be5f`. The sweep reached
+green on its fifth attempt; the four failed attempts were each stopped by a gate naming
+a real defect, and every catch and repair is recorded above. This section postdates the
+audited set by construction, since the audit hashed this document as it stood at
+`313979bb`; the section records the audit, it is not covered by it.
