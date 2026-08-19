@@ -248,3 +248,42 @@ Audit record `evidence-audit.json` sha256
 `7bd650ce608a3c1f9744c57e1c933c75cafa0b94a7a93f967e56f9679ef89971`. This section
 postdates the audited set by construction; it records the audit, it is not covered by
 it.
+
+## Unit 4a: the D-046 path policy engine, the pure half
+
+The ratified path acceptance policy as pure string judgment in core: configured media
+roots with an admit-nothing empty default, canonical containment judged on exactly one
+spelling of each path, and a bare boolean verdict with no reason classes at all, so
+the rejection shape cannot be used to probe the policy. The engine never touches the
+filesystem, which makes the ratified no-existence-oracle property hold by
+construction rather than by discipline. The regular-file requirement needs a
+filesystem probe and belongs to unit 4b, behind this check, alongside the endpoint
+whose route additions move the pinned route baselines. Deliberate strictness, recorded
+here because each rejects something a looser policy would admit: the caller presents
+the canonical spelling or is refused, so a traversal that would land inside a root is
+refused for its spelling alone; a trailing separator is refused explicitly because
+canonicalization preserves it; a colon is admitted only as a drive prefix's second
+character, which refuses device names and alternate stream spellings in one rule; UNC
+and extended-prefix namespaces are outside the v1 policy; and a configured root that
+is not itself canonical is dead, never repaired, because repairing configuration would
+move a security boundary somewhere the operator did not write down.
+
+**Red first.** `FAIL port-contract case=CT-034 type=NotImplementedException`, exit 1.
+
+**Green.** CT-034 and CT-035, an eighteen-shape hostile corpus plus the containment
+and empty-default asserts, pass in both configurations:
+`PASS port-contract cases=44 assertions=522 failures=0`.
+
+**Mutation proofs, each observed against the committed baseline and restored.** The
+corpus design earned its keep here: each mutation was caught by a different named
+shape.
+
+- Canonical spelling rule removed: `FAIL case=CT-035, hostile shape was admitted:
+  index 4`, the dot-segment traversal.
+- Containment separator rule neutralized: `FAIL case=CT-035, hostile shape was
+  admitted: index 16`, the sibling-root prefix trap.
+- Empty default flipped to admit: `FAIL case=CT-035, the empty default policy
+  admitted a path`.
+
+After restoration both configurations returned to `cases=44 assertions=522`. All six
+policing pins moved in the same commit as the cases.
