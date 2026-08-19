@@ -79,7 +79,7 @@ internal static class BoundedProcessCases
             "quote\"inside",
             "caret^and^more",
             "%PATH%",
-            "unicode-äßé",
+            "unicode-\u00e4\u00df\u00e9",
         ];
 
         BoundedProcessRequest request = ChildRequest(["echo-args", .. hostileArguments]);
