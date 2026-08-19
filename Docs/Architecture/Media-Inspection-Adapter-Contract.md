@@ -89,6 +89,27 @@ A new `port-inspection` gate, level 1, joining the wrapper after the contract ga
    agreed-facts list, and store the recorded divergences as data the exit criteria can
    cite. The CLI is acquired and hash-recorded; this recorder is now unblocked.
 
+## Definition of done for the first code unit
+
+Ratified by the maintainer on 2026-08-19. The typed payload, normalization layer, and
+privacy guard are done only when all four hold, in this order:
+
+1. Red first. Every test was observed failing before its implementation existed. A test
+   born passing is the check-that-cannot-fail class wearing a test's clothing, and it
+   does not count toward done.
+2. Green against the goldens. The tests pass field by field over all eight committed
+   documents in `eng/fixtures/media-inspection/`.
+3. Mutation proofs, recorded and wired into the harness so they re-run on every gate
+   pass, one per load-bearing rule: reverting the privacy guard must turn the harness
+   red, with the goldens' retained `UniqueID`, `Encoded_Library_Settings`, and
+   file-date fields as the proving inputs; injecting a silent default into the
+   normalizer must be caught by the `vfr-ffv1.mkv` tests, which is why that fixture has
+   no frame rate; and flipping any canonical mapping must fail the field-by-field
+   assertions. A proof run once by the author and remembered is not a proof.
+4. Full automated mutation tooling stays deferred per V01 of the verification plan:
+   activate after source exists with an approved bounded runner, and do not add a
+   mutation framework merely for this slice.
+
 ## What this contract deliberately does not do
 
 No thumbnailing, no summary prose block, no write of any kind, no PATH search, no
