@@ -1,8 +1,9 @@
 # Media Inspection Adapter Contract
 
-Version: 0.1 Draft. Date: 2026-08-18. Base: `d7e6412e`. Implements D-045; consumes the
-agreed-facts list; introduces one new decision, D-046, which is proposed and not
-ratified. No code exists yet; this contract is what the code must satisfy.
+Version: 0.2. Date: 2026-08-19. Base: `0ce3594d`. Implements D-045; consumes the
+agreed-facts list; D-046 was ratified on 2026-08-19. No code exists yet; this contract
+is what the code must satisfy, and the golden fixtures it tests against are captured
+and committed under `eng/fixtures/media-inspection/`.
 
 ## Layering
 
@@ -58,23 +59,23 @@ payloads carry the reason class and bounded sanitized detail, never raw stderr, 
 the command line. Cancellation must leave no process and no partial state, proven by the
 same ownership-receipt pattern the SLICE-002 harness already uses.
 
-## Path acceptance, the new boundary this slice opens (D-046, proposed)
+## Path acceptance, the new boundary this slice opens (D-046, ratified)
 
-The bootstrap's standing rule is that the server accepts no user path. Inspection cannot
-exist without accepting one, so the rule must be replaced deliberately, not eroded. The
-proposed policy is in D-046: configured media roots, canonical containment, regular
-files only. Until D-046 is ratified, no endpoint accepts a path and the capability stays
-`unavailable`; the adapter can still be built and tested against fixtures, because the
-port takes a path from its caller and the gates are the caller.
+The bootstrap's standing rule was that the server accepts no user path. Inspection
+cannot exist without accepting one, so the rule was replaced deliberately, not eroded:
+D-046, ratified 2026-08-19, sets configured media roots, canonical containment, regular
+files only, and a uniform rejection shape with no existence oracle. The endpoint ships
+only with that policy enforced, and the hostile-path corpus is its enforcement
+evidence; until the endpoint exists the capability stays `unavailable`.
 
 ## Gate plan
 
 A new `port-inspection` gate, level 1, joining the wrapper after the contract gates:
 
-1. Golden fixtures: one captured `--Output=JSON` document per pinned-range end, checked
-   in under `eng/fixtures/`, with the normalization output asserted field by field
-   against the agreed-facts list. Capture is blocked on tool acquisition approval and is
-   the matrix's named pending verification.
+1. Golden fixtures: captured and committed, one `--Output=JSON` document per fixture
+   per pinned-range end under `eng/fixtures/media-inspection/` with a provenance
+   manifest. The gate asserts the normalization output field by field against the
+   agreed-facts list over these documents.
 2. Hostile path corpus: traversal shapes, reparse points, device names, overlong paths,
    quote and control characters, paths outside the configured roots. Every one must
    produce the typed error, never an execution attempt, proven by the no-process check.
@@ -86,7 +87,7 @@ A new `port-inspection` gate, level 1, joining the wrapper after the contract ga
 6. Comparison recorder: on Windows, run the same fixture files through the existing
    MediaInfo.dll wrapper and the CLI, record per-fact agreement per the protocol in the
    agreed-facts list, and store the recorded divergences as data the exit criteria can
-   cite. Blocked on Windows CLI acquisition approval.
+   cite. The CLI is acquired and hash-recorded; this recorder is now unblocked.
 
 ## What this contract deliberately does not do
 
