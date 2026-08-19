@@ -287,3 +287,22 @@ shape.
 
 After restoration both configurations returned to `cases=44 assertions=522`. All six
 policing pins moved in the same commit as the cases.
+
+## Unit 4a validation sweep
+
+Run against committed head `5406ad1b` on 2026-08-19, all six gates in order, green on
+the first attempt, the second consecutive no-catch sweep:
+
+```
+PASS port-static        checks=225
+PASS port-verify        checks=1053
+PASS port-http-windows  checks=4554
+PASS port-browser       checks=694
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64240
+```
+
+Audit record `evidence-audit.json` sha256
+`7f7ccf48073944eece9220f78090a0864d984095bf4b0b6fd9d888a6b3cc5641`. This section
+postdates the audited set by construction; it records the audit, it is not covered by
+it.
