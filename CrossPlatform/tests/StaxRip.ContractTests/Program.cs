@@ -21,7 +21,7 @@ internal static class Program
         bool selfTestFailure = args.Contains("--self-test-failure", StringComparer.Ordinal);
         TestCase[] cases = selfTestFailure
             ? [new TestCase("HARNESS-FAILURE", "forced harness failure", static context => context.Equal(1, 2, "forced failure did not fail"))]
-            : ContractCases.All.Concat(MediaFactsCases.All).Concat(BoundedProcessCases.All).Concat(MediaInfoCliCases.All).Concat(ServerCases.All).ToArray();
+            : ContractCases.All.Concat(MediaFactsCases.All).Concat(BoundedProcessCases.All).Concat(MediaInfoCliCases.All).Concat(MediaPathPolicyCases.All).Concat(ServerCases.All).ToArray();
 
         var stopwatch = Stopwatch.StartNew();
         int assertions = 0;
