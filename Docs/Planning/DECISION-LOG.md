@@ -1086,3 +1086,57 @@ Revisit when: The selected tool's version range or JSON schema changes; a fact i
 needed that the selected authority cannot supply and the other can; the
 execution framework generalizes beyond one tool; or encoding slices need write authority,
 which this decision does not grant.
+
+## D-046: Path acceptance policy for read-only inspection
+
+Date: 2026-08-18
+Status: Proposed
+Area: S-PORT-02 media inspection; the server's request boundary
+
+Context: The bootstrap's confirmed security rules include that the server accepts no
+user path, upload, or URL. Read-only inspection cannot exist without accepting a path to
+inspect, so S-PORT-02 must replace that rule with a deliberate policy rather than erode
+it through an exception. This is the slice's real new attack surface: a local page that
+defeats the session model, or a confused client, must not be able to turn the inspector
+into a filesystem probe.
+
+Decision: Accept a path only under all of the following. The server holds a
+maintainer-configured list of media root directories, empty by default, so a fresh
+install inspects nothing. A request path must be absolute, must canonicalize with all
+symbolic links resolved to a location strictly inside one configured root, must be a
+regular file, and must survive the same reparse-point and canonical-path checks the
+verification harness already applies to its own trees. Device paths, UNC paths on
+Windows, alternate data streams, and any path whose canonical form differs from its
+requested form in a way that crosses a root boundary are rejected before the tool
+resolver is consulted. Rejections return the typed error class only, never an existence
+oracle: the same response shape for missing, denied, and outside-root, so the endpoint
+cannot be used to enumerate the filesystem. The probe list, the roots, and every
+rejection reason class are recorded in the capability payload so the shell can explain
+itself without a second channel.
+
+Because: A roots allowlist with canonical containment is the smallest policy that makes
+the inspector useful and keeps it from becoming a read oracle over the whole disk. The
+uniform rejection shape spends a little diagnosability to avoid building a filesystem
+enumeration primitive into a loopback service.
+
+Options considered:
+- Configured roots with canonical containment and uniform rejection: selected.
+- Accept any absolute path the OS user can read: matches the desktop application's
+  authority, but the desktop app does not sit behind a browser session on a loopback
+  socket; a session compromise would inherit whole-disk read reach.
+- File-picker tokens minted by a future native shell: strongest containment, but there
+  is no native shell yet and inspection should not wait for one.
+- Per-request maintainer confirmation: safest, unusable for the first real workflow.
+
+Consequences: A configuration surface is added, and configuration is state; the roots
+list lives in memory for version 1, supplied at startup, persisted nowhere, so the
+no-persistence claim of the bootstrap survives. The uniform rejection shape means a user
+who mistypes a path inside a root gets the same answer as one probing outside it; the
+shell compensates by showing the configured roots. The hostile-path corpus in the
+adapter contract's gate plan is the enforcement evidence, and the no-process check on
+rejection is what proves the policy runs before the resolver.
+
+Revisit when: A native shell exists and can mint scoped tokens; multi-user or remote
+access ever enters scope, which reopens the whole threat model; or persistence of
+configuration is approved, which moves the roots list into a recorded, migratable
+format.
