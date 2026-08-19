@@ -41,7 +41,13 @@ by a green run rather than trusting the revert, which is what saved this unit.
 **Baseline pins.** The reviewed contract baseline moved from 23 cases and 309 assertions
 to 31 and 455 in `Verify.ps1` and `Verify-Evidence.ps1`, in the same change as the cases
 themselves, per the test-change policing rule. Nothing was skipped, weakened, or
-re-recorded; the eight added cases are additive.
+re-recorded; the eight added cases are additive. A third pin was missed in that change:
+the static gate carries its own reviewed test-id baseline, and the validation sweep
+failed on it, listing the expected and actual id sets. The actual set contained all
+twenty-three reviewed ids plus exactly the eight manifest-recorded additions, so the pin
+was moved in a follow-up commit. The miss confirms the pins are genuinely independent
+recorders, and that a pin update must be located by searching the gates for the old
+value, not by memory of where the pins live.
 
 ## Deliberate scope boundaries in this unit
 
