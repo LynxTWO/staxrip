@@ -64,3 +64,13 @@ test configurations under `--no-restore`. The rule this teaches, now binding for
 work in this repository: a build is not a neutral act where lock files are audited
 evidence; every local build runs `--no-restore`, and restore happens only through the
 reviewed gate.
+
+**A third process failure, introduced by a repair and caught by the fixture manifest.**
+The static gate failed naming exactly one file, this document, as lacking a final
+newline. The repair swept every changed file instead and appended a newline terminator
+to any file not ending in one, which appended two bytes to three binary media fixtures,
+breaking their recorded manifest hashes; the damage was committed and pushed before
+being noticed. The fixtures were restored from their committed originals and all four
+hashes re-verified against the manifest. The rule this teaches: a fix targets exactly
+the set the gate names, because a wider sweep re-derives the gate's file classification
+without its exclusions, and binary artifacts under a text rule are mutated every time.
