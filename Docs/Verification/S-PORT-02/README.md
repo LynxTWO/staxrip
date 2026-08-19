@@ -41,13 +41,16 @@ by a green run rather than trusting the revert, which is what saved this unit.
 **Baseline pins.** The reviewed contract baseline moved from 23 cases and 309 assertions
 to 31 and 455 in `Verify.ps1` and `Verify-Evidence.ps1`, in the same change as the cases
 themselves, per the test-change policing rule. Nothing was skipped, weakened, or
-re-recorded; the eight added cases are additive. A third pin was missed in that change:
-the static gate carries its own reviewed test-id baseline, and the validation sweep
-failed on it, listing the expected and actual id sets. The actual set contained all
-twenty-three reviewed ids plus exactly the eight manifest-recorded additions, so the pin
-was moved in a follow-up commit. The miss confirms the pins are genuinely independent
-recorders, and that a pin update must be located by searching the gates for the old
-value, not by memory of where the pins live.
+re-recorded; the eight added cases are additive. Two further pins were missed in that
+change and caught one sweep apart: the static gate carries its own reviewed test-id
+baseline, and the evidence audit carries an independent copy of the same list that it
+compares against the static gate's published record. Each failure listed the expected
+and actual sets; the actual set was in both cases the reviewed twenty-three plus exactly
+the eight manifest-recorded additions. After the second catch the worktree was searched
+for the old id list, which located every copy: manifest, test source, static gate,
+audit, four sites total, all now moved. The misses confirm the pins are genuinely
+independent recorders, and the rule they teach: a pin update is located by searching
+the gates for the old value, never by memory of where the pins live.
 
 ## Deliberate scope boundaries in this unit
 
