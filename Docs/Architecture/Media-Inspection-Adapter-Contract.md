@@ -14,9 +14,13 @@ and committed under `eng/fixtures/media-inspection/`.
   identity. Core also owns normalization from raw fields to the typed payload, because
   normalization rules are product rules, not adapter details.
 - `StaxRip.Platform` gains the adapter: the MediaInfo CLI implementation of the port,
-  owning process execution under the D-045 bounds. The backup activates by adding a
-  second adapter class here; nothing above this layer changes, which is the swappable
-  boundary D-045 requires.
+  owning process execution under the D-045 bounds. Process execution lives in exactly
+  one bounded-execution primitive that the adapter calls, with the D-045 bounds tested
+  once on the primitive; a future tool reuses it rather than rolling its own, because
+  duplicated process rules across adapters are the drift risk the repository's
+  cross-pass rules already name. The backup activates by adding a second adapter class
+  here; nothing above this layer changes, which is the swappable boundary D-045
+  requires.
 - `StaxRip.Server` gains one read-only endpoint behind the existing session model.
   Capability `media-inspection` moves from `unavailable` to `available` only when the
   resolver, version range, and gates all hold at startup.

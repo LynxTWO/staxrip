@@ -20,15 +20,17 @@ name, or user identifier appears in any document, verified by scan before commit
 ## Media provenance
 
 Synthetic fixtures generated during the earlier portable-validation work from bundled
-tools; no personal media, no real-world content. The media files stay out of the
-repository; these hashes bind the documents to their exact inputs.
+tools; no personal media, no real-world content. The media files are committed beside
+these documents under `media/`, so the whole chain, input bytes to golden output, is
+reproducible from the repository alone, and the comparison recorder can run on any
+checkout. These hashes bind the documents to their exact inputs.
 
 | File | Bytes | SHA-256 |
 |---|---|---|
-| cfr-ffv1-10bit-pcm.mkv | 426480 | be499502e007ce2b (leading 16 hex; full hash in the capture record) |
-| cfr-h264-aac.mp4 | 215647 | 01d6599df1c1006d |
-| cfr-vp9-opus.webm | 111915 | cd0516b6df0685a3 |
-| vfr-ffv1.mkv | 225586 | 4b29fedfb1dccdbb |
+| cfr-ffv1-10bit-pcm.mkv | 426480 | `be499502e007ce2b2405523deca913c889e444703f3c2c79ba35f7acf346daf1` |
+| cfr-h264-aac.mp4 | 215647 | `01d6599df1c1006d7df29bcd2a3462cb1943b4294e243f3e9d84eb402b99a12b` |
+| cfr-vp9-opus.webm | 111915 | `cd0516b6df0685a36919bad2a886a50f657255eb71fe746e6c727090b1d645c0` |
+| vfr-ffv1.mkv | 225586 | `4b29fedfb1dccdbbf30a739d426a4d3e7d9656863e5451ecc931d66456b45491` |
 
 ## What the captures established
 
