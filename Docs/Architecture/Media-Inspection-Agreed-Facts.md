@@ -142,3 +142,14 @@ structure-equal after normalization, absent-on-one-side, or genuinely divergent 
 winning side named. The corpus starts from the synthetic fixtures already proven in
 SLICE-002 runtime testing and grows per container family. No fixture carries personal
 media, real paths, or unique identifiers, per the sensitive-data rules in `AGENTS.md`.
+
+Recorded 2026-08-20 by `Record-MediaComparison.ps1`, result in
+`Docs/Verification/S-PORT-02/comparison-record.md`: the installed product library was
+`MediaInfoLib v26.05`, the exact pinned CLI ceiling, so the comparison ran at matched
+versions. Eighty-five facts equal, seventy-nine absent on both sides, zero absent on
+one side only, and seven divergent, every one of them structure class rather than a
+value disagreement: the text API reports `Duration` and `Video_Delay` as integer
+milliseconds where the JSON primary reports decimal seconds, and the text API fuses
+`Format_Profile` as profile@level where the JSON primary carries the level separately.
+Consumers migrating from the Windows reads must apply those two shape rules; no fact
+value disagreed between the authorities at matched versions.
