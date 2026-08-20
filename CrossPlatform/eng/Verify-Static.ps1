@@ -1778,8 +1778,8 @@ $productBanPattern = '\b(?:System\.Diagnostics\.)?Process(?:StartInfo)?\b|\bProc
 # resolver fails when a named file is absent so no carve-out outlives its file, and
 # every other product file keeps the full ban. The bounded-execution primitive may use
 # process APIs and the single File.Exists its no-search rule requires; the media file
-# probe may read file metadata through FileInfo and nothing else, and process APIs
-# stay banned inside it. A second execution path, a second filesystem reader, or scope
+# probe may read file and directory-chain metadata through FileInfo and nothing
+# else, and process APIs stay banned inside it. A second execution path, a second filesystem reader, or scope
 # creep inside either named file still stops this gate.
 $boundedPrimitivePath = Resolve-SafeCrossPlatformLeaf 'BoundedProcess.cs' (Join-Path $crossPlatformRoot 'src\StaxRip.Platform') 'BoundedProcess.cs'
 $boundedPrimitiveBanPattern = '\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\bFile\.(?!Exists\b)\w+|\b(?:Directory|FileInfo|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('

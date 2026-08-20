@@ -29,6 +29,17 @@ public static class MediaFileProbe
             if ((attributes & FileAttributes.Device) != 0)
                 return false;
 
+            // The refusal walks the whole directory chain, not just the leaf: a
+            // junction or symlinked directory between the root and the file is an
+            // escape hatch even when the file itself is ordinary. The
+            // port-inspection gate proved this branch by traversing a junction
+            // inside a configured root before the walk existed.
+            for (DirectoryInfo? component = info.Directory; component is not null; component = component.Parent)
+            {
+                if ((component.Attributes & FileAttributes.ReparsePoint) != 0)
+                    return false;
+            }
+
             return true;
         }
         catch (Exception exception) when (

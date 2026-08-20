@@ -4154,6 +4154,37 @@ try {
         -not (Get-JsonBooleanField -Fields $browserFields -Name 'secretsPersisted' -Id 'browser-secrets')) `
         'browser-secrets-value'
 
+    # The port-inspection gate's record: the audited-set rule requires every gate
+    # whose pass the sweep reports to have its evidence validated here, or that pass
+    # is a producer claim outside the audited set.
+    $inspection = Read-JsonRecord -Name 'inspection.json' -ExpectedSchema 'staxrip-inspection-v1'
+    $inspectionFields = Assert-JsonObjectShape -Element $inspection.Root -ExpectedNames @(
+        'schema', 'head', 'configuration', 'test_binary_sha256', 'checks', 'corpus',
+        'reliances') -Id 'inspection-shape'
+    Confirm-Check (
+        (Get-JsonStringField -Fields $inspectionFields -Name 'head' -Id 'inspection-head') -cmatch '^[0-9a-f]{40}$') `
+        'inspection-head-grammar'
+    Confirm-Check (
+        (Get-JsonStringField -Fields $inspectionFields -Name 'configuration' -Id 'inspection-configuration') -cin @('Debug', 'Release')) `
+        'inspection-configuration-value'
+    Confirm-Check (
+        Test-Sha256Text (Get-JsonStringField -Fields $inspectionFields -Name 'test_binary_sha256' -Id 'inspection-binary-hash')) `
+        'inspection-binary-hash-grammar'
+    Confirm-Check (
+        (Get-JsonIntegerField -Fields $inspectionFields -Name 'checks' -Id 'inspection-checks') -eq 43) `
+        'inspection-checks-value'
+    $inspectionCorpus = Assert-JsonObjectShape -Element $inspectionFields['corpus'] -ExpectedNames @(
+        'hostile_paths', 'malformed_documents', 'cancellation_probes') -Id 'inspection-corpus-shape'
+    Confirm-Check (
+        (Get-JsonIntegerField -Fields $inspectionCorpus -Name 'hostile_paths' -Id 'inspection-hostile') -eq 7) `
+        'inspection-hostile-value'
+    Confirm-Check (
+        (Get-JsonIntegerField -Fields $inspectionCorpus -Name 'malformed_documents' -Id 'inspection-malformed') -eq 1) `
+        'inspection-malformed-value'
+    Confirm-Check (
+        (Get-JsonIntegerField -Fields $inspectionCorpus -Name 'cancellation_probes' -Id 'inspection-cancellation') -eq 1) `
+        'inspection-cancellation-value'
+
     $linux = Read-JsonRecord -Name 'linux-runtime.json' -ExpectedSchema 'staxrip-linux-runtime-v1'
     $linuxFields = Assert-JsonObjectShape -Element $linux.Root -ExpectedNames @(
         'schema', 'gate', 'result', 'sourceRecordSha256', 'host', 'artifact',
@@ -4396,6 +4427,7 @@ try {
     $reportArtifactPaths.Add('CrossPlatform/artifacts/evidence/linux-runtime.json', $linux.Path)
     $reportArtifactPaths.Add('CrossPlatform/artifacts/evidence/http-windows.json', $http.Path)
     $reportArtifactPaths.Add('CrossPlatform/artifacts/evidence/browser.json', $browser.Path)
+    $reportArtifactPaths.Add('CrossPlatform/artifacts/evidence/inspection.json', $inspection.Path)
     $reportArtifactPaths.Add('Docs/Review/SLICE-002-Adversarial-Review.md', $reviewPath)
 
     $criterionHeader = '| ID | Status | Evidence | Host | Artifact | Unknown | Impact | Approval | Rollback |'

@@ -10,13 +10,17 @@ internal static class Program
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
-        // The bounded-process cases re-invoke this binary as a controllable child, and
-        // the adapter cases re-invoke it as the impersonated tool; both sentinels
-        // dispatch before any test machinery runs.
+        // The bounded-process cases re-invoke this binary as a controllable child,
+        // the adapter cases re-invoke it as the impersonated tool, and the
+        // port-inspection gate re-invokes it as a configured server host, because
+        // the shipped binary deliberately has no configuration surface. Every
+        // sentinel dispatches before any test machinery runs.
         if (args.Length >= 2 && args[0] == "--bounded-child")
             return BoundedChild.Run(args[1..]);
         if (args.Length >= 1 && args[0] == "--Output=JSON")
             return FakeMediaInfo.Run(args);
+        if (args.Length == 3 && args[0] == "--serve-configured")
+            return await ConfiguredServerHost.RunAsync(args[1], args[2]).ConfigureAwait(false);
 
         bool selfTestFailure = args.Contains("--self-test-failure", StringComparer.Ordinal);
         TestCase[] cases = selfTestFailure

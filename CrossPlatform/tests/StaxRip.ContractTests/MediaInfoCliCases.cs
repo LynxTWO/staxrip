@@ -138,7 +138,15 @@ internal static class FakeMediaInfo
                 // direct pass-through. A media path answers with its sibling golden
                 // from the fixture root, which is how the wire-level pipeline case
                 // probes a real committed media file through a real child process.
+                // A sleep-probe media file hangs deliberately: the port-inspection
+                // gate cancels mid-probe and then proves nothing was left behind.
                 string probed = arguments[1];
+                if (Path.GetFileNameWithoutExtension(probed).Contains("sleep-probe", StringComparison.Ordinal))
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(30));
+                    return 0;
+                }
+
                 if (!probed.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                 {
                     string? mediaDirectory = Path.GetDirectoryName(probed);
