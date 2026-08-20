@@ -531,3 +531,26 @@ The gate passes at 43 checks. The comparison recorder, real CLI against the exis
 Windows MediaInfo library over the committed media files, remains the one open item
 of the ratified gate plan and is deliberately its own unit: it needs the current
 product's native wrapper, which no cross-platform gate should build.
+
+## Unit 4b-3 validation sweep, the first with seven gates
+
+Attempt 1 against `e5430523` reached the audit with six gates green and was stopped
+by the audit itself, rejecting the new inspection record for CRLF line endings where
+the evidence law is canonical LF: the newest gate's writer violated the house rule
+and the audit named it exactly. Fixed at the write, verified zero CRLF pairs.
+Attempt 2 against committed head `6ea92edc` on 2026-08-20, all seven gates in order:
+
+```
+PASS port-static        checks=244
+PASS port-verify        checks=1211
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=694
+PASS port-inspection    checks=43
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64716
+```
+
+Audit record `evidence-audit.json` sha256
+`9c5307a8b1901b685d6b4e088e0e09785bab2c54bc0eeef0e6429226168014b5`, the first audit
+that certifies the inspection record inside the set. This section postdates the
+audited set by construction; it records the audit, it is not covered by it.
