@@ -1,6 +1,7 @@
 # S-PORT-02 Verification Record
 
-Version: 0.1. Date: 2026-08-19. Started at base `9cc9bd37`.
+Version: 1.0 Final. Date: 2026-08-20. Started at base `9cc9bd37`; closed by the
+exit-criteria review below with the attesting seven-gate sweep recorded after it.
 
 ## Unit 1: typed payload, normalizer, privacy guard
 
@@ -554,3 +555,78 @@ Audit record `evidence-audit.json` sha256
 `9c5307a8b1901b685d6b4e088e0e09785bab2c54bc0eeef0e6429226168014b5`, the first audit
 that certifies the inspection record inside the set. This section postdates the
 audited set by construction; it records the audit, it is not covered by it.
+
+## Exit-criteria review
+
+Each ratified requirement, its delivered evidence, and its verdict. Confidence
+follows the repository convention; nothing below is a claim without a pointer.
+
+**D-045, the authority decision.** The MediaInfo CLI in JSON mode is the sole
+implemented authority, invoked exactly as the fixture manifest records, only through
+the bounded-execution primitive, behind the swappable `IMediaFactAuthority` port; the
+ffprobe backup is named, mapped in the agreed-facts tables, and deliberately not
+implemented, with its activation triggers recorded in the decision. Evidence: units
+2 and 3, the adapter and primitive sources, CT-023 through CT-033. Met.
+
+**D-045 privacy exit criterion.** The strip list is enforced before any field is
+read, self-tested by CT-020 and CT-021, proven red-on-revert in unit 1 and again by
+the surviving-mutant diagnosis in unit 4b-3, and the wire carries no banned name,
+asserted in process, in the wire case, and at the gate. The typed payload's fixed
+schema is the recorded second, structural layer. Met.
+
+**D-046, path acceptance.** Configured roots with an admit-nothing default, canonical
+containment on one spelling, regular files only with the reparse refusal walking the
+whole directory chain, uniform byte-identical rejection with no existence oracle,
+proven in process (CT-034, CT-035, CT-038), at the wire (ST-010, ST-011), and at the
+gate including the junction case that first exposed the component gap. The endpoint
+ships only with the policy enforced, and the capability is `unavailable` on any other
+path, sharing one composition-root verdict with the endpoint, mutation-proven. Met.
+
+**The error contract.** Three outcomes, never conflated: facts on success, absence as
+omission (the vfr fixture is the standing no-silent-default proof), and typed reason
+classes for authority failures that carry no tool output and no path. Cancellation
+propagates as cancellation with kill-and-reap proven at the primitive and no residue
+proven at the gate. Met.
+
+**The comparison protocol.** Recorded at matched library versions over the four
+committed fixtures: zero value disagreements; seven structure-class divergences, all
+explained and recorded as migration rules in the agreed-facts list. Met, with the
+corpus growth per container family remaining a standing instruction rather than a
+one-time act.
+
+**The exposed fact set, version 1, against the agreed tables.** The delivered payload
+covers the container, video, and color-and-HDR tables completely. Four agreed facts
+are not exposed in this version, enumerated here so the delta is a record, not a
+discovery: container chapters and the subtitle commentary, hearing-impaired, and
+stream-size flags have no committed fixture or synthetic coverage and are excluded by
+the fixture-first rule until a carrying fixture lands; audio delay (`Video_Delay`) is
+carried by the committed goldens but was not selected in unit 1, and is the first
+v1.1 addition candidate, a small test-first unit. No exposed field lacks a golden or
+synthetic assertion; the reverse gap is exactly these four, with these reasons.
+
+**Verification discipline.** Every unit red-first with the red quoted; every
+load-bearing rule mutation-proven against committed state and restored; every pin
+moved in the same commit as its cases across all six sites; every sweep run against
+committed heads with the audit last; surviving mutants dispositioned in writing. The
+sweep grew from six to seven gates and the audit certifies the seventh's record.
+
+**Deliberately out of scope, confirmed still out.** No thumbnailing, no summary
+prose, no writes, no PATH search, no environment discovery, no fact caching, no
+second authority, no enablement policy. The shipped production binary carries no
+configuration surface; the capability activates only by explicit composition.
+
+**Open rows carried forward.** Golden capture on a non-WSL Linux host when
+convenient; corpus growth per container family; the v1.1 fact additions above; the
+backup adapter on its recorded triggers.
+
+## Slice close
+
+S-PORT-02 delivered, on top of the SLICE-002 foundation: the typed media-facts
+contract and its normalizer with the privacy guard; the bounded-execution primitive
+as the tree's single process path under a deliberately amended boundary law; the
+MediaInfo CLI adapter behind a swappable port; the pure and filesystem halves of
+D-046 under a second sanctioned crossing; the amended request law and the media-facts
+endpoint with capability honesty; the port-inspection gate as the seventh sweep gate,
+audited inside the set; and the Windows comparison record at matched versions with
+zero value disagreements. Every catch, repair, deviation, and surviving mutant along
+the way is recorded above in the unit it belongs to.
