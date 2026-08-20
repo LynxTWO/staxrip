@@ -72,6 +72,14 @@ files only, and a uniform rejection shape with no existence oracle. The endpoint
 only with that policy enforced, and the hostile-path corpus is its enforcement
 evidence; until the endpoint exists the capability stays `unavailable`.
 
+Transport note, 2026-08-20: the path crosses the boundary in a bounded JSON POST body
+on the one POST route the request law admits, never in a query string or URL segment,
+so user paths stay out of URLs, logs, and browser history. The bootstrap's
+queryless-and-bodyless request law was amended for exactly that route: declared length
+within the transport bound, exact JSON content type, never chunked. The route exists
+and answers `capability-unavailable` behind the session gate while unconfigured; the
+configured pipeline follows.
+
 ## Gate plan
 
 A new `port-inspection` gate, level 1, joining the wrapper after the contract gates:

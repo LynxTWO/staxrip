@@ -360,3 +360,42 @@ Audit record `evidence-audit.json` sha256
 `764acad45366d6ef32e9072d272dfefded73b6006df4c2372c0cd81b7ac201d1`. This section
 postdates the audited set by construction; it records the audit, it is not covered by
 it.
+
+## Unit 4b, second half part 1: the media-facts route and the amended request law
+
+The transport decision D-046 needed: a media path crosses the server boundary in a
+bounded JSON POST body on exactly one route, never in a query string or URL segment,
+so user paths stay out of URLs, logs, and browser history. The bootstrap's request law
+said GET-only, queryless, bodyless everywhere; the amendment is narrow and literal:
+the media-facts route requires POST with a declared length within the transport bound
+and the exact JSON content type, never chunked and never with a query, and every other
+route keeps the full law. The Allow header on a 405 names the path's own method, keyed
+on the path part alone, because a rejected query must not flip which method a path
+claims to accept. The endpoint answers the session gate first, then says exactly that
+the capability is unavailable without reading the body; no configuration path exists
+yet, and inventing one belongs to the next unit.
+
+**Red first.** `FAIL port-contract case=ST-003, route allowlist changed`: the tests
+demanded the amended law before it existed. Green in both configurations:
+`PASS port-contract cases=46 assertions=545 failures=0`.
+
+**Pinned surfaces, all moved in the same commit.** The route allowlist and ST-003;
+the ST-004 matrix, which gained ten body-law assertions; ST-010 over real loopback;
+the static gate, whose route law now carries a one-entry literal POST inventory
+beside the GET inventory with `MapPost` otherwise still banned and the published
+routes record as the union; the audit's independent route copy; the http gate's
+rejection matrix, rewritten per route with five new body-law cases and the
+unconfigured endpoint contract, growing from 4554 to 5182 checks; and the count pins
+at six sites. Static passed at 231 and the http gate at 5182 before the sweep.
+
+**Mutation proofs, each observed against the committed baseline and restored.**
+
+- Method map neutralized: `FAIL case=ST-004, well-shaped media-facts request rejected
+  by the law`, 405 where the law must admit.
+- Body bound removed: `FAIL case=ST-004, oversized body was not refused`.
+- Content-type law loosened to the bare media type: `FAIL case=ST-004`, the exact
+  charset-qualified value is load bearing, not merely the check's presence.
+- Capability answer falsified to 200: `FAIL case=ST-010, unconfigured media-facts
+  status, expected ServiceUnavailable actual OK`.
+
+After restoration both configurations returned to `cases=46 assertions=545`.
