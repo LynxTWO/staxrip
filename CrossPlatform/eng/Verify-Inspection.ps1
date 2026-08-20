@@ -270,7 +270,7 @@ $record = [ordered]@{
         'CT-020 is the load-bearing privacy proof at the guard; the wire greps here restate it, and the typed payload schema excludes banned fields structurally, shown by a strip-neutralizing mutation that CT-020 caught while the wire greps could not'
     )
 }
-$json = $record | ConvertTo-Json -Depth 6
+$json = ($record | ConvertTo-Json -Depth 6).Replace("`r`n", "`n")
 [System.IO.File]::WriteAllText((Join-Path $evidenceRoot 'inspection.json'), $json + "`n")
 if (Test-Path -LiteralPath (Join-Path $failureRoot 'port-inspection.txt')) {
     Remove-Item -LiteralPath (Join-Path $failureRoot 'port-inspection.txt') -Force
