@@ -399,3 +399,22 @@ at six sites. Static passed at 231 and the http gate at 5182 before the sweep.
   status, expected ServiceUnavailable actual OK`.
 
 After restoration both configurations returned to `cases=46 assertions=545`.
+
+## Unit 4b-2 part 1 validation sweep
+
+Run against committed head `6f926dce` on 2026-08-20, all six gates in order, green on
+the first attempt, the fourth consecutive no-catch sweep:
+
+```
+PASS port-static        checks=231
+PASS port-verify        checks=1099
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=691
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64378
+```
+
+Audit record `evidence-audit.json` sha256
+`438eb090c88f2677999bc1f32f2a59c2a2820dd75c67261ec09c28728d1c18df`. This section
+postdates the audited set by construction; it records the audit, it is not covered by
+it.
