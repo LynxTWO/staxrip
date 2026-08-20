@@ -27,6 +27,7 @@ internal static class ServerCases
         new("ST-008", "contract JSON is immutable", ContractJsonIsImmutable),
         new("ST-009", "provider failure HTTP envelope", ProviderFailureHttpEnvelopeAsync),
         new("ST-010", "media facts endpoint unconfigured contract", MediaFactsUnconfiguredAsync),
+        new("ST-011", "media facts configured end to end", MediaFactsConfiguredAsync),
     ];
 
     private static void BoundAuthorityAllowlist(TestContext context)
@@ -374,6 +375,139 @@ internal static class ServerCases
             context.True(error is not null, "unconfigured envelope was not deserializable");
             context.Equal(ApiErrorCode.CapabilityUnavailable, error!.Error.Code, "unconfigured error code");
             context.Equal("The capability is unavailable.", error.Error.Message, "unconfigured error message");
+        }
+        finally
+        {
+            using var stopTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await app.StopAsync(stopTimeout.Token).ConfigureAwait(false);
+        }
+
+        // Configured but unresolvable is the same verdict as unconfigured: the
+        // activation judgment fails at the composition root, so the endpoint must
+        // answer capability-unavailable rather than let a probe discover the
+        // missing tool. This is the capability-endpoint agreement made observable.
+        var unresolvable = new MediaInspectionConfiguration
+        {
+            PathPolicy = new MediaPathPolicyOptions
+            {
+                MediaRoots = [FixtureFiles.PathOf("media")],
+            },
+            Authority = new StaxRip.Platform.MediaInfoCliOptions
+            {
+                ExecutablePath = Path.Combine(AppContext.BaseDirectory, "mediainfo-absent-77d2c9.exe"),
+            },
+        };
+
+        await using var unresolvableApp = ServerApp.Build(mediaInspection: unresolvable);
+        using var secondStartTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await unresolvableApp.StartAsync(secondStartTimeout.Token).ConfigureAwait(false);
+
+        try
+        {
+            Uri authority = ServerApp.PublishBoundAddress(unresolvableApp);
+            using var handler = new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                UseCookies = false,
+                UseProxy = false,
+            };
+            using var client = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(5),
+            };
+
+            using var rootRequest = CreateRequest(authority, "/");
+            using HttpResponseMessage rootResponse = await client.SendAsync(rootRequest).ConfigureAwait(false);
+            context.True(rootResponse.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? setCookies), "session cookie missing");
+            string cookiePair = SingleCookiePair(setCookies!);
+
+            using var request = CreatePostRequest(authority);
+            request.Headers.TryAddWithoutValidation("X-StaxRip-Client", "web");
+            request.Headers.TryAddWithoutValidation("Cookie", cookiePair);
+            using HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false);
+            context.Equal(System.Net.HttpStatusCode.ServiceUnavailable, response.StatusCode, "unresolvable configuration must read as unavailable");
+        }
+        finally
+        {
+            using var stopTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await unresolvableApp.StopAsync(stopTimeout.Token).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task MediaFactsConfiguredAsync(TestContext context)
+    {
+        var configuration = new MediaInspectionConfiguration
+        {
+            PathPolicy = new MediaPathPolicyOptions
+            {
+                MediaRoots = [FixtureFiles.PathOf("media")],
+            },
+            Authority = new StaxRip.Platform.MediaInfoCliOptions
+            {
+                ExecutablePath = Environment.ProcessPath
+                    ?? throw new InvalidOperationException("test host process path unavailable"),
+            },
+        };
+
+        await using var app = ServerApp.Build(mediaInspection: configuration);
+        using var startTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await app.StartAsync(startTimeout.Token).ConfigureAwait(false);
+
+        try
+        {
+            Uri authority = ServerApp.PublishBoundAddress(app);
+            using var handler = new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                UseCookies = false,
+                UseProxy = false,
+            };
+            using var client = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(10),
+            };
+
+            using var rootRequest = CreateRequest(authority, "/");
+            using HttpResponseMessage rootResponse = await client.SendAsync(rootRequest).ConfigureAwait(false);
+            context.True(rootResponse.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? setCookies), "session cookie missing");
+            string cookiePair = SingleCookiePair(setCookies!);
+
+            // The published capability and the endpoint share one verdict; with a
+            // resolvable configuration the capability row flips to available.
+            using var capabilitiesRequest = CreateRequest(authority, ApiContract.CapabilitiesRoute);
+            capabilitiesRequest.Headers.TryAddWithoutValidation("X-StaxRip-Client", "web");
+            capabilitiesRequest.Headers.TryAddWithoutValidation("Cookie", cookiePair);
+            using HttpResponseMessage capabilitiesResponse = await client.SendAsync(capabilitiesRequest).ConfigureAwait(false);
+            string capabilitiesBody = await capabilitiesResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+            CapabilityResponse? capabilities = JsonSerializer.Deserialize<CapabilityResponse>(capabilitiesBody, ContractJson.Options);
+            context.True(capabilities is not null, "capabilities payload was not deserializable");
+            FeatureCapability inspection = capabilities!.Features.Single(static feature => feature.Id == FeatureIds.MediaInspection);
+            context.Equal(CapabilityAvailability.Available, inspection.Availability, "configured capability availability");
+            context.Equal("inspection-configured", inspection.ReasonCode, "configured capability reason");
+
+            string mediaPath = FixtureFiles.PathOf(Path.Combine("media", "cfr-h264-aac.mp4"));
+            using var factsRequest = new HttpRequestMessage(
+                HttpMethod.Post,
+                new Uri(authority, ApiContract.MediaFactsRoute))
+            {
+                Version = System.Net.HttpVersion.Version11,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                Content = new StringContent(
+                    JsonSerializer.Serialize(new MediaFactsRequest(mediaPath), ContractJson.Options),
+                    Encoding.UTF8,
+                    "application/json"),
+            };
+            factsRequest.Headers.TryAddWithoutValidation("X-StaxRip-Client", "web");
+            factsRequest.Headers.TryAddWithoutValidation("Cookie", cookiePair);
+            using HttpResponseMessage factsResponse = await client.SendAsync(factsRequest).ConfigureAwait(false);
+            string factsBody = await factsResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            context.Equal(System.Net.HttpStatusCode.OK, factsResponse.StatusCode, "configured media-facts status");
+            MediaFactsResponse? facts = JsonSerializer.Deserialize<MediaFactsResponse>(factsBody, ContractJson.Options);
+            context.True(facts is not null, "media facts payload was not deserializable");
+            context.Equal("MPEG-4", facts!.Container.Format, "end-to-end container format");
+            context.Equal("26.05", facts.Authority.Version, "end-to-end authority version");
+            context.False(factsBody.Contains("UniqueID", StringComparison.OrdinalIgnoreCase), "banned field crossed the wire end to end");
         }
         finally
         {

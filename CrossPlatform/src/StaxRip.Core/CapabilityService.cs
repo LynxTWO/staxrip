@@ -5,17 +5,7 @@ namespace StaxRip.Core;
 
 public sealed class CapabilityService
 {
-    private static readonly ImmutableArray<FeatureCapability> Features =
-    [
-        AvailableFeature(FeatureIds.LocalEngine, "Local engine"),
-        AvailableFeature(FeatureIds.WebShell, "Web shell"),
-        UnavailableFeature(FeatureIds.MediaInspection, "Media inspection"),
-        UnavailableFeature(FeatureIds.Encoding, "Encoding"),
-        UnavailableFeature(FeatureIds.Persistence, "Persistence"),
-        UnavailableFeature(FeatureIds.RemoteAccess, "Remote access"),
-        UnavailableFeature(FeatureIds.Plugins, "Plugins"),
-        UnavailableFeature(FeatureIds.ProjectImport, "Project import"),
-    ];
+    private readonly ImmutableArray<FeatureCapability> _features;
 
     private static readonly ImmutableArray<ToolCapability> Tools =
     [
@@ -29,10 +19,27 @@ public sealed class CapabilityService
 
     private readonly IHostFactsProvider _hostFactsProvider;
 
-    public CapabilityService(IHostFactsProvider hostFactsProvider)
+    // Media inspection is the one capability with a real activation condition: the
+    // server's composition root decides it from explicit configuration and passes
+    // the verdict in, so this service never guesses and the published capability
+    // always matches what the endpoint will actually do.
+    public CapabilityService(IHostFactsProvider hostFactsProvider, bool mediaInspectionAvailable = false)
     {
         ArgumentNullException.ThrowIfNull(hostFactsProvider);
         _hostFactsProvider = hostFactsProvider;
+        _features =
+        [
+            AvailableFeature(FeatureIds.LocalEngine, "Local engine"),
+            AvailableFeature(FeatureIds.WebShell, "Web shell"),
+            mediaInspectionAvailable
+                ? new FeatureCapability(FeatureIds.MediaInspection, "Media inspection", CapabilityAvailability.Available, "inspection-configured")
+                : UnavailableFeature(FeatureIds.MediaInspection, "Media inspection"),
+            UnavailableFeature(FeatureIds.Encoding, "Encoding"),
+            UnavailableFeature(FeatureIds.Persistence, "Persistence"),
+            UnavailableFeature(FeatureIds.RemoteAccess, "Remote access"),
+            UnavailableFeature(FeatureIds.Plugins, "Plugins"),
+            UnavailableFeature(FeatureIds.ProjectImport, "Project import"),
+        ];
     }
 
     public static HealthResponse GetHealth() => new(
@@ -55,7 +62,7 @@ public sealed class CapabilityService
             ApiContract.ApiVersion,
             ApiContract.EngineVersion,
             safeHost,
-            Features,
+            _features,
             Tools);
     }
 

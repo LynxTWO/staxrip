@@ -37,6 +37,31 @@ public sealed class MediaInfoCliAuthority : IMediaFactAuthority
 
     public string AuthorityName => "mediainfo-cli";
 
+    // The pinned supported range from the tool matrix, proven schema-stable by the
+    // committed goldens at both ends. The vocabulary belongs to this authority; a
+    // version outside it, or one this parser cannot read, is unsupported, and range
+    // enforcement happens on every probed document because the version travels in
+    // the document itself.
+    public const string SupportedVersionFloor = "24.01";
+    public const string SupportedVersionCeiling = "26.05";
+
+    public static bool IsSupportedVersion(string? version)
+    {
+        if (version is null)
+            return false;
+
+        string[] parts = version.Split('.');
+        if (parts.Length < 2 ||
+            !int.TryParse(parts[0], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int major) ||
+            !int.TryParse(parts[1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int minor))
+        {
+            return false;
+        }
+
+        int value = (major * 100) + minor;
+        return value is >= 2401 and <= 2605;
+    }
+
     public async Task<MediaFactAuthorityDocument> ProbeAsync(string mediaPath, CancellationToken cancellationToken)
     {
         var request = new BoundedProcessRequest

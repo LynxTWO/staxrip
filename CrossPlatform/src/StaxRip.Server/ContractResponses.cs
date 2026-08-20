@@ -17,6 +17,12 @@ public static class ContractResponses
         CancellationToken cancellationToken = default) =>
         WriteJsonAsync(response, capabilities, cancellationToken);
 
+    public static Task WriteMediaFactsAsync(
+        HttpResponse response,
+        MediaFactsResponse facts,
+        CancellationToken cancellationToken = default) =>
+        WriteJsonAsync(response, facts, cancellationToken);
+
     public static Task WriteErrorAsync(
         HttpResponse response,
         int statusCode,

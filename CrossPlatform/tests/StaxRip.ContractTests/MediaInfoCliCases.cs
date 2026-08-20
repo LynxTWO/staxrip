@@ -134,13 +134,27 @@ internal static class FakeMediaInfo
                 return 7;
 
             default:
-                if (!File.Exists(arguments[1]))
+                // A .json path is emitted verbatim, which is the adapter cases'
+                // direct pass-through. A media path answers with its sibling golden
+                // from the fixture root, which is how the wire-level pipeline case
+                // probes a real committed media file through a real child process.
+                string probed = arguments[1];
+                if (!probed.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                {
+                    string? mediaDirectory = Path.GetDirectoryName(probed);
+                    string? fixtureRoot = mediaDirectory is null ? null : Path.GetDirectoryName(mediaDirectory);
+                    probed = fixtureRoot is null
+                        ? probed
+                        : Path.Combine(fixtureRoot, Path.GetFileName(probed) + ".win-26.05.json");
+                }
+
+                if (!File.Exists(probed))
                 {
                     Console.Error.Write("document not found\n");
                     return 65;
                 }
 
-                Console.Out.Write(File.ReadAllText(arguments[1]));
+                Console.Out.Write(File.ReadAllText(probed));
                 return 0;
         }
     }

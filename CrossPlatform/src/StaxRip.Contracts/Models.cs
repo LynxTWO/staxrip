@@ -27,6 +27,8 @@ public enum ApiErrorCode
     MethodNotAllowed = 5,
     InternalError = 6,
     CapabilityUnavailable = 7,
+    MediaRejected = 8,
+    AuthorityFailure = 9,
 }
 
 public sealed record HealthResponse(
@@ -64,6 +66,11 @@ public sealed record CapabilityResponse(
 public sealed record ApiError(
     ApiErrorCode Code,
     string Message);
+
+// The one request body the API accepts, on the media-facts route: the media path to
+// inspect, nothing else. Strict deserialization refuses unknown members, so the shape
+// cannot silently widen.
+public sealed record MediaFactsRequest(string? Path);
 
 public sealed record ErrorResponse(
     string SchemaVersion,

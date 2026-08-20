@@ -38,6 +38,7 @@ public static class ContractJson
 [JsonSerializable(typeof(ApiError))]
 [JsonSerializable(typeof(ErrorResponse))]
 [JsonSerializable(typeof(MediaFactsResponse))]
+[JsonSerializable(typeof(MediaFactsRequest))]
 internal sealed partial class ContractJsonContext : JsonSerializerContext
 {
 }

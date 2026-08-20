@@ -15,8 +15,18 @@ public static class ServerApp
 
     public static WebApplication Build(
         IHostFactsProvider? hostFactsProvider = null,
-        Assembly? assetAssembly = null)
+        Assembly? assetAssembly = null,
+        MediaInspectionConfiguration? mediaInspection = null)
     {
+        // The one activation judgment for media inspection, made here at the
+        // composition root so the published capability and the endpoint behavior can
+        // never disagree: explicit configuration, at least one media root, and a
+        // resolvable tool binary. The version range is enforced on every probed
+        // document because the version travels in the document itself.
+        bool mediaInspectionAvailable = mediaInspection is not null &&
+            !mediaInspection.PathPolicy.MediaRoots.IsDefaultOrEmpty &&
+            MediaFileProbe.IsRegularFile(mediaInspection.Authority.ExecutablePath);
+
         var options = new WebApplicationOptions
         {
             ApplicationName = typeof(ServerApp).Assembly.GetName().Name,
@@ -58,15 +68,16 @@ public static class ServerApp
             host.ShutdownTimeout = TimeSpan.FromSeconds(5);
         });
         builder.Services.AddRouting();
-        builder.Services.AddSingleton(hostFactsProvider ?? new RuntimeHostFactsProvider());
-        builder.Services.AddSingleton<CapabilityService>();
+        IHostFactsProvider factsProvider = hostFactsProvider ?? new RuntimeHostFactsProvider();
+        builder.Services.AddSingleton(factsProvider);
+        builder.Services.AddSingleton(new CapabilityService(factsProvider, mediaInspectionAvailable));
         builder.Services.AddSingleton<ProcessSession>();
         builder.Services.AddSingleton<BoundLoopbackAuthority>();
         builder.Services.AddSingleton(
             EmbeddedAssetCatalog.Load(assetAssembly ?? typeof(ServerApp).Assembly));
 
         WebApplication app = builder.Build();
-        ConfigurePipeline(app);
+        ConfigurePipeline(app, mediaInspectionAvailable ? mediaInspection : null);
         return app;
     }
 
@@ -117,10 +128,13 @@ public static class ServerApp
         return authority.PublishFrom(server);
     }
 
-    private static void ConfigurePipeline(WebApplication app)
+    private static void ConfigurePipeline(WebApplication app, MediaInspectionConfiguration? mediaInspection)
     {
         BoundLoopbackAuthority authority =
             app.Services.GetRequiredService<BoundLoopbackAuthority>();
+        IMediaFactAuthority? mediaAuthority = mediaInspection is null
+            ? null
+            : new MediaInfoCliAuthority(mediaInspection.Authority);
         ProcessSession session = app.Services.GetRequiredService<ProcessSession>();
         CapabilityService capabilityService =
             app.Services.GetRequiredService<CapabilityService>();
@@ -235,17 +249,21 @@ public static class ServerApp
                 return;
             }
 
-            // No inspection configuration path exists yet, so the capability is
-            // honestly unavailable and the endpoint says exactly that without
-            // reading the body. The configured pipeline arrives with the D-046
-            // wiring; until then this route exists so the request law, session
-            // gate, and capability answer are real and tested rather than pending.
-            await ContractResponses.WriteErrorAsync(
-                context.Response,
-                StatusCodes.Status503ServiceUnavailable,
-                ApiErrorCode.CapabilityUnavailable,
-                "The capability is unavailable.",
-                context.RequestAborted).ConfigureAwait(false);
+            // The endpoint and the published capability share one verdict, decided
+            // at the composition root: unconfigured or unresolvable means
+            // unavailable, said plainly without reading the body.
+            if (mediaInspection is null || mediaAuthority is null)
+            {
+                await ContractResponses.WriteErrorAsync(
+                    context.Response,
+                    StatusCodes.Status503ServiceUnavailable,
+                    ApiErrorCode.CapabilityUnavailable,
+                    "The capability is unavailable.",
+                    context.RequestAborted).ConfigureAwait(false);
+                return;
+            }
+
+            await MediaFactsHandler.HandleAsync(context, mediaInspection, mediaAuthority).ConfigureAwait(false);
         });
 
     }
