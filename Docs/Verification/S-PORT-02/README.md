@@ -471,3 +471,22 @@ reads available with reason `inspection-configured`. Green in both configuration
 
 After restoration both configurations returned to `cases=51 assertions=601`, no
 orphaned children. All six policing pins moved in the same commit as the cases.
+
+## Unit 4b-2 part 2 validation sweep
+
+Run against committed head `c3bd6fb8` on 2026-08-20, all six gates in order, green on
+the first attempt, the fifth consecutive no-catch sweep:
+
+```
+PASS port-static        checks=240
+PASS port-verify        checks=1211
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=694
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64520
+```
+
+Audit record `evidence-audit.json` sha256
+`b508af785f7142f05d1d05f6fc4977d58d4179308c64e11db7e0080346944d04`. This section
+postdates the audited set by construction; it records the audit, it is not covered by
+it.
