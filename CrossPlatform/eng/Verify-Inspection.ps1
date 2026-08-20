@@ -266,7 +266,8 @@ $record = [ordered]@{
         cancellation_probes = 1
     }
     reliances = @(
-        'CT-038 proves rejected paths never reach the authority, in process with an injected authority'
+        'CT-038 proves rejected paths never reach the authority, in process with an injected authority',
+        'CT-020 is the load-bearing privacy proof at the guard; the wire greps here restate it, and the typed payload schema excludes banned fields structurally, shown by a strip-neutralizing mutation that CT-020 caught while the wire greps could not'
     )
 }
 $json = $record | ConvertTo-Json -Depth 6

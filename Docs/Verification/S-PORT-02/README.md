@@ -490,3 +490,44 @@ Audit record `evidence-audit.json` sha256
 `b508af785f7142f05d1d05f6fc4977d58d4179308c64e11db7e0080346944d04`. This section
 postdates the audited set by construction; it records the audit, it is not covered by
 it.
+
+## Unit 4b-3: the port-inspection gate
+
+A seventh gate joins the sweep. It drives a configured server over real HTTP through
+the test binary's `--serve-configured` host, because the shipped binary deliberately
+has no configuration surface and inventing one for a gate would be product surface
+nobody asked for. The gate stages its own media world under the artifacts tree,
+committed media copies, a garbage golden, a sleep probe, and a junction directory
+inside the root, and proves at the wire: the capability row reads available; the
+happy path answers with normalized golden facts and no banned name in the body; seven
+hostile shapes are one byte-uniform 422 with no path echo; malformed authority output
+is a typed 502 naming only `document-not-json`; a cancelled hanging probe leaves no
+child process behind and the pipeline still answers afterward; and the host shuts
+down clean. Producer honesty both ways: the gate invalidates any standing audit
+before writing its record, and the audit validates the inspection record's shape and
+counts, because a gate pass the audit cannot see is a producer claim outside the
+audited set.
+
+**The gate went red before the product was ready, exactly as intended.** Design
+review predicted the probe refused reparse leaves but would traverse a junction
+directory inside a root, the root-escape shape D-046's corpus names. The gate's first
+run confirmed it: `FAIL check=hostile-status-4`, the junction path was admitted. The
+probe now walks the whole directory chain and refuses any reparse component, the
+suite stayed at `cases=51 assertions=601`, and the gate's junction case is the
+standing guard. Removing the walk turns the gate red at the same check, proven and
+restored.
+
+**A surviving mutant, dispositioned in writing.** Neutralizing the privacy strip left
+the gate green: the wire greps cannot fail while the typed payload's fixed schema
+structurally excludes banned fields, so the strip is defense in depth ahead of a
+projection that already blocks the wire. The suite run under the same mutation went
+red at `CT-020, banned field survived the guard: UniqueID`, which is the load-bearing
+proof at the guard itself. Per the restatement rule, the gate's record now cites
+CT-020 and the structural projection as the proofs its wire greps restate. The gate
+also records its reliance on CT-038 for the no-authority-call property of rejected
+paths, proven in process against an injected authority.
+
+The gate passes at 43 checks. The comparison recorder, real CLI against the existing
+Windows MediaInfo library over the committed media files, remains the one open item
+of the ratified gate plan and is deliberately its own unit: it needs the current
+product's native wrapper, which no cross-platform gate should build.
