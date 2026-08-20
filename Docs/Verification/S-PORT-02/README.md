@@ -630,3 +630,21 @@ endpoint with capability honesty; the port-inspection gate as the seventh sweep 
 audited inside the set; and the Windows comparison record at matched versions with
 zero value disagreements. Every catch, repair, deviation, and surviving mutant along
 the way is recorded above in the unit it belongs to.
+
+**The attesting sweep**, run against the Final-stamped commit `41201691` on
+2026-08-20, all seven gates green on the first attempt:
+
+```
+PASS port-static        checks=247
+PASS port-verify        checks=1211
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=694
+PASS port-inspection    checks=43
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64839
+```
+
+Audit record `evidence-audit.json` sha256
+`910da30061b87af14b0b291e2cb4767fd8938cec99c08381ca5d2d00d59d40d4`. This paragraph
+postdates the audited set by construction; it records the attestation, it is not
+covered by it. The slice is closed.
