@@ -418,3 +418,56 @@ Audit record `evidence-audit.json` sha256
 `438eb090c88f2677999bc1f32f2a59c2a2820dd75c67261ec09c28728d1c18df`. This section
 postdates the audited set by construction; it records the audit, it is not covered by
 it.
+
+## Unit 4b-2 part 2: the configured pipeline
+
+The endpoint now does the work when configured. The handler reads the bounded body
+trusting nothing beyond the declared length the request law admitted, deserializes the
+strict request shape, and then judges acceptance under D-046: the pure policy and the
+regular-file probe answer together, and every acceptance failure is one uniform
+response whose bodies are byte-identical by test, because acceptance is where the
+no-oracle rule lives. Past acceptance the ratified error contract takes over: the
+authority runs through the bounded primitive, the normalizer strips and types the
+document, the version range is enforced on every probed document because the version
+travels in the document itself, and failures carry a typed reason class describing
+the authority, never tool output or a path. Cancellation propagates.
+
+The activation verdict is made once at the composition root: explicit configuration,
+at least one media root, and a tool binary resolvable through the sanctioned probe.
+The published capability row and the endpoint share that verdict, so a configured but
+unresolvable server publishes unavailable and answers unavailable, proven end to end.
+The per-document range check is a recorded deviation from the contract's "version
+range holds at startup" wording: a startup check would require an unrecorded
+`--Version` invocation shape and a parser for non-JSON output, where the per-document
+check reads the same field the goldens already prove parseable, and it catches a tool
+swapped after startup, which the startup wording would not.
+
+**Red first.** `FAIL port-contract case=CT-037 type=NotImplementedException`, exit 1.
+
+**Corpus split by cost.** CT-037 through CT-040 drive the handler in process with
+injected authorities: the golden happy path with wire-level privacy asserts over the
+serialized body; the uniform-shape proof comparing four rejection bodies byte for
+byte, outside-root, absent, directory, and traversal-spelled; the malformed-body
+corpus; and the typed failures, including a future version synthesized by editing the
+golden's creatingLibrary. ST-011 proves the full wire once: a real POST through the
+real server spawns the impersonated tool as a real child process, the golden crosses
+the adapter and normalizer, the payload arrives privacy-clean, and the capability row
+reads available with reason `inspection-configured`. Green in both configurations:
+`PASS port-contract cases=51 assertions=601 failures=0`.
+
+**Mutation proofs, each observed against the committed baseline and restored.**
+
+- Probe half of acceptance removed: `FAIL case=CT-038, acceptance rejection status,
+  expected 422 actual 200`, an absent file reached the authority.
+- Uniform rejection differentiated by echoing the path: `FAIL case=CT-038,
+  acceptance rejections diverged in shape`, and the failure output itself shows real
+  filesystem paths appearing in the bodies, which is exactly the leak the
+  byte-uniformity rule exists to prevent.
+- Version range widened past the ceiling: `FAIL case=CT-040, version range status,
+  expected 502 actual 200`, the synthesized 27.00 document was admitted.
+- Activation verdict ignored by the endpoint: `FAIL case=ST-010, unresolvable
+  configuration must read as unavailable, expected ServiceUnavailable actual
+  UnprocessableEntity`, the capability-endpoint agreement is load bearing.
+
+After restoration both configurations returned to `cases=51 assertions=601`, no
+orphaned children. All six policing pins moved in the same commit as the cases.
