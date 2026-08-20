@@ -26,6 +26,7 @@ public enum ApiErrorCode
     NotFound = 4,
     MethodNotAllowed = 5,
     InternalError = 6,
+    CapabilityUnavailable = 7,
 }
 
 public sealed record HealthResponse(

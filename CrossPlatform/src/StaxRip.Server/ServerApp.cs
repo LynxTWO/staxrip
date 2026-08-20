@@ -169,7 +169,12 @@ public static class ServerApp
             if (rejection is not null)
             {
                 if (rejection.StatusCode == StatusCodes.Status405MethodNotAllowed)
-                    context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Allow] = HttpMethods.Get;
+                {
+                    string? rejectedTarget = context.Features
+                        .Get<Microsoft.AspNetCore.Http.Features.IHttpRequestFeature>()?.RawTarget;
+                    context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Allow] =
+                        LoopbackRequestPolicy.AllowedMethodFor(rejectedTarget);
+                }
 
                 await ContractResponses.WriteErrorAsync(
                     context.Response,
@@ -214,6 +219,32 @@ public static class ServerApp
             await ContractResponses.WriteCapabilitiesAsync(
                 context.Response,
                 capabilityService.GetCapabilities(),
+                context.RequestAborted).ConfigureAwait(false);
+        });
+
+        app.MapPost("/api/v1/media-facts", async context =>
+        {
+            if (!session.IsAuthorized(context.Request.Headers))
+            {
+                await ContractResponses.WriteErrorAsync(
+                    context.Response,
+                    StatusCodes.Status401Unauthorized,
+                    ApiErrorCode.Unauthorized,
+                    "Authorization is required.",
+                    context.RequestAborted).ConfigureAwait(false);
+                return;
+            }
+
+            // No inspection configuration path exists yet, so the capability is
+            // honestly unavailable and the endpoint says exactly that without
+            // reading the body. The configured pipeline arrives with the D-046
+            // wiring; until then this route exists so the request law, session
+            // gate, and capability answer are real and tested rather than pending.
+            await ContractResponses.WriteErrorAsync(
+                context.Response,
+                StatusCodes.Status503ServiceUnavailable,
+                ApiErrorCode.CapabilityUnavailable,
+                "The capability is unavailable.",
                 context.RequestAborted).ConfigureAwait(false);
         });
 

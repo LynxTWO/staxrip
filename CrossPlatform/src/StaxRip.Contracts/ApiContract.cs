@@ -7,6 +7,7 @@ public static class ApiContract
     public const string EngineVersion = "0.1.0-bootstrap";
     public const string HealthRoute = "/healthz";
     public const string CapabilitiesRoute = "/api/v1/capabilities";
+    public const string MediaFactsRoute = "/api/v1/media-facts";
 }
 
 public static class ContractLimits

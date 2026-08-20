@@ -1811,11 +1811,20 @@ $routeMatches = [regex]::Matches($serverText, '\bMapGet\s*\(\s*"([^"]+)"')
 $actualRoutes = @($routeMatches | ForEach-Object { $_.Groups[1].Value })
 $expectedRoutes = @('/', '/app.css', '/app.js', '/healthz', '/api/v1/capabilities')
 Assert-EqualSet -Label 'literal GET route inventory' -Actual $actualRoutes -Expected $expectedRoutes
+# D-046 amends the route law deliberately: exactly one POST route, the media-facts
+# endpoint, carries the one request body the server accepts. Every other
+# registration shape stays banned, both inventories are literal markers, and the
+# published routes record is the union the audit re-checks against its own copy.
+$postRouteMatches = [regex]::Matches($serverText, '\bMapPost\s*\(\s*"([^"]+)"')
+$actualPostRoutes = @($postRouteMatches | ForEach-Object { $_.Groups[1].Value })
+Assert-EqualSet -Label 'literal POST route inventory' -Actual $actualPostRoutes -Expected @('/api/v1/media-facts')
 $allMapGetCalls = [regex]::Matches($serverText, '\bMapGet\s*\(')
+$allMapPostCalls = [regex]::Matches($serverText, '\bMapPost\s*\(')
 if ($allMapGetCalls.Count -ne $routeMatches.Count -or
-    $serverText -match '\bMap(?:Post|Put|Patch|Delete|Methods|Controllers|ControllerRoute|Fallback|Group|BlazorHub|RazorPages)\s*\(' -or
+    $allMapPostCalls.Count -ne $postRouteMatches.Count -or
+    $serverText -match '\bMap(?:Put|Patch|Delete|Methods|Controllers|ControllerRoute|Fallback|Group|BlazorHub|RazorPages)\s*\(' -or
     $serverText -match '\bMap\s*\(') {
-    Stop-Gate -Message 'Server source registers a route outside the exact five GET route markers.'
+    Stop-Gate -Message 'Server source registers a route outside the exact six literal route markers.'
 }
 
 $serverProjectPath = Join-Path $serverRoot 'StaxRip.Server.csproj'
@@ -1893,7 +1902,7 @@ if (Test-Path -LiteralPath $testManifestPath -PathType Leaf) {
         'CT-022', 'CT-023', 'CT-024', 'CT-025', 'CT-026', 'CT-027', 'CT-028',
         'CT-029', 'CT-030', 'CT-031', 'CT-032', 'CT-033', 'CT-034', 'CT-035', 'CT-036',
         'ST-001', 'ST-002', 'ST-003', 'ST-004', 'ST-005', 'ST-006', 'ST-007',
-        'ST-008', 'ST-009'
+        'ST-008', 'ST-009', 'ST-010'
     )
     Assert-EqualSet -Label 'reviewed contract test id baseline' -Actual $testCaseIds -Expected $expectedTestCaseIds
 
@@ -1984,7 +1993,7 @@ try {
             entries = $scopeSnapshot.Entries
         }
         project_graph = $actualGraph
-        routes = @(Sort-Ordinal $actualRoutes)
+        routes = @(Sort-Ordinal ($actualRoutes + $actualPostRoutes))
         embedded_assets = @(Sort-Ordinal $embeddedPairs.ToArray())
         test_cases = @(Sort-Ordinal $testCaseIds)
         source_manifest = [ordered]@{

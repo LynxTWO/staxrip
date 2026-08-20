@@ -3406,7 +3406,7 @@ try {
         'Microsoft.NETCore.App.Runtime.linux-x64'
     )
     $expectedPackageVersion = '10.0.11'
-    $expectedRoutes = @('/', '/api/v1/capabilities', '/app.css', '/app.js', '/healthz')
+    $expectedRoutes = @('/', '/api/v1/capabilities', '/api/v1/media-facts', '/app.css', '/app.js', '/healthz')
     $expectedAssets = @(
         'Web/app.css|StaxRip.Server.Web.app.css',
         'Web/app.js|StaxRip.Server.Web.app.js',
@@ -3419,7 +3419,7 @@ try {
         'CT-022', 'CT-023', 'CT-024', 'CT-025', 'CT-026', 'CT-027', 'CT-028',
         'CT-029', 'CT-030', 'CT-031', 'CT-032', 'CT-033', 'CT-034', 'CT-035', 'CT-036',
         'ST-001', 'ST-002', 'ST-003', 'ST-004', 'ST-005', 'ST-006', 'ST-007',
-        'ST-008', 'ST-009'
+        'ST-008', 'ST-009', 'ST-010'
     )
 
     $static = Read-JsonRecord -Name 'static-gate.json' -ExpectedSchema 'staxrip-static-gate-v1'
@@ -3959,10 +3959,10 @@ try {
             $stepFields = Assert-JsonObjectShape -Element $stepItems[$index] -ExpectedNames @(
                 'id', 'exit', 'cases', 'assertions') -Id 'summary-contract-step-shape'
             Confirm-Check (
-                (Get-JsonIntegerField -Fields $stepFields -Name 'cases' -Id 'summary-contract-cases') -eq 45) `
+                (Get-JsonIntegerField -Fields $stepFields -Name 'cases' -Id 'summary-contract-cases') -eq 46) `
                 'summary-contract-cases-value'
             Confirm-Check (
-                (Get-JsonIntegerField -Fields $stepFields -Name 'assertions' -Id 'summary-contract-assertions') -eq 527) `
+                (Get-JsonIntegerField -Fields $stepFields -Name 'assertions' -Id 'summary-contract-assertions') -eq 545) `
                 'summary-contract-assertions-value'
         }
         elseif ($expectedStepId -ceq 'port-contract-failure') {

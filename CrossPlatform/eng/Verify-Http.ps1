@@ -1033,6 +1033,7 @@ function Invoke-HttpCase {
         [string[]]$ClientHeaderValues,
         [hashtable]$AdditionalHeaders,
         [string]$BodyText,
+        [string]$ContentTypeText = "text/plain",
         [switch]$Chunked,
         [ValidateSet("none", "one", "ignore")][string]$CookieExpectation = "none",
         [Parameter(Mandatory)][string[]]$PrivacySentinels
@@ -1072,7 +1073,7 @@ function Invoke-HttpCase {
         if ($PSBoundParameters.ContainsKey("BodyText")) {
             $request.Content = [System.Net.Http.ByteArrayContent]::new(
                 [System.Text.Encoding]::UTF8.GetBytes($BodyText))
-            $request.Content.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::new("text/plain")
+            $request.Content.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse($ContentTypeText)
         }
         if ($Chunked) {
             if ($null -eq $request.Content) {
@@ -2322,28 +2323,58 @@ try {
         Confirm-ErrorResponse $result 403 "forbidden" "The request was rejected."
     }
 
-    $routes = @("/", "/app.css", "/app.js", "/healthz", "/api/v1/capabilities")
-    $methods = @("HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE")
+    # The request law after the D-046 amendment: five GET routes keep the bodyless,
+    # queryless law; the one POST route accepts exactly one bounded JSON body shape.
+    # The Allow header on a 405 names the path's own method, so it is asserted per
+    # route rather than as a constant.
+    $mediaFactsRoute = "/api/v1/media-facts"
+    $mediaFactsContentType = "application/json; charset=utf-8"
+    $mediaFactsBody = '{"path":"placeholder"}'
+    $routes = @("/", "/app.css", "/app.js", "/healthz", "/api/v1/capabilities", $mediaFactsRoute)
+    $allMethods = @("HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE")
     foreach ($route in $routes) {
-        foreach ($method in $methods) {
+        $allowedMethod = if ($route -ceq $mediaFactsRoute) { "POST" } else { "GET" }
+        foreach ($method in @($allMethods | Where-Object { $_ -cne $allowedMethod })) {
             $result = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Method $method -PrivacySentinels $privacySentinels
             Confirm-ErrorResponse $result 405 "methodNotAllowed" "The request was rejected." -AllowEmptyBody:($method -ceq "HEAD")
             Confirm-Check ($result.Headers.ContainsKey("Allow")) "method-allow-present"
-            Confirm-Check (($result.Headers["Allow"] -join ", ") -ceq "GET") "method-allow-get"
+            Confirm-Check (($result.Headers["Allow"] -join ", ") -ceq $allowedMethod) "method-allow-exact"
         }
 
-        $query = Invoke-HttpCase $anonymous $serverOne.BaseUri ($route + "?probe=$sentinel") -PrivacySentinels $privacySentinels
-        Confirm-ErrorResponse $query 400 "invalidRequest" "The request was rejected."
-        $body = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -BodyText $sentinel -PrivacySentinels $privacySentinels
-        Confirm-ErrorResponse $body 400 "invalidRequest" "The request was rejected."
-        $chunked = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Chunked -PrivacySentinels $privacySentinels
-        Confirm-ErrorResponse $chunked 400 "invalidRequest" "The request was rejected."
+        if ($route -ceq $mediaFactsRoute) {
+            $query = Invoke-HttpCase $anonymous $serverOne.BaseUri ($route + "?probe=$sentinel") -Method "POST" -BodyText $mediaFactsBody -ContentTypeText $mediaFactsContentType -PrivacySentinels $privacySentinels
+            Confirm-ErrorResponse $query 400 "invalidRequest" "The request was rejected."
+            $bodyless = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Method "POST" -PrivacySentinels $privacySentinels
+            Confirm-ErrorResponse $bodyless 400 "invalidRequest" "The request was rejected."
+            $wrongType = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Method "POST" -BodyText $mediaFactsBody -PrivacySentinels $privacySentinels
+            Confirm-ErrorResponse $wrongType 400 "invalidRequest" "The request was rejected."
+            $oversized = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Method "POST" -BodyText ('{"path":"' + ("a" * 1100) + '"}') -ContentTypeText $mediaFactsContentType -PrivacySentinels $privacySentinels
+            Confirm-ErrorResponse $oversized 400 "invalidRequest" "The request was rejected."
+            $chunked = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Method "POST" -BodyText $mediaFactsBody -ContentTypeText $mediaFactsContentType -Chunked -PrivacySentinels $privacySentinels
+            Confirm-ErrorResponse $chunked 400 "invalidRequest" "The request was rejected."
+        }
+        else {
+            $query = Invoke-HttpCase $anonymous $serverOne.BaseUri ($route + "?probe=$sentinel") -PrivacySentinels $privacySentinels
+            Confirm-ErrorResponse $query 400 "invalidRequest" "The request was rejected."
+            $body = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -BodyText $sentinel -PrivacySentinels $privacySentinels
+            Confirm-ErrorResponse $body 400 "invalidRequest" "The request was rejected."
+            $chunked = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Chunked -PrivacySentinels $privacySentinels
+            Confirm-ErrorResponse $chunked 400 "invalidRequest" "The request was rejected."
+        }
     }
 
-    foreach ($route in @("/index.html", "/app.css/", "/app.js/", "/healthz/", "/api/v1/capabilities/", "/unknown", "/app.js%2f..%2fhealthz")) {
+    foreach ($route in @("/index.html", "/app.css/", "/app.js/", "/healthz/", "/api/v1/capabilities/", "/api/v1/media-facts/", "/unknown", "/app.js%2f..%2fhealthz")) {
         $result = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -PrivacySentinels $privacySentinels
         Confirm-ErrorResponse $result 404 "notFound" "The request was rejected."
     }
+
+    # The endpoint's own contract while no inspection configuration exists: the
+    # session gate answers first, and an authorized caller learns exactly that the
+    # capability is unavailable, with the body never read.
+    $mediaAnonymous = Invoke-HttpCase $anonymous $serverOne.BaseUri $mediaFactsRoute -Method "POST" -BodyText $mediaFactsBody -ContentTypeText $mediaFactsContentType -PrivacySentinels $privacySentinels
+    Confirm-ErrorResponse $mediaAnonymous 401 "unauthorized" "Authorization is required."
+    $mediaUnconfigured = Invoke-HttpCase $sessionOne $serverOne.BaseUri $mediaFactsRoute -Method "POST" -BodyText $mediaFactsBody -ContentTypeText $mediaFactsContentType -ClientHeaderValues @("web") -PrivacySentinels $privacySentinels
+    Confirm-ErrorResponse $mediaUnconfigured 503 "capabilityUnavailable" "The capability is unavailable."
 
     $preflightHeaders = @{
         "Access-Control-Request-Method" = "GET"

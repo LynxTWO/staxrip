@@ -26,6 +26,7 @@ internal static class ServerCases
         new("ST-007", "response security headers", ResponseSecurityHeaders),
         new("ST-008", "contract JSON is immutable", ContractJsonIsImmutable),
         new("ST-009", "provider failure HTTP envelope", ProviderFailureHttpEnvelopeAsync),
+        new("ST-010", "media facts endpoint unconfigured contract", MediaFactsUnconfiguredAsync),
     ];
 
     private static void BoundAuthorityAllowlist(TestContext context)
@@ -87,7 +88,7 @@ internal static class ServerCases
     private static void RawTargetAllowlist(TestContext context)
     {
         context.SequenceEqual(
-            ["/", "/app.css", "/app.js", ApiContract.HealthRoute, ApiContract.CapabilitiesRoute],
+            ["/", "/app.css", "/app.js", ApiContract.HealthRoute, ApiContract.CapabilitiesRoute, ApiContract.MediaFactsRoute],
             LoopbackRequestPolicy.AllowedRoutes,
             "route allowlist changed");
 
@@ -123,6 +124,43 @@ internal static class ServerCases
 
         foreach (string method in new[] { "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "CONNECT" })
             context.Equal(405, Evaluate(method, "/healthz")?.StatusCode, $"method status changed: {method}");
+
+        // The one route the request law amends: the media-facts route requires POST
+        // with an exact bounded JSON body, and every other law is unchanged there.
+        // The law layer admits a well-shaped request; authorization and capability
+        // are the handler's judgments, not the law's.
+        context.Equal<RequestRejection?>(
+            null,
+            Evaluate("POST", ApiContract.MediaFactsRoute, contentLength: 64, contentType: "application/json; charset=utf-8"),
+            "well-shaped media-facts request rejected by the law");
+        context.Equal(405, Evaluate("GET", ApiContract.MediaFactsRoute)?.StatusCode, "GET on the post route was not refused");
+        context.Equal("POST", LoopbackRequestPolicy.AllowedMethodFor(ApiContract.MediaFactsRoute), "allow method for the post route");
+        context.Equal("GET", LoopbackRequestPolicy.AllowedMethodFor("/healthz"), "allow method for a get route");
+        context.Equal("GET", LoopbackRequestPolicy.AllowedMethodFor("/unknown"), "allow method for an unknown route");
+        context.Equal(
+            400,
+            Evaluate("POST", ApiContract.MediaFactsRoute, contentType: "application/json; charset=utf-8")?.StatusCode,
+            "bodyless post was not refused");
+        context.Equal(
+            400,
+            Evaluate("POST", ApiContract.MediaFactsRoute, contentLength: 2048, contentType: "application/json; charset=utf-8")?.StatusCode,
+            "oversized body was not refused");
+        context.Equal(
+            400,
+            Evaluate("POST", ApiContract.MediaFactsRoute, contentLength: 64, contentType: "text/plain")?.StatusCode,
+            "wrong content type was not refused");
+        context.Equal(
+            400,
+            Evaluate("POST", ApiContract.MediaFactsRoute, contentLength: 64)?.StatusCode,
+            "missing content type was not refused");
+        context.Equal(
+            400,
+            Evaluate("POST", ApiContract.MediaFactsRoute, transferEncoding: true, contentType: "application/json; charset=utf-8")?.StatusCode,
+            "chunked transfer was not refused");
+        context.Equal(
+            400,
+            Evaluate("POST", ApiContract.MediaFactsRoute + "?x=1", query: "?x=1", contentLength: 64, contentType: "application/json; charset=utf-8")?.StatusCode,
+            "query on the post route was not refused");
     }
 
     private static void ProcessSessionIsolation(TestContext context)
@@ -267,7 +305,8 @@ internal static class ServerCases
         string? origin = null,
         string? query = null,
         long? contentLength = null,
-        bool transferEncoding = false)
+        bool transferEncoding = false,
+        string? contentType = null)
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Method = method;
@@ -283,11 +322,78 @@ internal static class ServerCases
         if (transferEncoding)
             httpContext.Request.Headers.TransferEncoding = "chunked";
 
+        if (contentType is not null)
+            httpContext.Request.Headers.ContentType = contentType;
+
         IHttpRequestFeature feature = httpContext.Features.Get<IHttpRequestFeature>() ??
             throw new InvalidOperationException("default request feature missing");
         feature.RawTarget = rawTarget;
 
         return LoopbackRequestPolicy.EvaluateRequest(httpContext.Request, authority);
+    }
+
+    private static async Task MediaFactsUnconfiguredAsync(TestContext context)
+    {
+        await using var app = ServerApp.Build();
+        using var startTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await app.StartAsync(startTimeout.Token).ConfigureAwait(false);
+
+        try
+        {
+            Uri authority = ServerApp.PublishBoundAddress(app);
+            using var handler = new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                UseCookies = false,
+                UseProxy = false,
+            };
+            using var client = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(5),
+            };
+
+            // Without a session the endpoint refuses before saying anything about
+            // capability state.
+            using var anonymousRequest = CreatePostRequest(authority);
+            using HttpResponseMessage anonymousResponse = await client.SendAsync(anonymousRequest).ConfigureAwait(false);
+            context.Equal(System.Net.HttpStatusCode.Unauthorized, anonymousResponse.StatusCode, "anonymous media-facts status");
+
+            using var rootRequest = CreateRequest(authority, "/");
+            using HttpResponseMessage rootResponse = await client.SendAsync(rootRequest).ConfigureAwait(false);
+            context.True(rootResponse.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? setCookies), "session cookie missing");
+            string cookiePair = SingleCookiePair(setCookies!);
+
+            using var authorizedRequest = CreatePostRequest(authority);
+            authorizedRequest.Headers.TryAddWithoutValidation("X-StaxRip-Client", "web");
+            authorizedRequest.Headers.TryAddWithoutValidation("Cookie", cookiePair);
+            using HttpResponseMessage response = await client.SendAsync(authorizedRequest).ConfigureAwait(false);
+            string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            context.Equal(System.Net.HttpStatusCode.ServiceUnavailable, response.StatusCode, "unconfigured media-facts status");
+            ErrorResponse? error = JsonSerializer.Deserialize<ErrorResponse>(body, ContractJson.Options);
+            context.True(error is not null, "unconfigured envelope was not deserializable");
+            context.Equal(ApiErrorCode.CapabilityUnavailable, error!.Error.Code, "unconfigured error code");
+            context.Equal("The capability is unavailable.", error.Error.Message, "unconfigured error message");
+        }
+        finally
+        {
+            using var stopTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await app.StopAsync(stopTimeout.Token).ConfigureAwait(false);
+        }
+    }
+
+    private static HttpRequestMessage CreatePostRequest(Uri authority)
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            new Uri(authority, ApiContract.MediaFactsRoute))
+        {
+            Version = System.Net.HttpVersion.Version11,
+            VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+            Content = new StringContent("{\"path\":\"placeholder\"}", Encoding.UTF8, "application/json"),
+        };
+
+        return request;
     }
 
     private static HttpRequestMessage CreateRequest(Uri authority, string route) => new(
