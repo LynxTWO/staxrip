@@ -830,3 +830,25 @@ plan would have routed author-controlled chapter labels to the wire verbatim.
 the family-prefix rule to exact-name matching turns `CT-020` red at
 `banned-family variant survived the guard: Encoded_Application_Name`, which is the
 same red that opened the unit, so the widening is load bearing rather than decorative.
+
+**The attesting sweep**, run against `609d20eb` on 2026-08-21, all seven gates green
+on the first attempt:
+
+```
+PASS port-static        checks=253
+PASS port-verify        checks=1231
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=752
+PASS port-inspection    checks=97
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=65088
+```
+
+Audit record `evidence-audit.json` sha256
+`b0ffbe40104028834203c4c0d3fe9c470ab9dcc7d5cc0c935d85395e425973ad`. One observation
+worth recording rather than smoothing: the browser gate's check count is not pinned
+and has ranged from 691 to 752 across this slice's sweeps while its evidence record
+validates every time, because the count follows the browser's own reported target and
+message set rather than the product surface. The pinned counts, contract cases and
+assertions, moved deliberately in the same commit as their cases. This paragraph
+postdates the audited set by construction.
