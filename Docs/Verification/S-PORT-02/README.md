@@ -714,3 +714,23 @@ pipeline has only run on Windows. The reviewer's remaining adversarial items, pa
 check-and-use races, inherited child environment, shutdown cancellation, activation
 with unusable roots, and path-like metadata values, stay with the continuing
 read-only audit.
+
+**The re-attesting sweep**, run against the 1.1 Final commit `f0edda08` on
+2026-08-21, all seven gates green on the first attempt:
+
+```
+PASS port-static        checks=247
+PASS port-verify        checks=1211
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=694
+PASS port-inspection    checks=97
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64842
+```
+
+Audit record `evidence-audit.json` sha256
+`e20829799bc4f5a658da91a1afad6dce4f94dc46fe2b29664299c911be5380f6`, the first audit
+whose certified set includes a lease-serialized inspection record and whose task-root
+law covers all three producer roots. This paragraph postdates the audited set by
+construction; it records the attestation, it is not covered by it. The certification
+repair is closed.
