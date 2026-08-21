@@ -45,6 +45,8 @@ public sealed class MediaInfoCliAuthority : IMediaFactAuthority
     public const string SupportedVersionFloor = "24.01";
     public const string SupportedVersionCeiling = "26.05";
 
+    public bool IsSupportedDocumentVersion(string? version) => IsSupportedVersion(version);
+
     public static bool IsSupportedVersion(string? version)
     {
         if (version is null)

@@ -111,7 +111,7 @@ public static class MediaFactsHandler
             return;
         }
 
-        if (!MediaInfoCliAuthority.IsSupportedVersion(facts.Authority.Version))
+        if (!authority.IsSupportedDocumentVersion(facts.Authority.Version))
         {
             await WriteAuthorityFailureAsync(context, "version-out-of-range").ConfigureAwait(false);
             return;

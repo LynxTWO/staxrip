@@ -137,9 +137,22 @@
 
     for (let index = 0; index < knownFeatureIds.length; index += 1) {
       const id = knownFeatureIds[index];
+      const row = payload.features[index];
+
+      if (id === "media-inspection") {
+        // The one capability with a real activation condition: a configured server
+        // legitimately publishes it available, and the shell must accept and render
+        // either honest state rather than pinning the bootstrap default forever.
+        if (!validateCatalogRow(row, id, "available", "inspection-configured") &&
+            !validateCatalogRow(row, id, "unavailable", "bootstrap-unavailable")) {
+          return false;
+        }
+        continue;
+      }
+
       const available = bootstrapAvailableFeatures.has(id);
       if (!validateCatalogRow(
-        payload.features[index],
+        row,
         id,
         available ? "available" : "unavailable",
         available ? "bootstrap-ready" : "bootstrap-unavailable"
@@ -168,7 +181,10 @@
 
       const badge = card.querySelector(".availability");
       if (badge) {
-        const isAvailable = row.availability === "available" && bootstrapAvailableFeatures.has(featureId);
+        // Validation already constrained which features may claim availability, so
+        // the render trusts the accepted row instead of re-clamping it to the
+        // bootstrap default.
+        const isAvailable = row.availability === "available";
         badge.textContent = isAvailable ? "Available" : "Unavailable";
         badge.classList.remove("availability-pending", "availability-on", "availability-off");
         badge.classList.add(isAvailable ? "availability-on" : "availability-off");

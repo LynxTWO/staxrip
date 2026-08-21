@@ -173,6 +173,8 @@ internal static class MediaFactsEndpointCases
 
         public string AuthorityName => "mediainfo-cli";
 
+        public bool IsSupportedDocumentVersion(string? version) => MediaInfoCliAuthority.IsSupportedVersion(version);
+
         public Task<MediaFactAuthorityDocument> ProbeAsync(string mediaPath, CancellationToken cancellationToken)
         {
             ProbeCount++;
@@ -191,6 +193,8 @@ internal static class MediaFactsEndpointCases
         }
 
         public string AuthorityName => "mediainfo-cli";
+
+        public bool IsSupportedDocumentVersion(string? version) => MediaInfoCliAuthority.IsSupportedVersion(version);
 
         public Task<MediaFactAuthorityDocument> ProbeAsync(string mediaPath, CancellationToken cancellationToken) =>
             Task.FromException<MediaFactAuthorityDocument>(_exception);

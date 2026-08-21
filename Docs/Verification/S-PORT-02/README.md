@@ -1,7 +1,10 @@
 # S-PORT-02 Verification Record
 
-Version: 1.0 Final. Date: 2026-08-20. Started at base `9cc9bd37`; closed by the
-exit-criteria review below with the attesting seven-gate sweep recorded after it.
+Version: 1.1 Final. Date: 2026-08-21. Started at base `9cc9bd37`; closed at 1.0 by
+the exit-criteria review below with its attesting sweep, then reopened for the
+certification repair recorded in the final section and re-attested by the sweep
+recorded after it. The 1.0 feature closure was never disproved; one concurrency
+invariant of the certification harness was, and is now repaired and proven.
 
 ## Unit 1: typed payload, normalizer, privacy guard
 
@@ -648,3 +651,66 @@ Audit record `evidence-audit.json` sha256
 `910da30061b87af14b0b291e2cb4767fd8938cec99c08381ca5d2d00d59d40d4`. This paragraph
 postdates the audited set by construction; it records the attestation, it is not
 covered by it. The slice is closed.
+
+## Certification repair, 2026-08-21: reopened and closed
+
+An independent adversarial review, run read-only in a parallel session, disproved one
+claimed concurrency invariant while leaving the sequential attestation standing: the
+inspection gate published audited evidence without the shared writer lease every other
+audited producer holds, invalidated the audit JSON before its sidecar, wrote its
+record non-atomically, and swept a fixed task root without the ownership and reparse
+safeguards, while the auditor never checked that task root. The classification is
+accepted exactly as the reviewer framed it: feature closed, certification repair
+reopened. The finding is the ADC-LOCAL-015 class recurring on its own unit of origin,
+and it sharpens that lesson: the family's obligations are enumerated by reading an
+incumbent producer end to end, never inferred from the one failure already observed.
+
+**The repair.** The gate now carries the family obligations in full: the shared
+writer lease with create-new, share-none semantics and the exact 33-byte receipt that
+owns removal; sidecar-then-JSON audit invalidation with a publication-readiness
+proof; atomic canonical publish through a temp-and-move under safety revalidation; a
+receipt-named `run-` directory under the family task root `tmp/port-inspection` with
+junction-aware validated cleanup, where exactly the one expected link is removed
+non-recursively and any other reparse entry stops the gate; and a failure path that
+releases the lease only on proven exact-receipt ownership, leaving it otherwise. The
+auditor enforces the inspection task root at its primary read and both closeouts. Two
+determinism defects found while repairing were fixed the same way: stale-audit
+invalidation and stale-run recovery both enforce uncounted, so the gate's check count
+and its published record value, 97 and 66, do not depend on prior-run state, proven
+by paired runs across a deliberately crashed predecessor.
+
+**Contention proofs, observed against the committed baseline and restored.**
+
+- Correct gate under a foreign lock: exit 1 at `evidence-lease-unavailable`, the lock
+  byte-intact and the standing record untouched, which is the fail-closed exclusion
+  and the receipt-ownership rule in one observation.
+- Exclusion mutation, create-new weakened to create: the gate ran green, clobbered
+  the foreign lock, and overwrote the record, exactly the pre-repair defect, caught
+  red by the contention expectations, so the create-new mode is the load-bearing
+  exclusion.
+- Restored: fail-closed again with everything intact, then a clean green run and an
+  empty task root.
+
+**A process failure, recorded because the rule is now three incidents old.** The
+first proof round ran its mutation restore while the reworked gate was uncommitted;
+checkout silently resurrected the old gate, and the "restored" observation measured
+the wrong code. The committed-baseline rule for revert-mutations was violated by its
+own author while repairing a finding about producer discipline. The sequence was
+redone commit-first and every observation above is against committed code.
+
+**Sharper accounting, from the same review, all applied.** The shell previously
+rejected any capability payload reporting media inspection available; it now accepts
+and renders both honest states, so a configured server and the shipped shell no
+longer contradict. The version-range judgment moved behind the authority port as
+`IsSupportedDocumentVersion`, so no layer above the port names a concrete adapter,
+and the adapter contract records that backup activation includes a per-authority
+normalization strategy. D-046 is amended rather than half-implemented: the capability
+payload deliberately carries availability and reason only, never configured roots,
+and the amendment supersedes the original payload sentence with its privacy
+rationale. The open queue gains a configured Linux pipeline run with the real
+MediaInfo, distinct from the non-WSL golden capture already queued, because the
+sandbox proves inspection unavailable-by-default on Linux while the configured
+pipeline has only run on Windows. The reviewer's remaining adversarial items, path
+check-and-use races, inherited child environment, shutdown cancellation, activation
+with unusable roots, and path-like metadata values, stay with the continuing
+read-only audit.

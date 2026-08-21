@@ -10,6 +10,11 @@ public interface IMediaFactAuthority
     string AuthorityName { get; }
 
     Task<MediaFactAuthorityDocument> ProbeAsync(string mediaPath, CancellationToken cancellationToken);
+
+    // The supported-version judgment belongs to the authority, because the range is
+    // authority-specific vocabulary: callers above the port ask, they never consult a
+    // concrete adapter, which is what keeps the backup swappable at this boundary.
+    bool IsSupportedDocumentVersion(string? version);
 }
 
 // The raw authority output, before normalization. RawJson is the authority's own

@@ -80,6 +80,14 @@ within the transport bound, exact JSON content type, never chunked. The route ex
 and answers `capability-unavailable` behind the session gate while unconfigured; the
 configured pipeline follows.
 
+Swappability note, 2026-08-21, from the certification review: the swappable boundary
+is the port plus the version vocabulary, which now travels through the port's
+`IsSupportedDocumentVersion` so no layer above it names a concrete adapter. The
+normalization layer itself parses the primary authority's JSON shape by design;
+activating the ffprobe backup therefore adds a per-authority normalization strategy
+alongside the second adapter, and that work is part of the recorded activation cost,
+not a surprise.
+
 ## Gate plan
 
 A new `port-inspection` gate, level 1, joining the wrapper after the contract gates:

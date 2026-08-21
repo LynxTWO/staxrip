@@ -1117,6 +1117,17 @@ cannot be used to enumerate the filesystem. The probe list, the roots, and every
 rejection reason class are recorded in the capability payload so the shell can explain
 itself without a second channel.
 
+Amendment, 2026-08-21, adopted with the certification repair on the maintainer's
+instruction: the capability payload carries availability and a reason code only, and
+deliberately does not carry the configured roots, the probe list, or rejection reason
+classes. Publishing absolute filesystem roots through the capability endpoint would
+put operator paths on the wire the payload otherwise keeps clean, for a
+diagnosability gain the operator already has by knowing their own configuration. The
+sentence above requiring roots in the payload is superseded; the shell renders the
+availability state honestly and explains configuration in operator terms, not path
+terms. A privacy-bounded representation can be revisited if a native shell ever needs
+machine-readable roots.
+
 Because: A roots allowlist with canonical containment is the smallest policy that makes
 the inspector useful and keeps it from becoming a read oracle over the whole disk. The
 uniform rejection shape spends a little diagnosability to avoid building a filesystem
