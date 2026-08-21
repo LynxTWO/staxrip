@@ -1154,3 +1154,65 @@ Revisit when: A native shell exists and can mint scoped tokens; multi-user or re
 access ever enters scope, which reopens the whole threat model; or persistence of
 configuration is approved, which moves the roots list into a recorded, migratable
 format.
+
+## D-047: Corpus growth needs a fixture-authoring tool, and that needs approval
+
+Date: 2026-08-21. Status: PROPOSED, awaiting maintainer ratification. Owner: P-004.
+
+Context: The S-PORT-02 exit review left three agreed facts unexposed, recorded as
+blocked by the fixture-first rule: chapters, subtitle commentary and hearing-impaired,
+and subtitle stream size. An investigation established that the record's reason is
+right for two of them and wrong for the third pair. Chapters and subtitle stream size
+are genuinely blocked by fixture absence: both carriers are present and range-stable,
+chapters as `Menu` track `extra` members named on an `_HH_MM_SS_mmm` grammar, subtitle
+stream size as `Text/StreamSize`. Commentary and hearing-impaired are blocked by range
+instability instead, recorded as P-012.
+
+The remaining blocker for the first pair is not knowledge; it is authority. Committing
+a fixture that carries chapters and subtitles means running a muxing tool to author
+bytes that enter the repository, and the tool matrix's own rule is that no tool gains a
+row until a slice needs it and a decision names it. The existing corpus was authored
+the same way, under the maintainer's tool-acquisition approval recorded in the fixture
+manifest, and its producing tool was never named, which is why the four committed
+fixtures have no recorded recipe today.
+
+Decision requested: approve one named fixture-authoring tool, recorded in the tool
+matrix with its path, version, and SHA-256, used only to author committed fixtures and
+never to run inside the product or a gate. The measured candidate is the ffmpeg build
+bundled with the installed Windows product tree, identified because every committed
+golden carries the writing-application string that build emits, which makes it the
+authoring identity the existing corpus already has.
+
+Because: fixture authoring is a provenance act. A committed fixture is an input to
+every golden, every test, and every comparison, so the tool that produced it belongs in
+the same matrix as the tool that reads it, at the same confidence bar.
+
+What approval unlocks, in one unit: a tracked, re-runnable recipe script pinned to the
+tool hash, producing byte-reproducible fixtures under bit-exact flags, verified by
+running it twice and comparing hashes; two new fixtures carrying chapters, subtitle
+tracks, and subtitle stream size; four new goldens at both range ends; the agreed-facts
+list amended first to name the real chapter carrier, per its own extension rule; then
+the payload, normalizer, tests, pins, mutation proofs, and a sweep.
+
+Options considered:
+- Approve the bundled product ffmpeg as the named authoring tool: recommended. It is
+  already the corpus's de facto authoring identity, it needs no download, and bit-exact
+  flags make its output reproducible, which the current corpus is not.
+- Approve a separately acquired ffmpeg pinned in the artifacts tools tree: cleaner
+  provenance boundary, but a new download and a new acquisition approval for a tool
+  that is already present.
+- Use the bundled MKVToolNix instead: rejected on measurement. Its output is not
+  reproducible; two runs of the same command produced different bytes because it writes
+  a random segment identifier and a wall-clock date.
+- Ship the facts without a carrying fixture: refused by the fixture-first rule.
+- Leave the corpus as it is: the three facts stay unexposed and the delta stays
+  recorded, which is honest but permanent.
+
+Consequences: the tool matrix gains an authoring row, a class it does not have today,
+and the distinction between an authority that reads and a tool that authors becomes
+explicit in it. The new fixtures would be the first with a recorded, re-runnable
+recipe; the original four remain unreproducible, which the manifest must say plainly
+rather than implying the whole corpus is recipe-reproducible.
+
+Revisit when: the range floor moves, which would reopen the commentary and
+hearing-impaired facts; or a container family outside the current three is needed.

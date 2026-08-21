@@ -751,6 +751,14 @@ exposed-set delta against the agreed tables now stands at three facts, chapters 
 the subtitle commentary and hearing-impaired flags plus subtitle stream size, all
 waiting on carrying fixtures per the fixture-first rule.
 
+**Correction, 2026-08-21.** That last sentence is wrong about one of the three, and
+the correction is recorded here rather than edited away. Chapters and subtitle stream
+size are genuinely fixture-blocked: both carriers exist and are range-stable.
+Commentary and hearing-impaired are blocked by range instability instead, measured
+below, and no fixture can unblock them. The delta is therefore two fixture-blocked
+facts and one range-blocked pair, which is a different and more actionable statement
+than the one this paragraph originally made.
+
 **The attesting sweep**, run against the 1.2 Final commit `d5aea9e2` on 2026-08-21,
 all seven gates green on the first attempt:
 
@@ -768,3 +776,57 @@ Audit record `evidence-audit.json` sha256
 `c04f67e756dfe1c3cc40035839029e9791ad992b6a524d82736a06ddd4c2c7b0`. This paragraph
 postdates the audited set by construction; it records the attestation, it is not
 covered by it.
+
+## v1.2 privacy widening and three corrected claims, 2026-08-21
+
+This unit came out of an investigation into growing the fixture corpus. The corpus
+work stopped at an approval gate, recorded as D-047; what follows is everything the
+investigation established that did not need one, including two committed claims it
+falsified.
+
+**A real privacy defect, found by measurement and fixed red-first.** The strip list
+banned exact names. A range-ceiling probe of a file written by a real muxer reports
+the writing-application fact split three ways: `Encoded_Application`,
+`Encoded_Application_Name`, and `Encoded_Application_Version`. The guard stripped one
+of the three. No committed golden carries the split form, because all four fixtures
+were written by a tool that emits only the bare field, so the corpus could never have
+surfaced this. The self-test document now carries the split form and the variant
+assertions, which turned the guard red exactly where it was blind:
+`FAIL case=CT-020, banned-family variant survived the guard: Encoded_Application_Name`.
+Every banned name is now a family head matched by prefix, the rule the identifier
+family already had. Green in both configurations at `cases=51 assertions=611`, and
+the widening is mutation-proven below. This is the guard-widening rule applied to the
+guard itself: a fix that widens a matcher ships a case that fails without it.
+
+**Three committed claims corrected, none edited away.** The fixture manifest and the
+tool matrix both said the only field-set difference across the pinned range is the two
+file-date fields, stated as a general fact and measured over a corpus with no subtitle
+track. A dual-subtitle probe at both ends found `ServiceKind`, reported by 26.05 with
+`HI` and `C` values and absent at 24.01. That is a media fact, not filesystem
+metadata, so both documents now scope the schema-stability claim to the exposed set as
+delivered and say plainly that it is not established beyond it. The third correction
+is in this record, above the audio-delay sweep: the exposed-set delta is not three
+fixture-blocked facts. Chapters and subtitle stream size are fixture-blocked;
+commentary and hearing-impaired are range-blocked and no fixture can unblock them,
+filed as unknown P-012.
+
+**What the investigation established but did not ship.** Chapters travel as `Menu`
+track `extra` members named on an `_HH_MM_SS_mmm` grammar, range-identical, and the
+same `extra` block also carries non-chapter members, so any reader needs a grammar
+filter rather than a member sweep. Subtitle stream size is present at both ends.
+Both are implementable the moment a carrying fixture exists, and authoring one runs a
+muxing tool whose output enters the repository, which the tool matrix's own rule puts
+behind a decision. D-047 is that decision, proposed and unratified. An independent
+adversarial review of the corpus plan is what surfaced the approval gate, along with
+four defects in the plan's own design, including an absence assertion the plan's
+measurements contradicted.
+
+**The value-embedded-path strip rule is specified and unimplemented**, filed as
+unknown P-013. The contract requires stripping any field whose value embeds a
+filesystem path; the guard inspects names only. This mattered here because the corpus
+plan would have routed author-controlled chapter labels to the wire verbatim.
+
+**Mutation proof, observed against the committed baseline and restored.** Reverting
+the family-prefix rule to exact-name matching turns `CT-020` red at
+`banned-family variant survived the guard: Encoded_Application_Name`, which is the
+same red that opened the unit, so the widening is load bearing rather than decorative.

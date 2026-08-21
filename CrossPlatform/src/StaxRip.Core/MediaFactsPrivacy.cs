@@ -12,7 +12,17 @@ namespace StaxRip.Core;
 // below and fails if any survives; reverting this guard turns that harness red.
 public static class MediaFactsPrivacy
 {
-    // Exact banned names, plus the prefix rule below for identifier variants.
+    // Banned field families. Every entry is the head of a family, not an exact name:
+    // the authority splits a single display field across variants, and it adds
+    // variants across the supported version range. A measured range-ceiling capture
+    // of a real muxer-written file reports Encoded_Application, and beside it
+    // Encoded_Application_Name and Encoded_Application_Version, so an exact-name ban
+    // strips one third of the same fact. The identifier family already carried this
+    // rule; the rest now carry it for the same reason.
+    //
+    // The suffix-bearing members are kept in the list rather than folded into their
+    // family heads, because the self-test and the payload assertions iterate this
+    // list and each name must stay individually falsifiable.
     public static ImmutableArray<string> BannedFieldNames { get; } =
     [
         "UniqueID",
@@ -26,9 +36,28 @@ public static class MediaFactsPrivacy
         "FolderName",
     ];
 
-    public static bool IsBannedFieldName(string name) =>
-        name.StartsWith("UniqueID", StringComparison.Ordinal) ||
-        BannedFieldNames.Contains(name, StringComparer.Ordinal);
+    // The family heads, shortest form of each banned name, matched by prefix.
+    private static readonly ImmutableArray<string> BannedFieldFamilies =
+    [
+        "UniqueID",
+        "Encoded_Library_Settings",
+        "Encoded_Application",
+        "File_Created_Date",
+        "File_Modified_Date",
+        "CompleteName",
+        "FolderName",
+    ];
+
+    public static bool IsBannedFieldName(string name)
+    {
+        foreach (string family in BannedFieldFamilies)
+        {
+            if (name.StartsWith(family, StringComparison.Ordinal))
+                return true;
+        }
+
+        return BannedFieldNames.Contains(name, StringComparer.Ordinal);
+    }
 
     // Removes every banned member from every object in the document, recursively, so a
     // banned field cannot survive at any nesting depth, including inside "extra" blocks.

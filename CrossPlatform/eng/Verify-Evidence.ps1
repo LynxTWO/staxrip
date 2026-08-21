@@ -3965,7 +3965,7 @@ try {
                 (Get-JsonIntegerField -Fields $stepFields -Name 'cases' -Id 'summary-contract-cases') -eq 51) `
                 'summary-contract-cases-value'
             Confirm-Check (
-                (Get-JsonIntegerField -Fields $stepFields -Name 'assertions' -Id 'summary-contract-assertions') -eq 607) `
+                (Get-JsonIntegerField -Fields $stepFields -Name 'assertions' -Id 'summary-contract-assertions') -eq 611) `
                 'summary-contract-assertions-value'
         }
         elseif ($expectedStepId -ceq 'port-contract-failure') {

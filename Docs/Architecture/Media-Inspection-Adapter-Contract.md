@@ -46,7 +46,12 @@ The adapter strips, before anything leaves it: `UniqueID` and every `UniqueID/*`
 variant, `Encoded_Library_Settings`, `Encoded_Application` command-line style strings,
 `File_Created_Date`, `File_Created_Date_Local`, `File_Modified_Date`,
 `File_Modified_Date_Local`, and any field whose value embeds a filesystem path other
-than the probed path itself. The file-date fields entered the list from captured
+than the probed path itself. Amended 2026-08-21: each listed name is a family head
+matched by prefix, not an exact name, because the authority splits one display fact
+across variants and adds variants across the supported range; a measured ceiling
+capture of a muxer-written file reports `Encoded_Application_Name` and
+`Encoded_Application_Version` beside `Encoded_Application`. The value-embedded-path
+rule remains unimplemented and is recorded as an open unknown. The file-date fields entered the list from captured
 evidence: 26.05 emits them and they describe the user's filesystem, not the media.
 The guard is a named function with a self-test that feeds a synthetic raw document
 containing every stripped field and fails if any survives, and the self-test is wired

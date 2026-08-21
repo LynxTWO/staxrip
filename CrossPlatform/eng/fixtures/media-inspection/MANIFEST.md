@@ -41,13 +41,34 @@ checkout. These hashes bind the documents to their exact inputs.
    probing tool, so the version-pinning contract in the tool matrix is verifiable from
    the payload itself.
 2. The pinned range `[24.01, 26.05]` is schema-stable for the exposed fact set over this
-   corpus: the only field-set difference anywhere is that 26.05 adds
+   corpus: the only field-set difference across these four fixtures is that 26.05 adds
    `File_Created_Date` and `File_Created_Date_Local` to the General track.
+
+   Scope correction, 2026-08-21. That sentence said "anywhere" and was measured only
+   over this corpus, which carries no subtitle track. A probe of a chaptered,
+   dual-subtitle Matroska file with both pinned binaries found a second and larger
+   difference: 26.05 reports `ServiceKind` on a Text track, carrying `HI` for a
+   hearing-impaired track and `C` for a commentary track, and 24.01 does not report the
+   field at all. That is a media fact, not filesystem metadata, so the schema-stability
+   claim holds for the exposed set as delivered and does not extend to subtitle
+   disposition facts. The consequence is recorded in the verification record: the
+   agreed commentary and hearing-impaired facts are blocked by range instability, not
+   by the absence of a carrying fixture. The probe file is not committed; committing a
+   fixture that carries it needs the tool-provenance approval named in the decision
+   log.
 3. Those two added fields are filesystem metadata, not media facts, and they join the
    privacy strip list together with the empirically confirmed `UniqueID` (every MKV and
    WebM here), `Encoded_Library_Settings` (the MP4), and `Encoded_Application` (all).
    These documents deliberately retain those fields: they are the raw inputs the privacy
    guard's self-test must prove it strips.
+
+   Variant correction, 2026-08-21. The same probe established that 26.05 splits the
+   writing-application fact across `Encoded_Application`, `Encoded_Application_Name`,
+   and `Encoded_Application_Version` for a file written by a real muxer. None of these
+   four fixtures carries the split form, so the corpus could not have surfaced it. The
+   privacy guard now bans each listed name as a family head matched by prefix, the rule
+   the identifier family already had, and the guard's self-test carries the split form
+   directly.
 4. Genuine absences the adapter must pass through as absence, identical at both ends:
    FFV1 carries no `Format_Profile`; AAC audio carries no `BitDepth`; VP9 carries no
    `ColorSpace` or `ScanType`; Opus carries no `BitRate`; and `vfr-ffv1.mkv` carries no

@@ -203,6 +203,8 @@ internal static class MediaFactsCases
                 "UniqueID": "123456789012345678901234567890",
                 "UniqueID/String": "123456789012345678901234567890 (0xABCDEF)",
                 "Encoded_Application": "synthetic-writer 1.0",
+                "Encoded_Application_Name": "synthetic-writer",
+                "Encoded_Application_Version": "1.0 (build 12345) 64-bit",
                 "File_Created_Date": "2026-08-19 00:00:00 UTC",
                 "File_Created_Date_Local": "2026-08-19 00:00:00",
                 "File_Modified_Date": "2026-08-19 00:00:00 UTC",
@@ -252,6 +254,21 @@ internal static class MediaFactsCases
         foreach (string banned in MediaFactsPrivacy.BannedFieldNames)
             context.False(stripped.Contains($"\"{banned}\"", StringComparison.Ordinal), $"banned field survived the guard: {banned}");
         context.False(stripped.Contains("UniqueID", StringComparison.Ordinal), "a UniqueID variant survived the guard");
+
+        // Variant coverage, from a measured range-ceiling capture: an authority that
+        // reports a writing application also reports it split across a name and a
+        // version field, and an exact-name ban misses both. Every banned family is
+        // therefore a prefix, proven here on the same shapes the ceiling emits.
+        foreach (string variant in new[]
+        {
+            "Encoded_Application_Name",
+            "Encoded_Application_Version",
+            "File_Created_Date_Local",
+            "File_Modified_Date_Local",
+        })
+        {
+            context.False(stripped.Contains($"\"{variant}\"", StringComparison.Ordinal), $"banned-family variant survived the guard: {variant}");
+        }
 
         // The normalized payload end to end: no banned name may appear in what leaves.
         string payload = JsonSerializer.Serialize(MediaFactsNormalizer.Normalize(SyntheticDocument), ContractJson.Options);

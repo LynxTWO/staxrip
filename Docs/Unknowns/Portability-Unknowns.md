@@ -150,3 +150,29 @@ This file records unresolved Linux and macOS port questions found during the por
 ## Resolution state
 
 P-006 is resolved only for the exact read-only SLICE-002 boundary. P-007 is resolved: the independent host is reachable and ran the artifact, though only while a host mitigation was temporarily relaxed and then restored. The independent-host claim is blocked instead by R-S2-039, an environment limitation on that host rather than an access problem. The workflow, persistence, process, tool, native, macOS, native-client, automation, and public-release boundaries remain open, in progress, or deferred as recorded above.
+
+### P-012: Subtitle disposition facts are not stable across the pinned authority range
+
+- **Area or file:** `CrossPlatform/src/StaxRip.Contracts/MediaFacts.cs` (`MediaTextFacts`), `Docs/Architecture/Media-Inspection-Agreed-Facts.md:126`, `Docs/Architecture/Tool-Matrix.md` version-skew row
+- **Concern:** The agreed subtitle commentary and hearing-impaired facts have no carrier at the range floor, so they cannot ship under the ratified range-first rule, and the agreed row names a carrier that neither pinned version reports.
+- **Why it matters:** The exit-criteria review recorded these two facts as blocked by the fixture-first rule, which is wrong and makes the remaining work look smaller and cheaper than it is. A wrong reason produces a wrong next action.
+- **Evidence found so far:** A chaptered dual-subtitle Matroska file probed with both pinned binaries: 26.05 reports `ServiceKind` on each Text track, `HI` for the hearing-impaired track and `C` for the commentary track; 24.01 reports no such field. Both ends agree on every other Text member. The agreed row at `Media-Inspection-Agreed-Facts.md:126` names `Text/Commentary` and `Text/HearingImpaired`, which the ceiling's own parameter enumeration does not list at all. The probe file is not committed; the probe was run from the scratchpad.
+- **Confidence:** verified for the two pinned binaries on one file; the value vocabulary beyond `HI` and `C` is unknown
+- **Likely owner:** Cross-platform inspection maintainer with the tool-matrix owner
+- **Next best check:** Decide whether the range floor moves to a version that reports `ServiceKind`, or whether the two facts are recorded as ceiling-only and excluded from version 1. Either path amends the agreed-facts row to name the real carrier first.
+- **Risk level:** low
+- **Status:** open
+- **Notes:** Recorded 2026-08-21. This is the D-045 revisit trigger, "a fact is needed that the selected authority cannot supply", scoped to one end of the range rather than to the authority as a whole.
+
+### P-013: The value-embedded-path strip rule is specified but unimplemented
+
+- **Area or file:** `CrossPlatform/src/StaxRip.Core/MediaFactsPrivacy.cs`, `Docs/Architecture/Media-Inspection-Adapter-Contract.md` privacy guard section
+- **Concern:** The adapter contract requires stripping any field whose value embeds a filesystem path other than the probed path itself, and the guard implements name-based stripping only. No value inspection exists anywhere in it.
+- **Why it matters:** Every exposed string fact is free text from the media. Title, subtitle title, and any future chapter label are author-controlled and can carry an absolute path, which would cross the wire while the payload's own contract says it cannot.
+- **Evidence found so far:** `MediaFactsPrivacy.cs` matches names only; the contract text requires a value rule beside it. No committed fixture carries a path-shaped value, and the per-golden leak assertions in CT-020 grep for identifier and file-date names, not for path shapes.
+- **Confidence:** verified as a gap between the contract and the code
+- **Likely owner:** Cross-platform inspection maintainer
+- **Next best check:** Decide the rule's shape before writing it: a value scan risks stripping legitimate titles that merely contain separators, so the cheaper first move may be to bound and record the exposure rather than to filter it. A hostile-label fixture is the enforcement evidence either way.
+- **Risk level:** medium
+- **Status:** open
+- **Notes:** Recorded 2026-08-21, surfaced by an independent review of a corpus-growth plan that would have routed author-controlled chapter labels to the wire verbatim.
