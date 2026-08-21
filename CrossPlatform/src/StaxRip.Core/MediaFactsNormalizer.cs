@@ -149,6 +149,8 @@ public static class MediaFactsNormalizer
         Default = ReadYesNo(track, "Default"),
         Forced = ReadYesNo(track, "Forced"),
         CompressionMode = ReadString(track, "Compression_Mode"),
+        VideoDelay = ReadString(track, "Video_Delay"),
+        VideoDelaySeconds = ReadDouble(track, "Video_Delay"),
     };
 
     private static MediaTextFacts ReadText(JsonObject track, int index) => new()

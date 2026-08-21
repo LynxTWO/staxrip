@@ -109,6 +109,8 @@ internal static class MediaFactsCases
         context.Equal("Lossy", audio.CompressionMode, "compression mode");
         context.Equal(true, audio.Default, "audio default flag");
         context.True(audio.BitDepth is null, "aac bit depth must be absent, not defaulted");
+        context.True(audio.VideoDelay is null, "mp4 audio delay must be absent, not defaulted");
+        context.True(audio.VideoDelaySeconds is null, "mp4 audio delay seconds must be absent, not defaulted");
 
         context.Equal(0, ceiling.Text.Length, "text stream count");
     }
@@ -136,6 +138,8 @@ internal static class MediaFactsCases
         context.Equal(1152000L, audio.BitRateBits, "pcm bitrate");
         context.Equal(false, audio.Default, "audio default flag");
         context.Equal(false, audio.Forced, "audio forced flag");
+        context.Equal("0.000", audio.VideoDelay, "audio delay raw");
+        context.Equal(0.0, audio.VideoDelaySeconds, "audio delay seconds");
     }
 
     private static void GoldenVp9Opus(TestContext context)
@@ -155,6 +159,8 @@ internal static class MediaFactsCases
         context.Equal("Opus", audio.Format, "audio format");
         context.True(audio.BitRateBits is null, "opus bitrate must be absent, not defaulted");
         context.Equal(16, audio.BitDepth, "opus bit depth");
+        context.Equal("0.000", audio.VideoDelay, "audio delay raw");
+        context.Equal(0.0, audio.VideoDelaySeconds, "audio delay seconds");
     }
 
     private static void GoldenVfrAbsence(TestContext context)

@@ -168,6 +168,14 @@ public sealed record MediaAudioFacts
 
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? CompressionMode { get; init; }
+
+    // The stream's delay against video, the agreed audio-delay fact: the raw view
+    // beside the typed seconds, absent when the authority does not report it.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? VideoDelay { get; init; }
+
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? VideoDelaySeconds { get; init; }
 }
 
 public sealed record MediaTextFacts
