@@ -750,3 +750,21 @@ baseline. Assertion pins moved at both count sites in the same commit. The
 exposed-set delta against the agreed tables now stands at three facts, chapters and
 the subtitle commentary and hearing-impaired flags plus subtitle stream size, all
 waiting on carrying fixtures per the fixture-first rule.
+
+**The attesting sweep**, run against the 1.2 Final commit `d5aea9e2` on 2026-08-21,
+all seven gates green on the first attempt:
+
+```
+PASS port-static        checks=247
+PASS port-verify        checks=1223
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=694
+PASS port-inspection    checks=97
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=64842
+```
+
+Audit record `evidence-audit.json` sha256
+`c04f67e756dfe1c3cc40035839029e9791ad992b6a524d82736a06ddd4c2c7b0`. This paragraph
+postdates the audited set by construction; it records the attestation, it is not
+covered by it.
