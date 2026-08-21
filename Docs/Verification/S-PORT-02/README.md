@@ -1,10 +1,11 @@
 # S-PORT-02 Verification Record
 
-Version: 1.1 Final. Date: 2026-08-21. Started at base `9cc9bd37`; closed at 1.0 by
-the exit-criteria review below with its attesting sweep, then reopened for the
-certification repair recorded in the final section and re-attested by the sweep
-recorded after it. The 1.0 feature closure was never disproved; one concurrency
-invariant of the certification harness was, and is now repaired and proven.
+Version: 1.2 Final. Date: 2026-08-21. Started at base `9cc9bd37`; closed at 1.0 by
+the exit-criteria review below with its attesting sweep; reopened and re-closed at
+1.1 for the certification repair recorded and re-attested below; 1.2 adds the first
+post-close fact, audio delay, with its own attesting sweep. The 1.0 feature closure
+was never disproved; one concurrency invariant of the certification harness was, and
+is repaired and proven.
 
 ## Unit 1: typed payload, normalizer, privacy guard
 
@@ -734,3 +735,18 @@ whose certified set includes a lease-serialized inspection record and whose task
 law covers all three producer roots. This paragraph postdates the audited set by
 construction; it records the attestation, it is not covered by it. The certification
 repair is closed.
+
+## v1.1 fact addition, 2026-08-21: audio delay
+
+The first post-close addition the exit-criteria review named. The audio stream's
+delay against video joins the exposed set as `videoDelay` beside typed
+`videoDelaySeconds`, golden-backed at both range ends on the matroska and webm
+fixtures and absent on the mp4 fixture, so the absence rule is asserted alongside the
+values. Red first: the payload gained the members before the normalizer read them,
+observed as `FAIL case=CT-017, audio delay raw, expected 0.000 actual null`. Green in
+both configurations at `cases=51 assertions=607`; the read was mutation-proven by a
+parameter-name flip that reproduced the same red, restored against the committed
+baseline. Assertion pins moved at both count sites in the same commit. The
+exposed-set delta against the agreed tables now stands at three facts, chapters and
+the subtitle commentary and hearing-impaired flags plus subtitle stream size, all
+waiting on carrying fixtures per the fixture-first rule.
