@@ -42,3 +42,18 @@ independent review's open inherited-child-environment item.
 One environment note for reruns: WSL wipes `/tmp` when its VM restarts between
 invocations, so run outputs that must survive belong on a Windows-backed mount or in
 the captured console stream, which is what this record is built from.
+
+## Covering sweep
+
+The commit carrying this record and its companion capture record was attested by the
+full seven-gate sweep on 2026-08-21 against `1579cb91`: static 253, verify 1223, http
+5182, browser 694, inspection 97, linux sandbox 27 with zero runtime writes, evidence
+audit 65088, audit sha256
+`3a712c982f10f44eb4526fbadaab2e5dfb498a41af2f9f5e6ed38291833e8a31`. The first sweep
+attempt failed at the http gate twice at two different transient points, a mid-flight
+connection error and a process-identity capture miss, each with a complete clean
+teardown per its own failure packet, then passed at the identical check count after
+the machine settled; the shifting points, clean teardowns, and unchanged product
+surface classify the pair as environmental load, consistent with the recorded
+developer-environment contention lesson. This paragraph postdates the audited set by
+construction.
