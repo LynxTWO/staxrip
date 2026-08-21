@@ -16,6 +16,7 @@ $evidenceRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'evidenc
 $failureRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'failures'))
 $browserTaskRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'tmp\port-browser'))
 $httpTaskRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'tmp\port-http'))
+$inspectionTaskRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'tmp\port-inspection'))
 $verifyWorkflowMarkerPath = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'tmp\.port-verify-running'))
 $publishRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'publish'))
 $packagesRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'nuget'))
@@ -3346,6 +3347,7 @@ function Assert-HeadScopeFailureCurrent {
     Assert-CloseoutCondition (Test-FailureDirectoryEmpty) 'failure-directory-empty'
     Assert-CloseoutCondition (Test-TaskRootEmpty $browserTaskRoot) 'browser-task-root-empty'
     Assert-CloseoutCondition (Test-TaskRootEmpty $httpTaskRoot) 'http-task-root-empty'
+    Assert-CloseoutCondition (Test-TaskRootEmpty $inspectionTaskRoot) 'inspection-task-root-empty'
     Assert-CloseoutCondition (
         (Test-TaskMarkerAbsent $verifyWorkflowMarkerPath)) 'verify-workflow-marker-absent'
 }
@@ -3362,6 +3364,7 @@ try {
     Confirm-Check (Test-SafeDirectory -Path $artifactsRoot -AllowedRoot $crossPlatformRoot) 'artifacts-root-safe'
     Confirm-Check (Test-TaskRootEmpty $browserTaskRoot) 'browser-task-root-empty'
     Confirm-Check (Test-TaskRootEmpty $httpTaskRoot) 'http-task-root-empty'
+    Confirm-Check (Test-TaskRootEmpty $inspectionTaskRoot) 'inspection-task-root-empty'
     Confirm-Check (Test-TaskMarkerAbsent $verifyWorkflowMarkerPath) 'verify-workflow-marker-absent'
     Confirm-Check (Ensure-SafeDirectory -Path $evidenceRoot -AllowedRoot $artifactsRoot) 'evidence-root-safe'
     Confirm-Check (Test-EvidencePublicationAuthority) 'failure-root-publication-authority'
@@ -4171,7 +4174,7 @@ try {
         Test-Sha256Text (Get-JsonStringField -Fields $inspectionFields -Name 'test_binary_sha256' -Id 'inspection-binary-hash')) `
         'inspection-binary-hash-grammar'
     Confirm-Check (
-        (Get-JsonIntegerField -Fields $inspectionFields -Name 'checks' -Id 'inspection-checks') -eq 43) `
+        (Get-JsonIntegerField -Fields $inspectionFields -Name 'checks' -Id 'inspection-checks') -eq 66) `
         'inspection-checks-value'
     $inspectionCorpus = Assert-JsonObjectShape -Element $inspectionFields['corpus'] -ExpectedNames @(
         'hostile_paths', 'malformed_documents', 'cancellation_probes') -Id 'inspection-corpus-shape'

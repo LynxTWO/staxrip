@@ -9,6 +9,14 @@
 # is proven in process by CT-038, which counts probe calls against an injected
 # authority; this gate relies on that proof rather than re-deriving a weaker
 # process-observation version of it.
+#
+# Evidence-family obligations, per the verification boundary contract: every audited
+# producer serializes evidence mutation through the shared writer lease, whose exact
+# receipt owns removal; invalidates the audit sidecar and then its JSON before
+# changing audited records; publishes atomically in canonical form; and cleans a
+# receipt-named run directory under its task root with the reparse safeguards, so the
+# auditor's empty-task-root law holds. Lease contention fails closed: a concurrent
+# holder means this gate reports failure and touches nothing.
 [CmdletBinding()]
 param(
     [string]$Configuration = 'Debug'
@@ -21,14 +29,50 @@ $ProgressPreference = 'SilentlyContinue'
 $engRoot = Split-Path -Parent $PSCommandPath
 $crossPlatformRoot = Split-Path -Parent $engRoot
 $repositoryRoot = Split-Path -Parent $crossPlatformRoot
-$evidenceRoot = Join-Path $crossPlatformRoot 'artifacts\evidence'
-$failureRoot = Join-Path $crossPlatformRoot 'artifacts\failures'
-$workRoot = Join-Path $crossPlatformRoot 'artifacts\tasks\inspection-gate'
+$artifactsRoot = [System.IO.Path]::GetFullPath((Join-Path $crossPlatformRoot 'artifacts'))
+$evidenceRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'evidence'))
+$failureRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'failures'))
+$taskRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'tmp\port-inspection'))
+$leasePath = [System.IO.Path]::GetFullPath((Join-Path $evidenceRoot '.evidence-writer.lock'))
+$auditPath = [System.IO.Path]::GetFullPath((Join-Path $evidenceRoot 'evidence-audit.json'))
+$auditSidecarPath = [System.IO.Path]::GetFullPath((Join-Path $evidenceRoot 'evidence-audit.json.sha256'))
 $script:CheckCount = 0
 $script:CurrentCheck = 'startup'
+$script:LeaseOwned = $false
+$script:LeaseStream = $null
+$script:LeaseBytes = $null
+$script:LeaseNonce = $null
+$script:AuditInvalidated = $false
 
 function Stop-Gate {
     param([Parameter(Mandatory)][string]$Message)
+
+    # Failing closed with the lease held would wedge every later producer, so a
+    # failure path releases only what it can prove it owns: the held stream must
+    # still carry the exact receipt, and so must the file, or the lock is left for
+    # an operator, because the exact receipt owns removal.
+    if ($script:LeaseOwned -and $null -ne $script:LeaseStream) {
+        try {
+            if (Test-ExactBytes -Stream $script:LeaseStream -Expected $script:LeaseBytes) {
+                $script:LeaseStream.Dispose()
+                $script:LeaseStream = $null
+                $verify = [System.IO.File]::Open($leasePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+                try {
+                    if (Test-ExactBytes -Stream $verify -Expected $script:LeaseBytes) {
+                        $verify.Dispose()
+                        $verify = $null
+                        [System.IO.File]::Delete($leasePath)
+                    }
+                }
+                finally {
+                    if ($null -ne $verify) { $verify.Dispose() }
+                }
+            }
+        }
+        catch {
+            # Leave the lock in place; fail closed.
+        }
+    }
 
     New-Item -ItemType Directory -Force -Path $failureRoot | Out-Null
     $packet = @(
@@ -57,6 +101,433 @@ function Confirm-Check {
     }
 }
 
+function Get-FullPath {
+    param([Parameter(Mandatory)][string]$Path)
+    return [System.IO.Path]::GetFullPath($Path)
+}
+
+function Test-PathBelow {
+    param(
+        [Parameter(Mandatory)][string]$Candidate,
+        [Parameter(Mandatory)][string]$Parent
+    )
+
+    try {
+        $candidatePath = Get-FullPath $Candidate
+        $parentPath = Get-FullPath $Parent
+        $prefix = $parentPath.TrimEnd(
+            [char[]]@([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)) +
+            [System.IO.Path]::DirectorySeparatorChar
+        return $candidatePath.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)
+    }
+    catch {
+        return $false
+    }
+}
+
+function Confirm-NoReparseComponents {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Root,
+        [Parameter(Mandatory)][string]$Id
+    )
+
+    $fullPath = Get-FullPath $Path
+    $fullRoot = Get-FullPath $Root
+    Confirm-Check -Condition ($fullPath -eq $fullRoot -or $fullPath.StartsWith(
+            $fullRoot.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar,
+            [System.StringComparison]::OrdinalIgnoreCase)) -Name $Id
+    $current = $fullRoot
+    if ([System.IO.Directory]::Exists($current)) {
+        Confirm-Check -Condition ((((Get-Item -LiteralPath $current -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0)) -Name $Id
+    }
+    $relative = [System.IO.Path]::GetRelativePath($fullRoot, $fullPath)
+    foreach ($component in $relative.Split(
+            [char[]]@([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar),
+            [System.StringSplitOptions]::RemoveEmptyEntries)) {
+        $current = Join-Path $current $component
+        if (-not (Test-Path -LiteralPath $current)) { break }
+        Confirm-Check -Condition ((((Get-Item -LiteralPath $current -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0)) -Name $Id
+    }
+}
+
+function Test-SafeExistingLeaf {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$AllowedRoot
+    )
+
+    try {
+        $target = Get-FullPath $Path
+        $root = Get-FullPath $AllowedRoot
+        if (-not (Test-PathBelow -Candidate $target -Parent $root)) {
+            return $false
+        }
+        $rootItem = Get-Item -LiteralPath $root -Force
+        if (-not $rootItem.PSIsContainer -or
+            ($rootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            return $false
+        }
+        $relative = [System.IO.Path]::GetRelativePath($root, $target)
+        $components = $relative.Split(
+            [char[]]@([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar),
+            [System.StringSplitOptions]::RemoveEmptyEntries)
+        if ($components.Count -eq 0) {
+            return $false
+        }
+        $current = $root
+        $leafItem = $null
+        for ($index = 0; $index -lt $components.Count; $index++) {
+            $component = $components[$index]
+            if ($component -in @('.', '..')) {
+                return $false
+            }
+            $entries = @(Get-ChildItem -LiteralPath $current -Force | Where-Object {
+                    [string]::Equals($_.Name, $component, [System.StringComparison]::Ordinal)
+                })
+            if ($entries.Count -ne 1) {
+                return $false
+            }
+            $leafItem = $entries[0]
+            if (($leafItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                return $false
+            }
+            if ($index -lt ($components.Count - 1) -and -not $leafItem.PSIsContainer) {
+                return $false
+            }
+            $current = $leafItem.FullName
+        }
+        $linkTypeProperty = $leafItem.PSObject.Properties['LinkType']
+        return -not $leafItem.PSIsContainer -and
+            $null -ne $linkTypeProperty -and
+            [string]::IsNullOrEmpty([string]$linkTypeProperty.Value)
+    }
+    catch {
+        return $false
+    }
+}
+
+function Test-SafeArtifactDirectory {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [switch]$Create
+    )
+
+    try {
+        $target = Get-FullPath $Path
+        $artifactPrefix = $artifactsRoot.TrimEnd(
+            [char[]]@([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)) +
+            [System.IO.Path]::DirectorySeparatorChar
+        if ($target -ne $artifactsRoot -and
+            -not $target.StartsWith($artifactPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+        foreach ($pass in 1..2) {
+            $current = $crossPlatformRoot
+            if (((Get-Item -LiteralPath $current -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                return $false
+            }
+            $relative = [System.IO.Path]::GetRelativePath($crossPlatformRoot, $target)
+            foreach ($component in $relative.Split(
+                    [char[]]@([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar),
+                    [System.StringSplitOptions]::RemoveEmptyEntries)) {
+                $current = Join-Path $current $component
+                if (-not (Test-Path -LiteralPath $current)) { break }
+                if (((Get-Item -LiteralPath $current -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    return $false
+                }
+            }
+            if ($pass -eq 1 -and $Create) {
+                [void][System.IO.Directory]::CreateDirectory($target)
+            }
+        }
+        return Test-Path -LiteralPath $target -PathType Container
+    }
+    catch {
+        return $false
+    }
+}
+
+function Test-SafeWritableArtifactLeaf {
+    param([Parameter(Mandatory)][string]$Path)
+
+    try {
+        $target = Get-FullPath $Path
+        if (-not (Test-PathBelow -Candidate $target -Parent $artifactsRoot)) {
+            return $false
+        }
+        $parent = Split-Path -Parent $target
+        if (-not (Test-SafeArtifactDirectory -Path $parent -Create)) {
+            return $false
+        }
+        if (Test-Path -LiteralPath $target) {
+            return Test-SafeExistingLeaf -Path $target -AllowedRoot $crossPlatformRoot
+        }
+        return -not [string]::IsNullOrWhiteSpace([System.IO.Path]::GetFileName($target))
+    }
+    catch {
+        return $false
+    }
+}
+
+function Test-ExactBytes {
+    param(
+        [Parameter(Mandatory)][System.IO.Stream]$Stream,
+        [Parameter(Mandatory)][byte[]]$Expected
+    )
+
+    try {
+        $Stream.Position = 0
+        $actual = [byte[]]::new($Expected.Length)
+        $offset = 0
+        while ($offset -lt $actual.Length) {
+            $read = $Stream.Read($actual, $offset, $actual.Length - $offset)
+            if ($read -eq 0) { return $false }
+            $offset += $read
+        }
+        if ($Stream.ReadByte() -ne -1) { return $false }
+        return [System.Security.Cryptography.CryptographicOperations]::FixedTimeEquals($actual, $Expected)
+    }
+    catch {
+        return $false
+    }
+}
+
+function Write-AtomicUtf8Artifact {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Content
+    )
+
+    $fullPath = Get-FullPath $Path
+    Confirm-Check -Condition (Test-SafeWritableArtifactLeaf -Path $fullPath) -Name 'evidence-output-leaf'
+    $parent = Split-Path -Parent $fullPath
+    $temporaryPath = Join-Path $parent (
+        '.' + [System.IO.Path]::GetFileName($fullPath) + '.' +
+        [System.Guid]::NewGuid().ToString('N') + '.tmp')
+    Confirm-Check -Condition (Test-SafeWritableArtifactLeaf -Path $temporaryPath) -Name 'evidence-output-temp'
+    $normalizedContent = $Content.Replace("`r`n", "`n")
+    Confirm-Check -Condition (-not $normalizedContent.Contains("`r", [System.StringComparison]::Ordinal)) -Name 'evidence-output-bare-cr'
+    $bytes = [System.Text.UTF8Encoding]::new($false).GetBytes($normalizedContent)
+    $stream = $null
+    try {
+        $stream = [System.IO.File]::Open(
+            $temporaryPath,
+            [System.IO.FileMode]::CreateNew,
+            [System.IO.FileAccess]::Write,
+            [System.IO.FileShare]::None)
+        $stream.Write($bytes, 0, $bytes.Length)
+        $stream.Flush($true)
+        $stream.Dispose()
+        $stream = $null
+        Confirm-Check -Condition (
+            (Test-SafeExistingLeaf -Path $temporaryPath -AllowedRoot $crossPlatformRoot) -and
+            (Test-SafeWritableArtifactLeaf -Path $fullPath)) -Name 'evidence-output-revalidate'
+        [System.IO.File]::Move($temporaryPath, $fullPath, $true)
+    }
+    finally {
+        if ($null -ne $stream) {
+            $stream.Dispose()
+        }
+        if (Test-Path -LiteralPath $temporaryPath -PathType Leaf) {
+            if (Test-SafeExistingLeaf -Path $temporaryPath -AllowedRoot $crossPlatformRoot) {
+                [System.IO.File]::Delete($temporaryPath)
+            }
+        }
+    }
+}
+
+function Enter-EvidenceWriterLease {
+    Confirm-NoReparseComponents $evidenceRoot $crossPlatformRoot 'evidence-lease-root-precreate'
+    [void][System.IO.Directory]::CreateDirectory($evidenceRoot)
+    Confirm-NoReparseComponents $evidenceRoot $crossPlatformRoot 'evidence-lease-root-created'
+    Confirm-NoReparseComponents $leasePath $crossPlatformRoot 'evidence-lease-path-safe'
+
+    $nonce = [System.Guid]::NewGuid().ToString('N')
+    Confirm-Check -Condition ($nonce -cmatch '^[0-9a-f]{32}$') -Name 'evidence-lease-receipt-shape'
+    $receiptBytes = [System.Text.UTF8Encoding]::new($false).GetBytes($nonce + "`n")
+    Confirm-Check -Condition ($receiptBytes.Length -eq 33) -Name 'evidence-lease-receipt-length'
+
+    $stream = $null
+    try {
+        $stream = [System.IO.File]::Open(
+            $leasePath,
+            [System.IO.FileMode]::CreateNew,
+            [System.IO.FileAccess]::ReadWrite,
+            [System.IO.FileShare]::None)
+    }
+    catch {
+        # Contention fails closed: another producer or the auditor holds the lease,
+        # and their exact receipt owns removal, so this gate reports and touches
+        # nothing.
+        $script:CurrentCheck = 'evidence-lease-unavailable'
+        Stop-Gate -Message 'Evidence writer lease is held by another producer or the auditor; failing closed without touching evidence.'
+    }
+
+    try {
+        $stream.Write($receiptBytes, 0, $receiptBytes.Length)
+        $stream.Flush($true)
+        if (-not (Test-ExactBytes -Stream $stream -Expected $receiptBytes)) {
+            $stream.Dispose()
+            Stop-Gate -Message 'Evidence lease receipt write could not be verified.'
+        }
+        $script:LeaseNonce = $nonce
+        $script:LeaseBytes = $receiptBytes
+        $script:LeaseStream = $stream
+        $script:LeaseOwned = $true
+        $script:AuditInvalidated = $false
+        $script:CheckCount++
+        $stream = $null
+    }
+    finally {
+        if ($null -ne $stream) {
+            $stream.Dispose()
+        }
+    }
+}
+
+function Assert-EvidenceWriterLease {
+    Confirm-Check -Condition (
+        $script:LeaseOwned -and
+        $null -ne $script:LeaseStream -and
+        $null -ne $script:LeaseBytes -and
+        $script:LeaseNonce -cmatch '^[0-9a-f]{32}$' -and
+        $script:LeaseBytes.Length -eq 33 -and
+        (Test-SafeExistingLeaf -Path $leasePath -AllowedRoot $evidenceRoot) -and
+        (Test-ExactBytes -Stream $script:LeaseStream -Expected $script:LeaseBytes)) -Name 'evidence-lease-ownership'
+}
+
+function Invalidate-EvidenceAudit {
+    Assert-EvidenceWriterLease
+    # The per-file work enforces without counting, so the gate's check count does not
+    # depend on whether a stale audit happened to exist; the surrounding asserts and
+    # the postcondition carry the fixed counts.
+    foreach ($stalePath in @($auditSidecarPath, $auditPath)) {
+        if (Test-Path -LiteralPath $stalePath) {
+            $script:CurrentCheck = 'evidence-audit-invalidation-safe'
+            if (-not (Test-SafeExistingLeaf -Path $stalePath -AllowedRoot $evidenceRoot)) {
+                Stop-Gate -Message 'Stale audit artifact failed the safety walk before invalidation.'
+            }
+            [System.IO.File]::Delete($stalePath)
+            if (Test-Path -LiteralPath $stalePath) {
+                $script:CurrentCheck = 'evidence-audit-invalidation-delete'
+                Stop-Gate -Message 'Stale audit artifact survived invalidation.'
+            }
+        }
+    }
+    Assert-EvidenceWriterLease
+    Confirm-Check -Condition (
+        -not (Test-Path -LiteralPath $auditSidecarPath) -and
+        -not (Test-Path -LiteralPath $auditPath)) -Name 'evidence-audit-invalidation-postcondition'
+    $script:AuditInvalidated = $true
+}
+
+function Assert-EvidencePublicationReady {
+    Assert-EvidenceWriterLease
+    Confirm-Check -Condition (
+        $script:AuditInvalidated -and
+        -not (Test-Path -LiteralPath $auditSidecarPath) -and
+        -not (Test-Path -LiteralPath $auditPath)) -Name 'evidence-publication-audit-invalidated'
+}
+
+function Exit-EvidenceWriterLease {
+    Assert-EvidenceWriterLease
+    $stream = $script:LeaseStream
+    $script:LeaseStream = $null
+    $stream.Dispose()
+
+    Confirm-Check -Condition (Test-SafeExistingLeaf -Path $leasePath -AllowedRoot $evidenceRoot) -Name 'evidence-lease-release-safe'
+    $verificationStream = $null
+    try {
+        $verificationStream = [System.IO.File]::Open(
+            $leasePath,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            [System.IO.FileShare]::None)
+        Confirm-Check -Condition (Test-ExactBytes -Stream $verificationStream -Expected $script:LeaseBytes) -Name 'evidence-lease-release-receipt'
+    }
+    finally {
+        if ($null -ne $verificationStream) {
+            $verificationStream.Dispose()
+        }
+    }
+
+    Confirm-Check -Condition (Test-SafeExistingLeaf -Path $leasePath -AllowedRoot $evidenceRoot) -Name 'evidence-lease-release-revalidate'
+    [System.IO.File]::Delete($leasePath)
+    Confirm-Check -Condition (-not (Test-Path -LiteralPath $leasePath)) -Name 'evidence-lease-release-delete'
+
+    $script:LeaseOwned = $false
+    $script:LeaseNonce = $null
+    $script:LeaseBytes = $null
+    $script:AuditInvalidated = $false
+}
+
+# The run directory is receipt-named, and its cleanup removes the one expected
+# junction first, non-recursively so only the link goes, then requires the remaining
+# tree to be reparse-free before the recursive delete. A junction anywhere else, or a
+# foreign entry in the task root, stops the gate rather than being swept. Stale-run
+# recovery at preflight enforces the same law uncounted, so the gate's check count
+# and its published record do not depend on whether a prior run crashed.
+function Remove-ValidatedRunDirectory {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [switch]$Uncounted
+    )
+
+    function Confirm-Local {
+        param([bool]$Condition, [string]$Name)
+        if ($Uncounted) {
+            $script:CurrentCheck = $Name
+            if (-not $Condition) {
+                Stop-Gate -Message "Check failed: $Name"
+            }
+        }
+        else {
+            Confirm-Check -Condition $Condition -Name $Name
+        }
+    }
+
+    if (-not [System.IO.Directory]::Exists($Path)) {
+        return
+    }
+
+    $fullPath = Get-FullPath $Path
+    $parent = [System.IO.Directory]::GetParent($fullPath)
+    $leaf = [System.IO.Path]::GetFileName($fullPath)
+    Confirm-Local -Condition (
+        $null -ne $parent -and
+        [string]::Equals($parent.FullName, $taskRoot, [System.StringComparison]::OrdinalIgnoreCase) -and
+        $leaf -cmatch '^run-[0-9a-f]{32}$') -Name 'cleanup-target'
+
+    if ($Uncounted) {
+        $script:CurrentCheck = 'cleanup-root-no-reparse'
+        if (-not (Test-SafeArtifactDirectory -Path $taskRoot)) {
+            Stop-Gate -Message 'Task root failed the safety walk before stale cleanup.'
+        }
+    }
+    else {
+        Confirm-NoReparseComponents $taskRoot $crossPlatformRoot 'cleanup-root-no-reparse'
+        Confirm-NoReparseComponents $fullPath $crossPlatformRoot 'cleanup-target-no-reparse'
+    }
+
+    $expectedJunction = Join-Path (Join-Path $fullPath 'media') 'linked'
+    if (Test-Path -LiteralPath $expectedJunction) {
+        $junctionItem = Get-Item -LiteralPath $expectedJunction -Force
+        Confirm-Local -Condition (
+            $junctionItem.PSIsContainer -and
+            (($junctionItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0)) -Name 'cleanup-junction-shape'
+        [System.IO.Directory]::Delete($expectedJunction, $false)
+        Confirm-Local -Condition (-not (Test-Path -LiteralPath $expectedJunction)) -Name 'cleanup-junction-removed'
+    }
+
+    foreach ($item in @(Get-ChildItem -LiteralPath $fullPath -Recurse -Force)) {
+        Confirm-Local -Condition ((($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0)) -Name 'cleanup-tree-no-reparse'
+    }
+
+    [System.IO.Directory]::Delete($fullPath, $true)
+    Confirm-Local -Condition (-not (Test-Path -LiteralPath $fullPath)) -Name 'cleanup-run-removed'
+}
+
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 # Resolve the committed inputs and the built test binary.
@@ -70,19 +541,32 @@ $fixtureRoot = (Resolve-Path -LiteralPath (Join-Path $crossPlatformRoot 'eng\fix
 $baseCommit = (& git -C $repositoryRoot rev-parse 'HEAD') 2>$null
 if ($LASTEXITCODE -ne 0) { Stop-Gate -Message 'Unable to resolve repository head.' }
 
-# Build the gate's own media world under the artifacts tree: committed media copies,
-# a garbage golden for the malformed case, a sleep probe for the cancellation case,
-# and a junction directory inside the root for the reparse-component case.
-$script:CurrentCheck = 'stage-media-world'
-if (Test-Path -LiteralPath $workRoot) {
-    Remove-Item -LiteralPath $workRoot -Recurse -Force
+# Preflight: the task root must contain only receipt-named run directories from
+# crashed prior runs, each removed through the validated path; anything else stops
+# the gate.
+$script:CurrentCheck = 'task-root-preflight'
+Confirm-Check -Condition (Test-SafeArtifactDirectory -Path $taskRoot -Create) -Name 'task-root-safe'
+foreach ($entry in @(Get-ChildItem -LiteralPath $taskRoot -Force)) {
+    $script:CurrentCheck = 'task-root-foreign-entry'
+    if (-not ($entry.PSIsContainer -and $entry.Name -cmatch '^run-[0-9a-f]{32}$')) {
+        Stop-Gate -Message "Foreign entry in the inspection task root: $($entry.Name)"
+    }
+    Remove-ValidatedRunDirectory -Path $entry.FullName -Uncounted
 }
-$mediaDir = Join-Path $workRoot 'media'
-New-Item -ItemType Directory -Force -Path $mediaDir | Out-Null
+
+# Stage the gate's media world inside a receipt-named run directory: committed media
+# copies, a garbage golden for the malformed case, a sleep probe for the cancellation
+# case, and a junction directory inside the root for the reparse-component case.
+$script:CurrentCheck = 'stage-media-world'
+$runNonce = [System.Guid]::NewGuid().ToString('N')
+$runRoot = Join-Path $taskRoot ("run-" + $runNonce)
+Confirm-Check -Condition (Test-SafeArtifactDirectory -Path $runRoot -Create) -Name 'run-root-safe'
+$mediaDir = Join-Path $runRoot 'media'
+Confirm-Check -Condition (Test-SafeArtifactDirectory -Path $mediaDir -Create) -Name 'run-media-safe'
 Copy-Item -LiteralPath (Join-Path $fixtureRoot 'media\cfr-h264-aac.mp4') -Destination (Join-Path $mediaDir 'cfr-h264-aac.mp4')
-Copy-Item -LiteralPath (Join-Path $fixtureRoot 'cfr-h264-aac.mp4.win-26.05.json') -Destination (Join-Path $workRoot 'cfr-h264-aac.mp4.win-26.05.json')
+Copy-Item -LiteralPath (Join-Path $fixtureRoot 'cfr-h264-aac.mp4.win-26.05.json') -Destination (Join-Path $runRoot 'cfr-h264-aac.mp4.win-26.05.json')
 Copy-Item -LiteralPath (Join-Path $fixtureRoot 'media\cfr-h264-aac.mp4') -Destination (Join-Path $mediaDir 'malformed-probe.mkv')
-[System.IO.File]::WriteAllText((Join-Path $workRoot 'malformed-probe.mkv.win-26.05.json'), "this is not a json document`n")
+[System.IO.File]::WriteAllText((Join-Path $runRoot 'malformed-probe.mkv.win-26.05.json'), "this is not a json document`n")
 Copy-Item -LiteralPath (Join-Path $fixtureRoot 'media\cfr-h264-aac.mp4') -Destination (Join-Path $mediaDir 'sleep-probe.mkv')
 $junctionDir = Join-Path $mediaDir 'linked'
 & cmd /c mklink /J "$junctionDir" "$mediaDir" | Out-Null
@@ -186,7 +670,7 @@ try {
     # The hostile corpus: every acceptance failure is the same status and the same
     # body, byte for byte, including the reparse-component path inside the root.
     $hostilePaths = @(
-        (Join-Path $workRoot 'cfr-h264-aac.mp4.win-26.05.json'),
+        (Join-Path $runRoot 'cfr-h264-aac.mp4.win-26.05.json'),
         (Join-Path $mediaDir 'absent-file-4471aa.mkv'),
         $mediaDir,
         ($mediaDir + '\..\media\cfr-h264-aac.mp4'),
@@ -243,17 +727,13 @@ finally {
 }
 Confirm-Check -Condition ($hostProcess.ExitCode -eq 0) -Name 'host-clean-shutdown'
 
-# Publish the evidence record. New producer evidence invalidates any standing audit
-# first, because a record written after an audit attempt is unaudited and the stale
-# audit must not keep certifying a set that no longer exists.
+# Publish the evidence record under the shared writer lease: acquire, invalidate the
+# stale audit sidecar-then-JSON, prove publication readiness, write atomically in
+# canonical form, and release with the exact receipt.
 $script:CurrentCheck = 'write-evidence'
-New-Item -ItemType Directory -Force -Path $evidenceRoot | Out-Null
-foreach ($staleAudit in @('evidence-audit.json', 'evidence-audit.json.sha256')) {
-    $stalePath = Join-Path $evidenceRoot $staleAudit
-    if (Test-Path -LiteralPath $stalePath) {
-        Remove-Item -LiteralPath $stalePath -Force
-    }
-}
+Enter-EvidenceWriterLease
+Invalidate-EvidenceAudit
+Assert-EvidencePublicationReady
 $record = [ordered]@{
     schema = 'staxrip-inspection-v1'
     head = $baseCommit
@@ -270,12 +750,17 @@ $record = [ordered]@{
         'CT-020 is the load-bearing privacy proof at the guard; the wire greps here restate it, and the typed payload schema excludes banned fields structurally, shown by a strip-neutralizing mutation that CT-020 caught while the wire greps could not'
     )
 }
-$json = ($record | ConvertTo-Json -Depth 6).Replace("`r`n", "`n")
-[System.IO.File]::WriteAllText((Join-Path $evidenceRoot 'inspection.json'), $json + "`n")
+$json = ConvertTo-Json -InputObject $record -Depth 6
+Write-AtomicUtf8Artifact -Path (Join-Path $evidenceRoot 'inspection.json') -Content ($json.Replace("`r`n", "`n").TrimEnd([char]10) + "`n")
+Exit-EvidenceWriterLease
 if (Test-Path -LiteralPath (Join-Path $failureRoot 'port-inspection.txt')) {
     Remove-Item -LiteralPath (Join-Path $failureRoot 'port-inspection.txt') -Force
 }
-Remove-Item -LiteralPath $workRoot -Recurse -Force
+
+# Receipt-bound cleanup, then the task root must be empty for the auditor's law.
+$script:CurrentCheck = 'cleanup'
+Remove-ValidatedRunDirectory -Path $runRoot
+Confirm-Check -Condition (@(Get-ChildItem -LiteralPath $taskRoot -Force).Count -eq 0) -Name 'task-root-empty-after'
 
 $stopwatch.Stop()
 Write-Output "PASS port-inspection checks=$script:CheckCount elapsed_ms=$($stopwatch.ElapsedMilliseconds) evidence=CrossPlatform/artifacts/evidence/inspection.json"
