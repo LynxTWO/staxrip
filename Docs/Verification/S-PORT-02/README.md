@@ -1,11 +1,12 @@
 # S-PORT-02 Verification Record
 
-Version: 1.2 Final. Date: 2026-08-21. Started at base `9cc9bd37`; closed at 1.0 by
+Version: 1.3 Final. Date: 2026-08-21. Started at base `9cc9bd37`; closed at 1.0 by
 the exit-criteria review below with its attesting sweep; reopened and re-closed at
 1.1 for the certification repair recorded and re-attested below; 1.2 adds the first
-post-close fact, audio delay, with its own attesting sweep. The 1.0 feature closure
-was never disproved; one concurrency invariant of the certification harness was, and
-is repaired and proven.
+post-close fact, audio delay, then a privacy widening and three corrected claims; 1.3
+grows the fixture corpus under D-047 and ships chapters and subtitle stream size, each
+with its own attesting sweep. The 1.0 feature closure was never disproved; one
+concurrency invariant of the certification harness was, and is repaired and proven.
 
 ## Unit 1: typed payload, normalizer, privacy guard
 
@@ -830,6 +831,65 @@ plan would have routed author-controlled chapter labels to the wire verbatim.
 the family-prefix rule to exact-name matching turns `CT-020` red at
 `banned-family variant survived the guard: Encoded_Application_Name`, which is the
 same red that opened the unit, so the widening is load bearing rather than decorative.
+
+## v1.3 corpus growth: chapters and subtitle stream size, 2026-08-21
+
+D-047 ratified, so the corpus grew for the first time with a recorded recipe. Two
+facts that the exit review left unexposed now ship, and the third stays deferred with
+a measured reason rather than an assumed one.
+
+**The recipe, and the reproducibility the corpus never had.**
+`CrossPlatform/eng/New-MediaFixtures.ps1` verifies the authoring tool against its
+pinned SHA-256 before executing it, writes its own inputs, and authors under bit-exact
+flags. Run twice into separate directories it produced byte-identical files:
+`781db6dc...` for the MP4 and `06452f6d...` for the Matroska, both times. The original
+four fixtures were not authored this way and their bytes are not reproducible; the
+manifest now says which claim belongs to which generation instead of implying one
+claim for all six. The authoring tool is recorded in the tool matrix as an authoring
+row, a class that matrix did not previously have, and its identity was not guessed:
+every committed golden already carried that build's writing-application string, so
+naming it recorded what was unrecorded.
+
+**The list was amended before the code, per its own extension rule.** The agreed-facts
+chapters row named a Windows-wrapper carrier that neither pinned version reports
+through the CLI; it now names the measured one, a `Menu` track's `extra` block keyed by
+timecode. The subtitle disposition row now records that its CLI carrier is
+`ServiceKind`, reported at the ceiling and absent at the floor, so those two facts are
+deferred with the reason in the row. The blanket claim that every row's portable source
+is a parameter name is corrected, because two rows are now known exceptions.
+
+**Red first.** `FAIL case=CT-041, chapter entry count across both menus, expected 4
+actual 0`: the payload carried the section before the normalizer populated it, which is
+the recorded method for a fact addition. Green in both configurations at
+`cases=54 assertions=663`.
+
+**Design decisions, each with the reason it was forced.** The chapters section is flat
+and every entry carries its menu index, because one chapter list arrives through two
+menu tracks on the MP4 and picking one would be a silent rule; flat also keeps the
+range comparison honest, since record equality over a nested collection compares
+backing references rather than contents, the defect this record already carries once.
+Chapter labels are exposed verbatim: a label may contain the separator that a
+language-prefix parser would split on, and the fixture carries exactly such a label so
+the refusal is provable rather than asserted. Membership in the chapters section is
+decided by the timecode grammar alone, because the same `extra` block carries
+non-chapter members.
+
+**Mutation proofs, each observed against the committed baseline and restored.**
+
+- Grammar filter removed, whole block swept: `FAIL case=CT-041, chapter entry count,
+  expected 4 actual 5`, the menu's own non-chapter member appearing as a chapter.
+- Chapter label split on the colon: `FAIL case=CT-041, second chapter label survives
+  verbatim, expected Act One: The Setup actual The Setup`.
+- Menu case removed: `FAIL case=CT-041, expected 4 actual 0`.
+- Subtitle stream size defaulted to zero: `FAIL case=CT-043, matroska subtitle stream
+  size must be absent, not defaulted`.
+
+**The exposed-set delta is now one deferred pair.** Chapters and subtitle stream size
+are exposed and golden-backed in both directions, presence on the MP4 and genuine
+absence on the Matroska at both range ends. Commentary and hearing-impaired remain
+unexposed, blocked by range instability and tracked as P-012, with the committed
+fixture carrying the dispositions so the evidence of the gap is in the corpus rather
+than only in prose.
 
 **The attesting sweep**, run against `609d20eb` on 2026-08-21, all seven gates green
 on the first attempt:
