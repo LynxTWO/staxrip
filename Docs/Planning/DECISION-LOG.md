@@ -1538,8 +1538,33 @@ binary publication case arises that the licence analysis above does not cover.
 
 ## D-052: A server that closes a connection must say so
 
-Date: 2026-08-22. Status: **PROPOSED**, awaiting maintainer ratification. Owner: P-015.
-Approval-gated: it changes response headers on the loopback HTTP endpoint.
+Date: 2026-08-22. Status: **CONFIRMED**, ratified by the maintainer 2026-08-22 and
+implemented the same day. Owner: P-015. Approval-gated because it changes response headers
+on the loopback HTTP endpoint, which is why it was held as PROPOSED until ratified.
+
+Implemented in `CrossPlatform/src/StaxRip.Server/ServerApp.cs`, in the rejection path of
+the request-law middleware. The header is set only when the rejected request declared a
+body, and the predicate is `LoopbackRequestPolicy.IsBodyless`, the policy's own, so this
+rule cannot drift from the law that decides whether a body is present.
+
+Result, measured identically before and after, against a server started outside the gate:
+
+| Measurement | Before | After |
+|---|---|---|
+| Oversized-then-chunked pairs, 200 | 198 clean, 1 SocketException, 1 HttpIOException | 200 clean, 0 failures |
+| Chunked alone, 200 | 200 clean | 200 clean |
+| Control with declared length, 200 | 200 clean | 200 clean |
+| `Connection` on the two body-refusal 400s | absent | `close` |
+| `Connection` on the 401 control | absent | absent, correctly, that body was accepted |
+
+The gate then passed six consecutive runs, having previously failed about a third of the
+time. Its check count rose from 5182 to 5196, which is the gate verifying a header that did
+not exist before rather than new coverage appearing from nowhere.
+
+Not yet done, and recorded so it is not forgotten: there is no regression guard. The fix is
+proven by measurement but nothing fails if the header is removed again. A gate assertion
+naming this header on a body-refusal response is owed, and until it exists this fix is
+protected only by the intermittent failure returning.
 
 Context: P-015 recorded an intermittent failure of the `port-http-windows` gate as an
 `HttpIOException` with no status. Instrumentation identified the failing request, and

@@ -190,6 +190,23 @@ public static class ServerApp
                         LoopbackRequestPolicy.AllowedMethodFor(rejectedTarget);
                 }
 
+                // D-052. This rejection answers without reading the request body, so the
+                // connection cannot be reused: the unread bytes would be parsed as the
+                // start of the next request. The connection closes either way. What this
+                // header changes is whether the client knows, because a client told
+                // nothing is entitled to treat the connection as reusable, return it to
+                // its pool, and send the next request into a close it cannot see coming.
+                // POST is not idempotent, so a correct client will not silently retry,
+                // and the race surfaces to the caller as an I/O error with no status.
+                // Measured at roughly 1 percent of oversized-then-next request pairs
+                // before this line existed. The predicate is the policy's own, so the
+                // rule cannot drift from the law that decides a body is present.
+                if (!LoopbackRequestPolicy.IsBodyless(context.Request))
+                {
+                    context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Connection] =
+                        "close";
+                }
+
                 await ContractResponses.WriteErrorAsync(
                     context.Response,
                     rejection.StatusCode,
