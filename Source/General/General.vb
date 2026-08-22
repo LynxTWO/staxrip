@@ -1508,13 +1508,25 @@ Public Class Cuda
 End Class
 
 Public Class Vulkan
-    Private Shared _result As VkResult = Nothing
+    ' The memoized verdict is deliberately Boolean? and not VkResult. VkResult.Success is
+    ' zero, which is also what an uninitialized VkResult holds, so a "not probed yet"
+    ' sentinel stored in that type cannot be told apart from a successful probe. This
+    ' field previously was a VkResult tested against Nothing, so the guard was only ever
+    ' true-and-stayed-true for failures: a machine WITH Vulkan re-ran the whole probe on
+    ' every read and created a fresh VkInstance each time, none of which was destroyed.
+    ' The property is read from a Project field initializer, from the options page twice,
+    ' and from two package requirement lambdas, so those instances accumulated on exactly
+    ' the machines whose hardware works.
+    Private Shared _isSupported As Boolean?
 
     <UnmanagedFunctionPointer(CallingConvention.Cdecl)>
     Public Delegate Function vkCreateInstanceDelegate(ByRef createInfo As VkInstanceCreateInfo, allocator As IntPtr, ByRef instance As IntPtr) As VkResult
 
     <UnmanagedFunctionPointer(CallingConvention.Cdecl)>
     Public Delegate Function vkEnumeratePhysicalDevicesDelegate(instance As IntPtr, ByRef deviceCount As Integer, devices As IntPtr) As VkResult
+
+    <UnmanagedFunctionPointer(CallingConvention.Cdecl)>
+    Public Delegate Sub vkDestroyInstanceDelegate(instance As IntPtr, allocator As IntPtr)
 
     <DllImport("vulkan-1.dll", CallingConvention:=CallingConvention.Cdecl)>
     Public Shared Function vkGetInstanceProcAddr(instance As IntPtr, name As String) As IntPtr
@@ -1523,32 +1535,53 @@ Public Class Vulkan
 
     Public Shared ReadOnly Property IsSupported As Boolean
         Get
+            If _isSupported.HasValue Then Return _isSupported.Value
+
+            ' Declared outside the Try so the Finally can release it on every path,
+            ' including the throws that mean the probe failed after the instance existed.
+            Dim instance As IntPtr = IntPtr.Zero
+
             Try
-                If _result = Nothing Then
-                    Dim createInstancePtr = vkGetInstanceProcAddr(IntPtr.Zero, "vkCreateInstance")
-                    If createInstancePtr = IntPtr.Zero Then Throw New Exception()
+                Dim createInstancePtr = vkGetInstanceProcAddr(IntPtr.Zero, "vkCreateInstance")
+                If createInstancePtr = IntPtr.Zero Then Throw New Exception()
 
-                    Dim vkCreateInstance = CType(Marshal.GetDelegateForFunctionPointer(createInstancePtr, GetType(vkCreateInstanceDelegate)), vkCreateInstanceDelegate)
-                    Dim ci As New VkInstanceCreateInfo With {
-                            .sType = 1 ' VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
-                            }
-                    Dim instance As IntPtr = IntPtr.Zero
-                    If vkCreateInstance.Invoke(ci, IntPtr.Zero, instance) <> VkResult.Success Then Throw New Exception()
+                Dim vkCreateInstance = CType(Marshal.GetDelegateForFunctionPointer(createInstancePtr, GetType(vkCreateInstanceDelegate)), vkCreateInstanceDelegate)
+                Dim ci As New VkInstanceCreateInfo With {
+                        .sType = 1 ' VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
+                        }
+                If vkCreateInstance.Invoke(ci, IntPtr.Zero, instance) <> VkResult.Success Then Throw New Exception()
 
-                    Dim enumDevicesPtr = vkGetInstanceProcAddr(instance, "vkEnumeratePhysicalDevices")
-                    If enumDevicesPtr = IntPtr.Zero Then Throw New Exception()
+                Dim enumDevicesPtr = vkGetInstanceProcAddr(instance, "vkEnumeratePhysicalDevices")
+                If enumDevicesPtr = IntPtr.Zero Then Throw New Exception()
 
-                    Dim vkEnumeratePhysicalDevices = CType(Marshal.GetDelegateForFunctionPointer(enumDevicesPtr, GetType(vkEnumeratePhysicalDevicesDelegate)), vkEnumeratePhysicalDevicesDelegate)
-                    Dim deviceCount = 0
-                    vkEnumeratePhysicalDevices.Invoke(instance, deviceCount, IntPtr.Zero)
-                    If deviceCount < 1 Then Throw New Exception()
+                Dim vkEnumeratePhysicalDevices = CType(Marshal.GetDelegateForFunctionPointer(enumDevicesPtr, GetType(vkEnumeratePhysicalDevicesDelegate)), vkEnumeratePhysicalDevicesDelegate)
+                Dim deviceCount = 0
+                vkEnumeratePhysicalDevices.Invoke(instance, deviceCount, IntPtr.Zero)
+                If deviceCount < 1 Then Throw New Exception()
 
-                    _result = VkResult.Success
-                End If
+                _isSupported = True
             Catch ex As Exception
-                _result = VkResult.ErrorInitializationFailed
+                _isSupported = False
+            Finally
+                If instance <> IntPtr.Zero Then
+                    ' Release the probe instance. This is the only place it can happen:
+                    ' the handle is local, nothing else holds it, and the verdict this
+                    ' probe exists to produce is already recorded above.
+                    Dim destroyInstancePtr = vkGetInstanceProcAddr(instance, "vkDestroyInstance")
+
+                    If destroyInstancePtr <> IntPtr.Zero Then
+                        Try
+                            CType(Marshal.GetDelegateForFunctionPointer(destroyInstancePtr, GetType(vkDestroyInstanceDelegate)), vkDestroyInstanceDelegate).Invoke(instance, IntPtr.Zero)
+                        Catch
+                            ' A failed teardown must not turn a good verdict into a crash,
+                            ' and must not overwrite the verdict either. Losing one
+                            ' instance is the old behavior; losing the answer is worse.
+                        End Try
+                    End If
+                End If
             End Try
-            Return _result = VkResult.Success
+
+            Return _isSupported.Value
         End Get
     End Property
 End Class

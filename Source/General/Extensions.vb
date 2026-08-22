@@ -895,9 +895,7 @@ Module StringExtensions
     <Extension()>
     Function MD5Hash(instance As String) As String
         Using m = MD5.Create()
-            Dim inputBuffer = Encoding.UTF8.GetBytes(instance)
-            Dim hashBuffer = m.ComputeHash(inputBuffer)
-            Return BitConverter.ToString(m.ComputeHash(inputBuffer))
+            Return BitConverter.ToString(m.ComputeHash(Encoding.UTF8.GetBytes(instance)))
         End Using
     End Function
 
