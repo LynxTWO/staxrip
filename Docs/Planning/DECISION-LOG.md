@@ -1310,6 +1310,18 @@ Decision: the matrix gains three tiers, distinguished by what claim a row makes.
   declaration. It makes no claim that the tool exists, runs, is available, or is
   compatible on any platform.
 
+**Amended 2026-08-22, same day, before any implementation.** The Tier C schema above says
+`filename`, singular, and that is wrong. The upstream availability survey established that
+the same tool ships under different executable names per platform: the three rigaya
+hardware encoders are `NVEncC64.exe`, `QSVEncC64.exe`, and `VCEEncC64.exe` on Windows and
+`nvencc`, `qsvencc`, and `vceencc` on Linux. A record carrying one filename would search
+for the Windows name on Linux and report a correctly installed tool as absent, which is a
+false negative produced by the schema rather than by the lookup. Tier C therefore records
+a filename **per platform**, with the legacy value as the Windows entry and other
+platforms absent until evidence fills them. Absent stays absent; it is never defaulted to
+the Windows name, because that is precisely the failure being corrected. The survey is in
+`Docs/Architecture/Linux-Tool-Availability.md`, section 5.
+
 The load-bearing rule is that a Tier C entry may not be invoked, and that is enforced by
 mechanism rather than by prose. The portable process boundary already refuses any
 executable path that is not absolute and resolvable, and a Tier C entry has no approved
@@ -1353,3 +1365,80 @@ inferred from the resolver's absolute-path rule, not verified for this purpose.
 Revisit when: a Tier C entry needs to run, which is a promotion decision; or the
 catalogue gains a runtime availability probe, which would give Tier C a claim it does
 not have today and would need its own decision.
+
+## D-050: VapourSynth is the Linux filtering path, and AviSynth+ is the expensive tail
+
+Date: 2026-08-22. Status: **PROPOSED**, awaiting maintainer ratification. Owner: P-004
+and P-005. Would bind S-PORT-05 onward.
+
+This one is not mine to confirm. It chooses which half of the product's filtering surface
+gets carried to Linux first, and it will be visible to users as which filters work. It is
+written as a recommendation with its evidence, and it should be ratified, amended, or
+rejected rather than assumed.
+
+Context: the portable side has to pick an order for frameserver work, and the two
+frameservers looked interchangeable from inside this repository. They are not, and the
+difference is large enough to change the plan. Measurements, all dated 2026-08-22 and
+recorded with sources in `Docs/Architecture/Linux-Tool-Availability.md`:
+
+Our own catalogue, classified by which frameserver's filter names each entry declares:
+
+- 132 entries declare AviSynth filter names only.
+- 91 declare VapourSynth filter names only.
+- 13 declare both.
+- 63 declare neither, being executables, runtimes, and support entries.
+- 26 entries additionally declare `.Dependencies`, pulling in further plugins by name.
+
+So 145 entries expose AviSynth filters and 104 expose VapourSynth filters. On entry count
+alone AviSynth looks like the bigger prize. On availability it is the opposite:
+
+| | AviSynth+ | VapourSynth |
+|---|---|---|
+| Upstream Linux binary for the frameserver | None. Source build only | `pip install`, glibc and musl, x86-64 and aarch64, including `vspipe` and the SDK |
+| In Debian, Ubuntu, Fedora | No | Core in Fedora; Debian and Ubuntu carry nothing |
+| Plugin ABI | C++ vtable, crosses the MSVC-against-Itanium boundary | Plain versioned C ABI, platform-neutral by construction |
+| Plugins with a published Linux binary | Effectively none. One project in a roughly 160-repository survey | About 40 percent in the platform-keyed index, about 93 percent of native projects on PyPI, a combined floor near 56 percent |
+| Per-plugin Linux availability index | None exists, searched for | `vspackages3.zip`, platform-keyed, 254 KB |
+| Linux packaging channel | 49 AUR source recipes, essentially one maintainer, most untouched since 2023 | PyPI, plus a build project covering 76 plugins |
+
+Proposed decision: **VapourSynth is the portable side's first-class filtering path.**
+AviSynth+ support on Linux is neither dropped nor promised; it is sequenced behind, and
+each AviSynth plugin that matters is promoted individually with its own evidence, in the
+same way Tier C entries are promoted under D-049.
+
+Because: the two ecosystems differ by roughly an order of magnitude in how much work a
+Linux user's filter graph requires, and that difference is in release engineering rather
+than in capability, so it is not something this project can fix by trying harder. Choosing
+VapourSynth first buys most of the filtering surface for close to the cost of a package
+install. Choosing AviSynth first means building most of a plugin ecosystem from source
+before a single filter runs, and inheriting four families that are architecturally
+blocked rather than merely unported.
+
+Options considered:
+- VapourSynth first, AviSynth+ promoted per plugin: recommended, for the reasons above.
+- Both at once: rejected on cost. It doubles the plugin surface at the moment the port
+  can least afford it, and the AviSynth half has no index to plan against.
+- AviSynth+ first, because 145 entries is more than 104: rejected on measurement. Entry
+  count is the wrong metric when the two counts sit on ecosystems with such different
+  availability; it measures what the legacy app offers, not what a Linux user could run.
+- Drop AviSynth+ on Linux entirely: rejected. It is a larger promise than the evidence
+  supports, the frameserver itself does build and is packaged by several distributions,
+  the repository already vendors `Source/FrameServer/avs/posix.h`, and roughly two-thirds
+  of sampled plugins do build from source. The problem is published binaries, not
+  feasibility, and that can change.
+
+Consequences if ratified: the portable filter surface starts at roughly the 104
+VapourSynth-declaring entries rather than all 249, and the gap is visible and recorded
+rather than discovered by users. Plugin availability becomes a lookup against an existing
+index instead of a survey this project maintains. The AviSynth tail stays enumerated, so
+"not yet" never quietly becomes "never".
+
+Risks recorded with it: of the plugins the index reports as Linux-capable, 78 of 82 get
+their binaries from a single volunteer build project, so that 40 percent figure is closer
+to one upstream than to 82. The PyPI channel is more distributed and should be preferred
+where both exist. Neither number should be treated as a stable platform property without
+re-measuring.
+
+Revisit when: the AviSynth+ plugin ecosystem starts publishing Linux binaries, which one
+pilot project is now doing; or a specific AviSynth-only filter becomes load-bearing for a
+shipped feature, which is a promotion decision rather than a reversal of this one.
