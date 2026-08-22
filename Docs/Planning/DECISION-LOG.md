@@ -1157,7 +1157,7 @@ format.
 
 ## D-047: Corpus growth needs a fixture-authoring tool, and that needs approval
 
-Date: 2026-08-21. Status: PROPOSED, awaiting maintainer ratification. Owner: P-004.
+Date: 2026-08-21. Status: CONFIRMED, ratified by the maintainer 2026-08-21. Owner: P-004.
 
 Context: The S-PORT-02 exit review left three agreed facts unexposed, recorded as
 blocked by the fixture-first rule: chapters, subtitle commentary and hearing-impaired,
@@ -1176,7 +1176,7 @@ the same way, under the maintainer's tool-acquisition approval recorded in the f
 manifest, and its producing tool was never named, which is why the four committed
 fixtures have no recorded recipe today.
 
-Decision requested: approve one named fixture-authoring tool, recorded in the tool
+Decision, ratified: one named fixture-authoring tool, recorded in the tool
 matrix with its path, version, and SHA-256, used only to author committed fixtures and
 never to run inside the product or a gate. The measured candidate is the ffmpeg build
 bundled with the installed Windows product tree, identified because every committed

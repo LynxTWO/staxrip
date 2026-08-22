@@ -113,7 +113,7 @@ $factSections = @(
         @{ Dll = 'Video_Delay' }, @{ Dll = 'Compression_Mode' }) }
 )
 
-$mediaFiles = @('cfr-h264-aac.mp4', 'cfr-ffv1-10bit-pcm.mkv', 'cfr-vp9-opus.webm', 'vfr-ffv1.mkv')
+$mediaFiles = @('cfr-h264-aac.mp4', 'cfr-ffv1-10bit-pcm.mkv', 'cfr-vp9-opus.webm', 'vfr-ffv1.mkv', 'cfr-h264-aac-chapters.mp4', 'cfr-h264-aac-subtitles.mkv')
 $rows = [System.Collections.Generic.List[object]]::new()
 $counts = [ordered]@{ equal = 0; 'absent-both' = 0; 'absent-cli' = 0; 'absent-dll' = 0; divergent = 0 }
 

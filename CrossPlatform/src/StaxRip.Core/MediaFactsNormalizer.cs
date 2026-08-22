@@ -57,6 +57,8 @@ public static class MediaFactsNormalizer
         var video = ImmutableArray.CreateBuilder<MediaVideoFacts>();
         var audio = ImmutableArray.CreateBuilder<MediaAudioFacts>();
         var text = ImmutableArray.CreateBuilder<MediaTextFacts>();
+        var chapters = ImmutableArray.CreateBuilder<MediaChapterFacts>();
+        int menuIndex = 0;
 
         foreach (JsonNode? trackNode in tracks)
         {
@@ -77,6 +79,10 @@ public static class MediaFactsNormalizer
                 case "Text":
                     text.Add(ReadText(track, text.Count));
                     break;
+                case "Menu":
+                    ReadChapters(track, menuIndex, chapters);
+                    menuIndex++;
+                    break;
             }
         }
 
@@ -87,6 +93,7 @@ public static class MediaFactsNormalizer
             Video = video.ToImmutable(),
             Audio = audio.ToImmutable(),
             Text = text.ToImmutable(),
+            Chapters = chapters.ToImmutable(),
         };
     }
 
@@ -161,7 +168,82 @@ public static class MediaFactsNormalizer
         Title = ReadString(track, "Title"),
         Default = ReadYesNo(track, "Default"),
         Forced = ReadYesNo(track, "Forced"),
+        StreamSizeBytes = ReadLong(track, "StreamSize"),
     };
+
+    // Chapters are the one fact the authority reports through dynamically named members
+    // rather than through a parameter name: each entry is a member of the menu track's
+    // extra block, named by its own timecode. The block is not exclusively chapters, so
+    // membership is decided by the timecode grammar and nothing else; sweeping the block
+    // would publish the menu's other members as chapters. The label is exposed verbatim,
+    // because a label may contain the separator any further parsing would split on.
+    private static void ReadChapters(
+        JsonObject track,
+        int menuIndex,
+        ImmutableArray<MediaChapterFacts>.Builder chapters)
+    {
+        if (track["extra"] is not JsonObject extra)
+            return;
+
+        int index = 0;
+        foreach (KeyValuePair<string, JsonNode?> member in extra)
+        {
+            if (!TryReadChapterTimecode(member.Key, out string? timecode, out long milliseconds))
+                continue;
+
+            chapters.Add(new MediaChapterFacts
+            {
+                MenuIndex = menuIndex,
+                Index = index,
+                Timecode = timecode,
+                TimecodeMilliseconds = milliseconds,
+                Label = member.Value is JsonValue value && value.TryGetValue(out string? label) && label.Length > 0
+                    ? label
+                    : null,
+            });
+            index++;
+        }
+    }
+
+    // The member grammar is an underscore, then hours, minutes, seconds, and
+    // milliseconds, each underscore separated. Anything else is not a chapter.
+    private static bool TryReadChapterTimecode(string name, out string? timecode, out long milliseconds)
+    {
+        timecode = null;
+        milliseconds = 0;
+
+        if (name.Length != 13 || name[0] != '_' || name[3] != '_' || name[6] != '_' || name[9] != '_')
+            return false;
+
+        if (!TryReadDigits(name, 1, 2, out int hours) ||
+            !TryReadDigits(name, 4, 2, out int minutes) ||
+            !TryReadDigits(name, 7, 2, out int seconds) ||
+            !TryReadDigits(name, 10, 3, out int fraction))
+        {
+            return false;
+        }
+
+        timecode = string.Create(
+            CultureInfo.InvariantCulture,
+            $"{hours:D2}:{minutes:D2}:{seconds:D2}.{fraction:D3}");
+        milliseconds = (((hours * 60L) + minutes) * 60L + seconds) * 1000L + fraction;
+        return true;
+    }
+
+    private static bool TryReadDigits(string name, int start, int length, out int value)
+    {
+        value = 0;
+        for (int offset = 0; offset < length; offset++)
+        {
+            char character = name[start + offset];
+            if (character is < '0' or > '9')
+                return false;
+
+            value = (value * 10) + (character - '0');
+        }
+
+        return true;
+    }
 
     private static string? ReadString(JsonObject track, string name) =>
         track[name] is JsonValue value && value.TryGetValue(out string? text) && text.Length > 0

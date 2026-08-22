@@ -196,11 +196,38 @@ public sealed record MediaTextFacts
 
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? Forced { get; init; }
+
+    // Present on containers that carry real subtitle sample tables, absent on those
+    // that do not; both cases are golden-backed, so absence here is a measured fact
+    // rather than an untested branch.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? StreamSizeBytes { get; init; }
 }
 
-// Chapters are deliberately absent from version 1 of this payload: the committed fixture
-// corpus contains no chaptered media, and the fixture-first rule forbids shipping a field
-// no golden can assert. The section arrives together with a chaptered fixture.
+// One chapter entry, flat by design. The authority reports chapters inside menu tracks,
+// and a container can carry more than one menu track for a single chapter list, so the
+// menu's own index travels on the entry instead of nesting a collection inside a record.
+// Nesting would also defeat the payload's range comparison, because record equality over
+// a collection member compares backing references rather than contents.
+public sealed record MediaChapterFacts
+{
+    public int MenuIndex { get; init; }
+
+    public int Index { get; init; }
+
+    // The authority names each entry by its own timecode; both the raw spelling and the
+    // parsed milliseconds are retained, and the label is exposed verbatim because a
+    // label may legitimately contain the separator any parsing would split on.
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Timecode { get; init; }
+
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? TimecodeMilliseconds { get; init; }
+
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Label { get; init; }
+}
+
 public sealed record MediaFactsResponse
 {
     public string Schema { get; init; } = MediaFactsContract.SchemaId;
@@ -214,4 +241,6 @@ public sealed record MediaFactsResponse
     public ImmutableArray<MediaAudioFacts> Audio { get; init; } = [];
 
     public ImmutableArray<MediaTextFacts> Text { get; init; } = [];
+
+    public ImmutableArray<MediaChapterFacts> Chapters { get; init; } = [];
 }

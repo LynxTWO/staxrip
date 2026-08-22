@@ -12,9 +12,13 @@ execution authority; the adapter decision is D-045, ratified 2026-08-18: the Med
 CLI with `--Output=JSON` is the primary portable authority, and ffprobe JSON is the
 named backup with activation triggers recorded in the decision.
 
-Under the ratified primary, the portable source for every row below is the same
-MediaInfo parameter name delivered through the CLI JSON track fields, so the primary
-divergence class is `none` or `structure` for nearly all rows, and the ground rules
+Under the ratified primary, the portable source for nearly every row below is the same
+MediaInfo parameter name delivered through the CLI JSON track fields. Two rows are
+exceptions established by measurement on 2026-08-21 and amended in place: chapters
+travel as dynamically named members of a `Menu` track's `extra` block rather than as a
+parameter name, and the subtitle disposition pair travels as `ServiceKind` rather than
+as the parameter names the Windows wrapper reads. For every row that follows the rule
+the primary divergence class is `none` or `structure`, and the ground rules
 carry the remaining real divergences: the absence rules still apply because the silent
 defaults and identifier synthesis live in the Windows wrapper code, not in MediaInfo
 itself, and the privacy rule is load-bearing because the CLI JSON includes
@@ -59,7 +63,7 @@ Windows defaults).
 | Duration | `General/Duration` | `format.duration` | structure; ms integer vs seconds decimal |
 | File size | `General/FileSize` | `format.size` | none |
 | Title | `General/Title` or `Movie` (`MainForm.vb`) | `format.tags.title` | authority: probe wins |
-| Chapters | `Menu/Chapters_Pos_*` (`Demux.vb`) | `chapters[]` with `start_time`, `tags.title` | structure |
+| Chapters | `Menu/Chapters_Pos_*` (`Demux.vb`); the CLI JSON carrier is a `Menu` track whose `extra` block names each entry `_HH_MM_SS_mmm` with the label as its value, amended 2026-08-21 from a measured capture at both range ends | `chapters[]` with `start_time`, `tags.title` | structure |
 
 ### Video stream
 
@@ -123,8 +127,8 @@ future encoding slice. S-PORT-02 exposes them read-only.
 | Format | `Text/Format`, `Codec/String` fallback (`MediaInfo.vb:185-191`) | `codec_name` | spelling |
 | Language, Title | as audio | as audio | spelling |
 | Default, Forced | yes-strings | `disposition` booleans | structure |
-| Commentary, Hearing impaired | `Text/Commentary`, `HearingImpaired` | `disposition.comment`, `disposition.hearing_impaired` | structure |
-| Size | `Text/StreamSize` | absent in most containers | absence |
+| Commentary, Hearing impaired | `Text/Commentary`, `HearingImpaired` in the Windows wrapper; the CLI JSON carrier is `Text/ServiceKind` with values `C` and `HI`, and 24.01 does not report it at all, so these two facts are NOT exposed in version 1 and the reason is range instability, not fixture absence (unknown P-012) | `disposition.comment`, `disposition.hearing_impaired` | structure; deferred |
+| Size | `Text/StreamSize`, confirmed present at both range ends on Matroska and MP4 by measured capture 2026-08-21 | absent in most containers | absence, on the backup only |
 
 ## Out of scope for version 1
 

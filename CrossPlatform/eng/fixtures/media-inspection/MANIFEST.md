@@ -22,8 +22,16 @@ name, or user identifier appears in any document, verified by scan before commit
 
 ## Media provenance
 
-Synthetic fixtures generated during the earlier portable-validation work from bundled
-tools; no personal media, no real-world content. The media files are committed beside
+Synthetic fixtures; no personal media, no real-world content. Provenance differs by
+generation and the difference matters. The first four were generated during the earlier
+portable-validation work from bundled tools with no recorded recipe: their goldens carry
+a writing-application string identifying the ffmpeg build now named in the tool matrix,
+which recovers the authoring identity, but they were not authored bit-exactly and their
+exact bytes are not reproducible. The two fixtures added 2026-08-21 were authored under
+D-047 by `CrossPlatform/eng/New-MediaFixtures.ps1`, which verifies the authoring tool's
+SHA-256 before running it and uses bit-exact flags; running that script twice into
+separate directories produced byte-identical files, which is a reproducibility claim
+only those two carry. The media files are committed beside
 these documents under `media/`, so the whole chain, input bytes to golden output, is
 reproducible from the repository alone, and the comparison recorder can run on any
 checkout. These hashes bind the documents to their exact inputs.

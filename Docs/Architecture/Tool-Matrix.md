@@ -28,6 +28,23 @@ repository convention, and a `configured` claim stays configured until a named g
 | Verification pending | Done 2026-08-19: eight goldens captured, four fixtures at each range end, committed under `eng/fixtures/media-inspection/` with a provenance manifest. Done 2026-08-21: non-WSL capture on the independent bare-metal Ubuntu host, fact-identical to the committed floor goldens with only stripped file-date metadata differing (`Docs/Verification/S-PORT-02/t540p-golden-capture.md`), and the configured pipeline verified on Linux with the real floor tool (`linux-configured-run.md`), including the reparse walk on genuine symlinks and the loader-path note for user-prefix extractions. Remaining open: re-verify when either range end moves | verified on two independent Linux hosts |
 | Windows comparison | Recorded 2026-08-20 over the four committed fixtures: the installed product library was v26.05, the exact pinned ceiling, so the comparison ran at matched versions; 85 facts equal, 79 absent on both sides, zero one-sided absences, and 7 divergences, all structure class (text-API milliseconds versus JSON decimal seconds on `Duration` and `Video_Delay`; text-API fused profile@level), never a value disagreement. Full record in `Docs/Verification/S-PORT-02/comparison-record.md` | verified by execution, recorder committed |
 
+## ffmpeg, fixture-authoring tool (D-047)
+
+Authoring, not authority. This tool never runs inside the product and never runs inside
+a gate; it exists to author committed fixture bytes, and it is recorded here at the same
+bar as the tools that read them.
+
+| Property | Value | Confidence |
+|---|---|---|
+| Tool | `ffmpeg`, the build bundled with the installed Windows product tree at `Apps\FrameServer\AviSynth\ffmpeg.exe` | verified by execution |
+| Role | Authors committed media fixtures only. Not an inspection authority, not a product dependency, not a gate dependency | verified, D-047 |
+| Version | `N-125670-g6d300b4732`, `libavformat 63.5.101` | verified, printed by the binary |
+| SHA-256 | `890af5f546b8b8560d873e12dec223b84caa495c829291a120d0c2a990ff8e23` | verified |
+| Why this build | Every committed golden reports `Encoded_Application` of `Lavf63.5.101`, which is this build's own libavformat version, so it is the authoring identity the existing corpus already carries. Naming it records what was previously unrecorded rather than introducing something new | verified by matching the goldens against the binary |
+| Reproducibility | Under `-fflags +bitexact -flags:v +bitexact -flags:a +bitexact` the output is byte-identical across runs, proven by running the recipe twice into separate directories and comparing SHA-256 | verified by execution |
+| Rejected alternative | The bundled MKVToolNix `mkvmerge`: measurably not reproducible, writing a random segment identifier and a wall-clock date, so two runs of one command produce different bytes | verified by execution |
+| Recipe | `CrossPlatform/eng/New-MediaFixtures.ps1`, tracked, which verifies this SHA-256 before executing the binary and writes its own inputs | verified |
+| Scope limit | The four original fixtures predate the recipe and were not authored bit-exactly; their bytes are not reproducible and the manifest says so. Only recipe-authored fixtures carry a reproducibility claim | verified |
 ## ffprobe, named backup (D-045)
 
 Recorded, not implemented. Activation triggers and the swappable-authority requirement

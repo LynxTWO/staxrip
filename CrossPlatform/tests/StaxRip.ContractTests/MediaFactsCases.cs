@@ -17,6 +17,9 @@ internal static class MediaFactsCases
         new("CT-020", "privacy guard strips every banned field", PrivacyGuard),
         new("CT-021", "canonical mappings are load bearing", CanonicalMappings),
         new("CT-022", "malformed documents fail typed", MalformedDocuments),
+        new("CT-041", "golden chapters mp4 two menus and grammar filter", GoldenChaptersMp4),
+        new("CT-042", "golden chapters and subtitle facts mkv", GoldenSubtitlesMkv),
+        new("CT-043", "subtitle stream size presence and absence", SubtitleStreamSizePair),
     ];
 
     // Both range ends of a fixture, from the committed goldens. The range stability the
@@ -42,6 +45,7 @@ internal static class MediaFactsCases
         context.SequenceEqual(floor.Video, ceiling.Video, "video facts differ between range ends");
         context.SequenceEqual(floor.Audio, ceiling.Audio, "audio facts differ between range ends");
         context.SequenceEqual(floor.Text, ceiling.Text, "text facts differ between range ends");
+        context.SequenceEqual(floor.Chapters, ceiling.Chapters, "chapter facts differ between range ends");
     }
 
     private static void SchemaAndShape(TestContext context)
@@ -53,7 +57,7 @@ internal static class MediaFactsCases
         using JsonDocument document = JsonDocument.Parse(json);
 
         context.SequenceEqual(
-            ["schema", "authority", "container", "video", "audio", "text"],
+            ["schema", "authority", "container", "video", "audio", "text", "chapters"],
             document.RootElement.EnumerateObject().Select(static member => member.Name),
             "payload top-level keys changed");
         context.Equal(
@@ -244,6 +248,75 @@ internal static class MediaFactsCases
         }
         """;
 
+    private static void GoldenChaptersMp4(TestContext context)
+    {
+        (MediaFactsResponse floor, MediaFactsResponse ceiling) = NormalizePair("cfr-h264-aac-chapters.mp4");
+        AssertRangeStable(context, floor, ceiling);
+
+        // This container reports one chapter list through two menu tracks. Both are
+        // exposed with their own menu index rather than one being chosen, because
+        // choosing would be a silent rule the payload cannot justify.
+        context.Equal(4, ceiling.Chapters.Length, "chapter entry count across both menus");
+        context.SequenceEqual([0, 0, 1, 1], ceiling.Chapters.Select(static chapter => chapter.MenuIndex), "menu indexes");
+        context.SequenceEqual([0, 1, 0, 1], ceiling.Chapters.Select(static chapter => chapter.Index), "chapter indexes within menus");
+
+        MediaChapterFacts first = ceiling.Chapters[0];
+        context.Equal("00:00:00.000", first.Timecode, "first chapter timecode raw");
+        context.Equal(0L, first.TimecodeMilliseconds, "first chapter timecode milliseconds");
+        context.Equal("Cold Open", first.Label, "first chapter label");
+
+        // The label carries the separator that a language-prefix parser would split on.
+        // Exposing it verbatim is the rule; this assertion is its proof.
+        MediaChapterFacts second = ceiling.Chapters[1];
+        context.Equal("00:00:01.000", second.Timecode, "second chapter timecode raw");
+        context.Equal(1000L, second.TimecodeMilliseconds, "second chapter timecode milliseconds");
+        context.Equal("Act One: The Setup", second.Label, "second chapter label survives verbatim");
+
+        // The authority's menu block also carries members that are not chapters. A
+        // reader that swept the block instead of matching the timecode grammar would
+        // invent them as entries, so their absence is asserted by name.
+        context.False(
+            ceiling.Chapters.Any(static chapter => chapter.Label is "1,2,3" || chapter.Timecode is "Menu_For"),
+            "a non-chapter menu member was exposed as a chapter");
+    }
+
+    private static void GoldenSubtitlesMkv(TestContext context)
+    {
+        (MediaFactsResponse floor, MediaFactsResponse ceiling) = NormalizePair("cfr-h264-aac-subtitles.mkv");
+        AssertRangeStable(context, floor, ceiling);
+
+        context.Equal(2, ceiling.Chapters.Length, "matroska chapter entry count");
+        context.SequenceEqual([0, 0], ceiling.Chapters.Select(static chapter => chapter.MenuIndex), "single menu index");
+        context.Equal("Act One: The Setup", ceiling.Chapters[1].Label, "matroska chapter label survives verbatim");
+
+        context.Equal(2, ceiling.Text.Length, "subtitle track count");
+        MediaTextFacts sdh = ceiling.Text[0];
+        context.Equal("UTF-8", sdh.Format, "subtitle format");
+        context.Equal("English SDH", sdh.Title, "subtitle title");
+        context.Equal("en", sdh.Language, "subtitle language");
+        context.Equal(true, sdh.Default, "subtitle default flag");
+        context.Equal(false, sdh.Forced, "subtitle forced flag");
+
+        MediaTextFacts commentary = ceiling.Text[1];
+        context.Equal("Director Commentary", commentary.Title, "commentary title");
+        context.Equal(false, commentary.Default, "commentary default flag");
+    }
+
+    private static void SubtitleStreamSizePair(TestContext context)
+    {
+        // The presence and absence legs of one fact, both golden-backed and both
+        // range-stable: an authority that measures the subtitle stream reports it, one
+        // that does not omits it, and omission stays omission rather than becoming zero.
+        (_, MediaFactsResponse mp4) = NormalizePair("cfr-h264-aac-chapters.mp4");
+        context.Equal(1, mp4.Text.Length, "mp4 subtitle track count");
+        context.Equal(42L, mp4.Text[0].StreamSizeBytes, "mp4 subtitle stream size present");
+
+        (MediaFactsResponse mkvFloor, MediaFactsResponse mkvCeiling) = NormalizePair("cfr-h264-aac-subtitles.mkv");
+        context.True(mkvCeiling.Text[0].StreamSizeBytes is null, "matroska subtitle stream size must be absent, not defaulted");
+        context.True(mkvCeiling.Text[1].StreamSizeBytes is null, "matroska commentary stream size must be absent, not defaulted");
+        context.True(mkvFloor.Text[0].StreamSizeBytes is null, "matroska subtitle stream size absent at the range floor too");
+    }
+
     private static void PrivacyGuard(TestContext context)
     {
         // The guard itself, on a document containing every banned name.
@@ -348,6 +421,10 @@ internal static class FixtureFiles
         "cfr-h264-aac.mp4.wsl-24.01.json",
         "cfr-vp9-opus.webm.win-26.05.json",
         "cfr-vp9-opus.webm.wsl-24.01.json",
+        "cfr-h264-aac-chapters.mp4.win-26.05.json",
+        "cfr-h264-aac-chapters.mp4.wsl-24.01.json",
+        "cfr-h264-aac-subtitles.mkv.win-26.05.json",
+        "cfr-h264-aac-subtitles.mkv.wsl-24.01.json",
         "vfr-ffv1.mkv.win-26.05.json",
         "vfr-ffv1.mkv.wsl-24.01.json",
     ];

@@ -50,7 +50,7 @@ post() {
   curl -s -w '\n%{http_code}' -X POST "${AUTH[@]}" -H 'Content-Type: application/json; charset=utf-8' --data-binary @"$RUN/out/body.json" "$BASE/api/v1/media-facts" > "$out"
 }
 
-for f in cfr-h264-aac.mp4 cfr-ffv1-10bit-pcm.mkv cfr-vp9-opus.webm vfr-ffv1.mkv; do
+for f in cfr-h264-aac.mp4 cfr-ffv1-10bit-pcm.mkv cfr-vp9-opus.webm vfr-ffv1.mkv cfr-h264-aac-chapters.mp4 cfr-h264-aac-subtitles.mkv; do
   post "$RUN/media/$f" "$RUN/out/happy-$f.txt"
   echo "happy_$f status=$(tail -1 "$RUN/out/happy-$f.txt")"
   echo "happy_$f body=$(head -c 400 "$RUN/out/happy-$f.txt")"

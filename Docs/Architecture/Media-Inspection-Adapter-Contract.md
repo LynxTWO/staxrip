@@ -34,8 +34,8 @@ order is the authority's native order with the authority's native index; no fiel
 contains an absolute path other than the request's own echo, and no field contains a
 globally unique media identifier.
 
-Sections mirror the agreed-facts list exactly: `container`, `video[]`, `audio[]`,
-`subtitles[]`, `chapters[]`, with the exposed fact set of
+Sections mirror the agreed-facts list: `container`, `video[]`, `audio[]`, the
+subtitle section serialized as `text[]`, and `chapters[]`, with the exposed fact set of
 `Media-Inspection-Agreed-Facts.md` version 1 and nothing else. A fact not in that list
 does not ship until the list gains it first. Enablement policy fields do not exist here
 at all.

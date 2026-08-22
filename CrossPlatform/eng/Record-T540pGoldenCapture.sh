@@ -33,7 +33,7 @@ echo "host_tool_version=$("$TOOL" --Version | tr "\n" " ")"
 echo "host_identity hostname=$(hostname) machine_id_sha=$(sha256sum /etc/machine-id | cut -d" " -f1) os=$(. /etc/os-release && echo $PRETTY_VERSION $VERSION_ID) kernel=$(uname -r) fs=$(stat -f -c %T ~/staxrip-verify)"
 mkdir -p out
 cd media
-for f in cfr-h264-aac.mp4 cfr-ffv1-10bit-pcm.mkv cfr-vp9-opus.webm vfr-ffv1.mkv; do
+for f in cfr-h264-aac.mp4 cfr-ffv1-10bit-pcm.mkv cfr-vp9-opus.webm vfr-ffv1.mkv cfr-h264-aac-chapters.mp4 cfr-h264-aac-subtitles.mkv; do
   "$TOOL" --Output=JSON "$f" > "../out/$f.t540p-24.01.json"
   echo "captured $f bytes=$(wc -c < ../out/$f.t540p-24.01.json)"
 done
@@ -46,7 +46,7 @@ ls -la "$RESULTS/out"
 
 echo "=== byte-exact comparison vs committed wsl-24.01 goldens ==="
 GOLD="$REPO/CrossPlatform/eng/fixtures/media-inspection"
-for f in cfr-h264-aac.mp4 cfr-ffv1-10bit-pcm.mkv cfr-vp9-opus.webm vfr-ffv1.mkv; do
+for f in cfr-h264-aac.mp4 cfr-ffv1-10bit-pcm.mkv cfr-vp9-opus.webm vfr-ffv1.mkv cfr-h264-aac-chapters.mp4 cfr-h264-aac-subtitles.mkv; do
   cap="$RESULTS/out/$f.t540p-24.01.json"
   ref="$GOLD/$f.wsl-24.01.json"
   # Normalize the capture to a single trailing newline per the manifest rule.
