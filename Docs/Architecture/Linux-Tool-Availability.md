@@ -332,7 +332,52 @@ problem the legacy path would have hit.
 records a single `filename` per entry, and finding 1 in section 5 shows filename is
 platform-dependent for at least three entries in the execution path.
 
-## 7. What this file does not license
+## 7. Upstream contribution targets, verified 2026-08-22
+
+D-051 proposed spending the first effort upstream, on projects that already build Linux
+artifacts in continuous integration and never attach them to their releases. Six candidates
+were checked by reading every workflow file, querying the releases API across all releases
+rather than the latest, and extracting the published archives to confirm their contents.
+**The premise held for four of six, and the check changed the plan in three ways.**
+
+**Two must be dropped, because they already solved this better than the proposed fix.**
+L-SMASH-Works publishes to PyPI as `vapoursynth-lsmas` with four Linux wheels, built by
+cibuildwheel and released on tag. vapoursynth-zip publishes as `vapoursynth-vszip`, and
+did so deliberately: releases R6 to R13 used to carry Linux zip assets and those were
+removed, with the release workflow now creating an empty tag marker and pushing everything
+to PyPI. A pull request there would ask a maintainer to revert a decision they made on
+purpose, which is worse than not contributing at all.
+
+**One premise was simply wrong.** neo_f3kdb's workflow is build verification only: it has
+no `upload-artifact` step and no install step, so the Linux binary is compiled and
+discarded. It does not exist even transiently as a downloadable artifact, so the framing
+of "the artifact exists and is merely unattached" is false there and the change is larger
+than advertised.
+
+| Target | Gap real | Shape | Note |
+|---|---|---|---|
+| vs-dfttest2 | yes | Smallest. One file, roughly 25 lines, mirroring a release pattern the Windows workflow already uses | Active, pull requests merged in about two days |
+| assrender | yes | Small diff, but the workflow has no tag trigger and one must be added | The repository is itself a fork; its many open pull requests are stale bot dependency bumps, not a stalled queue |
+| vs-mlrt | yes | Not small. Eight workflows plus an orchestrator, because the Linux ones lack the `workflow_call` and tag inputs the Windows ones have | Highest impact of the four. Open an issue first, or send one workflow as a proof of concept |
+| neo_f3kdb | yes, different shape | Largest. Needs an install step, an upload, and a release attach | Slowest cadence of the four |
+
+**No policy anywhere, verified three ways.** None of the six has a `CONTRIBUTING.md`, code
+of conduct, pull request template, DCO, or CLA, and none states any policy on
+tool-assisted contributions. Checked against repository contents, the community profile
+API, and organization-level `.github` repositories. No `Signed-off-by` trailers appear in
+recent history and no DCO or CLA bot appears in any check run. So under D-051 there is
+nothing to disclose and nothing to withhold: contribute in each project's conventions,
+sign as the author, and answer honestly if anyone asks.
+
+**The objection to expect, which is legitimate.** A raw `.so` attached to a GitHub release
+is glibc and ABI sensitive, and therefore distro-specific in a way a wheel is not. That is
+exactly why the two dropped projects chose manylinux wheels instead. Any pull request here
+should state which runner image and glibc version the binary is built against, or it reads
+as naive. This is also a real argument that the better contribution, where a project is
+willing, is a wheel rather than a release asset. That is a larger change and a separate
+judgment per project.
+
+## 8. What this file does not license
 
 Nothing here authorizes downloading, installing, or executing any tool. Acquisition is
 approval-gated at every tier per `AGENTS.md`, and this survey changes none of that. It
