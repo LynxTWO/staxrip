@@ -23,9 +23,24 @@ This file records unresolved Linux and macOS port questions found during the por
 - **Concern:** The safe import, export, migration, downgrade, and corruption behavior for legacy BinaryFormatter data is not mapped.
 - **Why it matters:** A new writer could corrupt user-owned projects, settings, templates, profiles, or jobs, and deserializing untrusted data in a server would add a critical security boundary.
 - **Evidence found so far:** `SafeSerialization` and `JobManager` use `BinaryFormatter`; `MainForm` reads and writes project and recovery files. A capability-only HTTP response schema now exists under `CrossPlatform/`, but no portable legacy project or settings schema and no HTTP reader for legacy payloads exists.
-- **Confidence:** verified
+
+  **Reader and writer map, measured 2026-08-22.** Fourteen `BinaryFormatter` sites across six files sort into two groups, and the split matters because only one group carries a compatibility burden.
+
+  *On disk, five formats, all of which must stay readable forever:*
+  1. `SafeSerialization` in `Source/General/General.vb:305-360`, a member-wise serializer writing a `List(Of Object)` of name-value pairs over a `FileStream`. It backs the `.srip` workflow templates written at `:243`, `:251` and `:269`; project files and the batch job project at `Source/Forms/MainForm.vb:1636`, `:1760`, `:1802` and `:4000`; the recovery project at `:2535`; and `ApplicationSettings` at `Source/General/GlobalClass.vb:107` and `:127`, with versioned backup copies at `:117`.
+  2. `AudioProfilesFile`, a `List(Of AudioProfile)` written under a named mutex (`GlobalClass.vb:164`, read at `:184`).
+  3. `VideoEncoderProfilesFile`, a `List(Of VideoEncoder)` (`GlobalClass.vb:219`, read at `:231`).
+  4. The event-commands file, a `List(Of EventCommand)` (`GlobalClass.vb:275`, read at `:295`).
+  5. `Jobs.dat`, a `List(Of Job)` (`Source/General/JobManager.vb:156`, read at `:118`).
+
+  *In memory only, no format burden, safe to replace outright:*
+  6. `ObjectHelp.GetCopy(Of T)` at `Source/General/Help.vb:78-84`, a deep clone via `MemoryStream`. **85 call sites**, overwhelmingly encoder parameter copies.
+  7. `ControlsThemeColors.Clone()` at `Source/UI/Theme.vb:477-483`, the same pattern.
+
+  **The trap, and it is not visible from the call sites.** `GetObjectInstance` and `GetObjectData` at `General.vb:386-400` use a `MemoryStream` and look like a third in-memory helper. They are not. `GetObjectData` is called from inside `SafeSerialization.Serialize` at `:311` for any field whose type is not simple, and `GetObjectInstance` reads it back at `:348`. **The on-disk format therefore contains nested `BinaryFormatter` blobs inside its member list**, so a reimplementation cannot stop at the outer structure. Classifying these by their stream type alone gets the answer wrong; only the callers reveal it.
+- **Confidence:** verified by enumeration and caller tracing
 - **Likely owner:** Persistence-slice maintainer
-- **Next best check:** Freeze synthetic legacy fixtures, map every reader and writer, and design a Windows-only one-way importer into a versioned typed representation before proposing a new writer.
+- **Next best check:** Sequence the clone helper first. `ObjectHelp.GetCopy` is 85 call sites with **zero** on-disk compatibility risk, so replacing it removes a large share of the `BinaryFormatter` surface without touching a single file format, and it can land and be verified independently of the hard part. Only then freeze synthetic fixtures for the five on-disk formats, remembering that fixtures must cover the nested-blob path and not only simple fields, and design a Windows-only one-way importer before proposing any new writer.
 - **Risk level:** critical
 - **Status:** open
 - **Notes:** Legacy serialized bytes must never be accepted by the loopback API.
