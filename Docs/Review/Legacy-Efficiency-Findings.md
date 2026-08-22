@@ -119,25 +119,64 @@ input bytes, same formatting call. No caller changes.
 
 ## F-003: `MediaInfo.ClearCache` has no callers, and a memory-pressure workaround sits nearby
 
-Status: NOT FIXED, deliberately, and not for want of approval. Severity: medium. Class:
-dead invalidation path, with a probable downstream symptom. Gate a fix would cross:
-process coordination and shared resources, because the memory workaround is part of
-process lifetime management.
+Status: NOT FIXED. Measured 2026-08-22, and the measurement changed what the fix is worth.
+Severity: **low**, reduced from medium once the cost was known. Class: dead invalidation
+path. Gate a fix would cross: process coordination and shared resources, because the
+memory workaround is part of process lifetime management.
 
-The approval to change `Source/` covered this finding too. It is left alone because the
-work it needs is measurement, not editing, and that has not changed since the finding was
-written. Every available fix is a guess until someone knows what the cache costs. Calling
-`ClearCache` somewhere plausible would add an invalidation path with no evidence it helps,
-and if the hypothesis below is wrong it would introduce staleness bugs while leaving the
-real growth untouched. Deleting the method as dead code would discard the one tool a
-future fix needs. Neither is an improvement, and shipping one to be able to write "fixed"
-here would be the worst of the three.
+The approval to change `Source/` covered this finding. It was left alone pending
+measurement rather than fixed on a guess, and that was the right call: the measurement
+refuted the reason the finding looked important. The cache leaks 57.7 KB per entry and
+`ClearCache` would reclaim 91 percent of it, so a fix is cheap and would work. It is also
+worth far less than this entry originally implied, because the cache is not what drives the
+1500 MB recycling. Wiring it up remains a reasonable small improvement; presenting it as a
+fix for the recycling workaround would be false.
 
 `Shared Sub ClearCache()` is declared at `Source/General/MediaInfo.vb:432`. A search of
 the entire `Source/` tree for `ClearCache` returns exactly one hit, that declaration.
 Nothing calls it. The media-info cache therefore only grows for the life of the process.
 
-That is a fact. What follows is context, then a hypothesis.
+**MEASURED 2026-08-22, and the hypothesis below is refuted.** The measurement F-003 was
+waiting for has been taken, so the entry now reports numbers instead of a guess.
+
+What the cache retains, read from `MediaInfo.vb:414-438`: a `ConcurrentDictionary` keyed on
+path concatenated with `LastWriteTime.Ticks`, holding `MediaInfo` instances that each own a
+native handle from `MediaInfo_New`. `Dispose` closes and deletes that handle and a
+finalizer calls it, but the static dictionary roots every instance, so the finalizer can
+never run. The key means a rewritten file does not replace its entry, it adds one.
+
+Measured by retaining 300 opened native handles, since the product's own class cannot be
+loaded in isolation (see below):
+
+| | Result |
+|---|---|
+| Private memory per retained entry | **57.7 KB** |
+| 300 entries | +17,312 KB |
+| OS handle count | **unchanged**, so this is native heap, not a Win32 handle leak |
+| Reclaimed by close and delete, which is what `ClearCache` does | **91 percent** |
+| Entries needed to reach the 1500 MB recycle threshold from the cache alone | **about 26,600** |
+
+**The hypothesis is refuted by that last row.** A job would have to probe roughly 26,600
+distinct path-and-timestamp pairs before this cache alone reached the threshold the
+process-recycling workaround exists to survive. A large batch might produce a few hundred
+entries, which is tens of megabytes, not fifteen hundred. So the cache is a real leak and
+is **not** the explanation for the recycling. Whatever drives that growth is still
+unidentified, and this entry no longer claims otherwise.
+
+That changes the recommendation rather than settling it. Calling `ClearCache` somewhere
+principled would reclaim 91 percent of a cost that is small, which is a modest and safe
+win; it would not remove the recycling workaround, and anyone who wires it up expecting
+that will be disappointed. Finding what actually drives the growth needs a memory profile
+over a long batch and is separate work.
+
+**Incidental finding, recorded because it is a portability fact.** `StaxRip.MediaInfo`
+cannot be loaded and called in isolation: its static graph reaches `StaxRip.Package`, whose
+type initializer throws outside a real application environment. That is why the numbers
+above were taken against the native library directly rather than through the product class.
+A port that expects to lift media inspection out on its own will meet this first, and it is
+the same entangled-static-state problem P-001 records for the workflow boundary.
+
+What follows is the original context, and the hypothesis the measurement above refuted.
 
 The context is verified. `Source/General/GlobalClass.vb:516-519` recycles the whole
 process between jobs: when `PrivateMemorySize64` exceeds 1500 MB, the application
