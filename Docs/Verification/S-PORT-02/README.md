@@ -891,6 +891,41 @@ unexposed, blocked by range instability and tracked as P-012, with the committed
 fixture carrying the dispositions so the evidence of the gap is in the corpus rather
 than only in prose.
 
+**The attesting sweep**, run against `b34ae0ec` on 2026-08-22, all seven gates green
+on the first attempt:
+
+```
+PASS port-static        checks=270
+PASS port-verify        checks=1335
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=715
+PASS port-inspection    checks=97
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=65556
+```
+
+Audit record `evidence-audit.json` sha256
+`168a48881301b52ced71425885f5ea3995a39be653fdd1a515d421302751a6a0`. The static gate
+rose from 253 to 270 and the wrapper from 1231 to 1335 because both count the corpus
+they police, which is the shape a growing fixture set should produce. This paragraph
+postdates the audited set by construction.
+
+## Open queue after 1.3
+
+- Commentary and hearing-impaired, deferred on P-012, waiting on a range-floor
+  decision rather than on any work in this repository.
+- The value-embedded-path strip rule, P-013, specified in the adapter contract and
+  unimplemented; chapter labels made its surface concrete, since a label is
+  author-controlled free text that now reaches the wire.
+- The comparison recorder covers General, Video, and Audio parameter sections only,
+  so the two facts added here are outside what it compares; growing it to Text and
+  Menu sections is the next honest step for that record, and its counts move when it
+  grows.
+- The new fixtures are captured at the floor under WSL only. The independent
+  bare-metal capture covers the original four; extending it to six is a rerun of the
+  recorded script, not new work.
+- Container families beyond MP4, Matroska, and WebM remain a standing instruction.
+
 **The attesting sweep**, run against `609d20eb` on 2026-08-21, all seven gates green
 on the first attempt:
 
