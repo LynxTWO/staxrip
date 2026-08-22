@@ -1368,13 +1368,12 @@ not have today and would need its own decision.
 
 ## D-050: VapourSynth is the Linux filtering path, and AviSynth+ is the expensive tail
 
-Date: 2026-08-22. Status: **PROPOSED**, awaiting maintainer ratification. Owner: P-004
-and P-005. Would bind S-PORT-05 onward.
+Date: 2026-08-22. Status: **CONFIRMED**, ratified by the maintainer 2026-08-22. Owner:
+P-004 and P-005. Binds S-PORT-05 onward.
 
-This one is not mine to confirm. It chooses which half of the product's filtering surface
-gets carried to Linux first, and it will be visible to users as which filters work. It is
-written as a recommendation with its evidence, and it should be ratified, amended, or
-rejected rather than assumed.
+This one was not mine to confirm. It chooses which half of the product's filtering surface
+gets carried to Linux first, and it is visible to users as which filters work, so it was
+written as a recommendation with its evidence and held as PROPOSED until ratified.
 
 Context: the portable side has to pick an order for frameserver work, and the two
 frameservers looked interchangeable from inside this repository. They are not, and the
@@ -1442,3 +1441,97 @@ re-measuring.
 Revisit when: the AviSynth+ plugin ecosystem starts publishing Linux binaries, which one
 pilot project is now doing; or a specific AviSynth-only filter becomes load-bearing for a
 shipped feature, which is a promotion decision rather than a reversal of this one.
+
+## D-051: Upstream contribution comes before recreation, and recipes ship before binaries
+
+Date: 2026-08-22. Status: CONFIRMED, ratified by the maintainer 2026-08-22. Owner: P-004.
+Depends on D-049 and D-050.
+
+Context: the Linux tool survey established that most of what the port needs already
+exists, and that the gap is release engineering rather than capability. Several plugin
+projects build Linux artifacts in continuous integration on every change and attach none
+of them to their releases, so the artifacts exist, are current, and are invisible to
+anyone looking at a release page. That reframes the question from "what must we build" to
+"what must we publish, and who should publish it".
+
+The measured position, from `Docs/Architecture/Linux-Tool-Availability.md` and a join of
+the catalogue against the published VapourSynth index on 2026-08-22:
+
+- 27 of 33 named tools need no recreation, shipping upstream Linux binaries or sitting in
+  distribution repositories.
+- Of 168 catalogue `.dll` entries, 93 appear in the index by filename and 59 already have
+  a Linux binary. 34 are Windows-only there and 75 are not indexed at all, the latter
+  being mostly the AviSynth side, which the index does not cover. The 59 is a floor,
+  because several of the 34 publish wheels the index has not picked up.
+
+Decision, in four parts.
+
+**One: do not fork upstream tools.** Anything an upstream maintains is pinned, never
+vendored. A fork is a permanent maintenance liability, and the survey found upstream
+health to be good in most cases. Forking is reconsidered only when an upstream is
+demonstrably dead and the tool is load-bearing, which is a separate decision each time.
+
+**Two: spend the first effort upstream, not on our own infrastructure.** Where a project
+already builds a Linux artifact and does not publish it, the contribution is a small
+change to its release workflow. That is cheaper than operating a build farm, it benefits
+every consumer of that plugin rather than only this project, and it reduces the
+concentration risk recorded in the survey, where 78 of 82 index packages with Linux
+binaries come from one volunteer's project. Standing up a second single-maintainer farm
+would reproduce that fragility rather than repair it.
+
+**Three: recipes are public by default, binaries are per-tool and gated.** Publishing a
+build recipe is publishing a script. Publishing a binary is redistribution, and
+redistribution is where tool licences bind. This repository is MIT, which imposes nothing
+on us, but the tools are not ours to relicense:
+
+- fdkaac depends on non-free `libfdk-aac`, which is why Debian ships it in contrib. No
+  binary publication.
+- DEE is marked confidential to Dolby licensees. No publication of any kind.
+- vvenc is Clear-BSD, which grants no patent rights, over a patent-encumbered codec.
+  Legal review before any binary publication.
+- x264 and x265 are GPL. Publishing binaries carries the corresponding source obligation.
+
+Anything published carries the same provenance discipline as a tool-matrix row: pinned
+upstream commit, recorded build, and SHA-256. A public artifact without provenance is
+worse than no artifact, because it invites trust it has not earned.
+
+**Four: upstream contributions disclose honestly and follow each project's policy.**
+Before opening a pull request, read that project's `CONTRIBUTING.md` and any developer
+certificate of origin requirement, and record which applies. A sign-off is an attestation
+about the origin of the work, so it is made truthfully or not at all. Where a project has
+a policy on tool-assisted contributions, that policy is followed as written; where a
+project asks, the answer is honest; and where a policy rules us out, we do not contribute
+there and build the recipe ourselves instead. Contributions are written in the project's
+own conventions rather than this repository's, which means this repository's commit
+trailers do not travel upstream, because they describe this repository's practice and
+would be inaccurate elsewhere.
+
+Because: the port's dependency on these ecosystems is long-lived, and it is a relationship
+rather than a transaction. Every upstream that publishes a Linux artifact because we asked
+is a dependency we no longer carry. Every maintainer who finds a contribution was
+submitted under a false account of its origin is a dependency we have damaged, and the
+damage lands on the whole effort rather than on one pull request. The technical case and
+the honest case point the same way here, which is the ordinary situation and worth
+recording as such.
+
+Options considered:
+- Fork what we need and maintain it: rejected. Permanent cost, no upstream benefit, and
+  the survey shows most upstreams are healthy enough not to need it.
+- Build a StaxRip-specific Linux artifact farm first: rejected as a first move. It
+  duplicates existing infrastructure and recreates a known single point of failure. It
+  remains the fallback for projects that cannot or will not publish.
+- Publish binaries broadly for user convenience: rejected as a default. It is a
+  redistribution act with per-tool licence consequences, at least two of which are hard
+  prohibitions.
+- Contribute without regard to project policy: rejected.
+
+Consequences: the recreation list is much shorter than the catalogue size suggests, and
+what remains is mostly recipes rather than code. A separate public recipes repository is
+justified when the first recipe lands, kept outside the application repository because its
+licence surface, build matrix, and release cadence all differ, and because being useful to
+people who do not use this application is what would attract the co-maintainers the
+existing farm lacks. That repository's creation is itself a distribution decision and
+needs its own approval under `AGENTS.md`.
+
+Revisit when: a load-bearing upstream goes dead, which reopens the forking question; or a
+binary publication case arises that the licence analysis above does not cover.

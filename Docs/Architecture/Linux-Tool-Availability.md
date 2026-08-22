@@ -245,6 +245,28 @@ One piece of good news the repository already owns: `Source/FrameServer/avs/posi
 present and vendored, so the AviSynth+ POSIX shim is in the tree rather than something
 that would need acquiring.
 
+### The catalogue joined against the index, measured
+
+The ecosystem percentages above describe the ecosystem. Joining our own 168 `.dll`
+entries against `vspackages3.zip` on 2026-08-22, matching on the Windows filename
+recorded in each package's `win64` release block, gives the figure for this catalogue
+specifically:
+
+| Result | Count |
+|---|---|
+| Catalogue `.dll` entries | 168 |
+| Matched in the index by filename | 93 |
+| Of those, a Linux binary exists | 59 |
+| Of those, Windows-only in the index | 34 |
+| Not in the index at all | 75 |
+
+So 59 of our plugin entries already have a Linux binary that can simply be pinned. That
+is a floor rather than a measurement of availability: the survey found several packages
+in the Windows-only column that publish Linux wheels the index has not picked up, and the
+75 unmatched entries are largely the AviSynth side, which this index does not cover at
+all. The join is reproducible from the committed catalogue and the published index; it
+requires no credentials and downloads 254 KB.
+
 ### A concentration risk worth recording before depending on it
 
 Of the 82 vsrepo packages carrying a Linux binary, 78 get it from a single volunteer
