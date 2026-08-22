@@ -36,7 +36,7 @@ This ledger breaks the current application and the portability target into revie
 - **Exact gate or next check:** D-046 ratified, tools acquired at both range ends, eight goldens captured and committed with range stability verified. Next: the Contracts typed payload and the normalization layer, test-first against the committed goldens, then the port-inspection gate
 - **Invalidated by:** Probe executable/version, schema, resolver, process runner, path policy, or media-fact contract changes
 - **Next pass:** 02 architecture map
-- **Status:** in progress
+- **Status:** done; the verification record is at 1.4 Final with seven gates green against d4e4ad30
 
 ### S-PORT-03: Portable workflow representation
 

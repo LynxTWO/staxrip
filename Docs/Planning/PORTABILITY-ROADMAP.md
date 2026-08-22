@@ -6,7 +6,7 @@ Version: 0.2. Date: 2026-08-16. Direction: Linux now, macOS later.
 
 StaxRip keeps its current Windows x64 application while a separate modern engine becomes usable from a local web shell and, later, a native cross-platform client. The port reuses external encoders and script engines through explicit adapters. It does not rewrite codecs or send user media to a service.
 
-Stage 1 has provisional focused passes on Windows x64 and local WSL Ubuntu x64. The prior independent final-evidence review returned NO-GO and has been worked: all five producer gates now pass together and the final audit advances to its documentation assertions, where it stops. The audit has not yet passed and independent re-review has not run. Independent-host evidence is blocked by R-S2-039, not by host access. This is a capability-only foundation result, not Linux product support and not automatic approval for Stage 2 authority.
+Stages 1 and 2 are complete as of 2026-08-22, superseding this paragraph's earlier NO-GO status. Stage 1 closed with all forty-seven review findings resolved and a passing final audit. Stage 2 closed with read-only media inspection reaching typed facts over real HTTP, then reopened once for a certification repair an independent review found, and re-closed at 1.4 Final: seven gates green, an evidence audit certifying the set, the configured pipeline proven on Linux with the real floor tool, goldens proven host-independent on an independent bare-metal host, and a Windows comparison at matched library versions with zero value disagreements. This remains a capability result on two Linux hosts, not Linux product support: no encode authority exists yet, and Stage 3 is the next slice.
 
 ## Architecture direction
 

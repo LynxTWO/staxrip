@@ -980,6 +980,23 @@ invalid and was redone against a rebuilt, restored tree, with the restored state
 verified green before the mutation was applied. A proof that measures the wrong
 artifact is not a weaker proof; it is not a proof.
 
+**The attesting sweep**, run against `d4e4ad30` on 2026-08-22, all seven gates green
+on the first attempt:
+
+```
+PASS port-static        checks=272
+PASS port-verify        checks=1391
+PASS port-http-windows  checks=5182
+PASS port-browser       checks=694
+PASS port-inspection    checks=97
+PASS port-linux-sandbox checks=27    runtime_writes=0
+PASS port-evidence      checks=65560
+```
+
+Audit record `evidence-audit.json` sha256
+`544a795d3c71113792c10c65d26198d392596ee25137ebc7895d4277b87a0471`. This paragraph
+postdates the audited set by construction.
+
 ## Open queue after 1.4
 
 - Commentary and hearing-impaired remain deferred, now under D-048 with CT-045 as the
