@@ -1,11 +1,12 @@
 # S-PORT-02 Verification Record
 
-Version: 1.3 Final. Date: 2026-08-21. Started at base `9cc9bd37`; closed at 1.0 by
+Version: 1.4 Final. Date: 2026-08-22. Started at base `9cc9bd37`; closed at 1.0 by
 the exit-criteria review below with its attesting sweep; reopened and re-closed at
 1.1 for the certification repair recorded and re-attested below; 1.2 adds the first
 post-close fact, audio delay, then a privacy widening and three corrected claims; 1.3
-grows the fixture corpus under D-047 and ships chapters and subtitle stream size, each
-with its own attesting sweep. The 1.0 feature closure was never disproved; one
+grows the fixture corpus under D-047 and ships chapters and subtitle stream size; 1.4
+closes both open unknowns, completes the comparison, and re-runs the independent-host
+capture over the grown corpus, each with its own attesting sweep. The 1.0 feature closure was never disproved; one
 concurrency invariant of the certification harness was, and is repaired and proven.
 
 ## Unit 1: typed payload, normalizer, privacy guard
@@ -910,21 +911,87 @@ rose from 253 to 270 and the wrapper from 1231 to 1335 because both count the co
 they police, which is the shape a growing fixture set should produce. This paragraph
 postdates the audited set by construction.
 
-## Open queue after 1.3
+## v1.4: the value-path rule, the deferral tripwire, and full comparison
 
-- Commentary and hearing-impaired, deferred on P-012, waiting on a range-floor
-  decision rather than on any work in this repository.
-- The value-embedded-path strip rule, P-013, specified in the adapter contract and
-  unimplemented; chapter labels made its surface concrete, since a label is
-  author-controlled free text that now reaches the wire.
-- The comparison recorder covers General, Video, and Audio parameter sections only,
-  so the two facts added here are outside what it compares; growing it to Text and
-  Menu sections is the next honest step for that record, and its counts move when it
-  grows.
-- The new fixtures are captured at the floor under WSL only. The independent
-  bare-metal capture covers the original four; extending it to six is a rerun of the
-  recorded script, not new work.
-- Container families beyond MP4, Matroska, and WebM remain a standing instruction.
+Four queued items, landed together because they share one commit's pins.
+
+**P-013 closed: the privacy guard now judges values, not only names.** The contract
+always required that no field carry an absolute filesystem path, and the guard
+implemented name-based stripping only, which cannot reach the fields at risk because
+those are author-controlled free text. The guard now removes any member whose value
+carries an absolute path in one of three recognized forms: a drive-letter root, a
+doubled leading separator, or a rooted POSIX path with a further segment. It
+recognizes only those three deliberately. Red first at `CT-044, a path-shaped value
+reached the payload: C:\Users`, from a synthetic document poisoned in three carriers,
+a container title, a subtitle title, and a chapter label.
+
+The case proves both directions, and the second direction is the one that matters: a
+value rule that strips real facts is its own defect. `Act Two: 24/7 Coverage` survives
+intact, and the widening mutation below shows what a loose rule costs.
+
+**P-012 closed by D-048: the disposition facts stay deferred, and the deferral is
+enforced.** Exposing a fact that exists at one end of a supported range and not the
+other would falsify the payload's own stability claim, and the stability assertion
+compares whole sections, so the field would fail by construction. Moving the floor to
+reach two display flags would invalidate every committed floor golden, re-run the
+independent-host capture, and reopen tool acquisition, for facts no consumer has asked
+for. So the pair stays out and `CT-045` makes the exclusion falsifiable: it asserts
+from the committed goldens that the ceiling reports the carrier and the floor does
+not, and that no disposition member reaches the payload.
+
+Writing that case exposed a sloppy assertion of my own, recorded because a looser
+version of the same mistake is how false confidence enters a suite. The first form
+scanned the whole payload for the substring `commentary`, which the fixture's own
+legitimate subtitle title, `Director Commentary`, satisfies. It is now asserted on
+member names, with the real title asserted present beside it so the tightened check
+cannot be satisfied by the title having gone missing.
+
+**The comparison recorder gained the sections it never had.** It compared General,
+Video, and Audio only, so the two facts added in 1.3 were outside what it compared,
+which is a coverage hole in a record whose whole purpose is per-fact agreement. With
+subtitle and menu sections added and the corpus at six fixtures: 149 facts equal, 132
+absent on both sides, zero absent on one side only, and 12 divergent, all the same two
+structure classes as before. The newly compared subtitle and chapter facts produced no
+divergence at all. Three documents quoting the old counts were updated.
+
+**The independent bare-metal capture re-ran over all six fixtures.** Every one is
+fact-identical to its committed floor golden, the only differences being the two
+strip-listed file-date lines, so the two new fixtures now carry the same
+host-independence evidence as the original four.
+
+**Mutation proofs, each observed against the committed baseline and restored.**
+
+- Value-path strip removed from the guard pass: `FAIL case=CT-044, a path-shaped value
+  reached the payload: C:\Users`.
+- Rule widened to treat any separator as a path: `FAIL case=CT-021, max content light
+  level raw, expected 1000 cd/m2 actual null`. This one is better evidence than it was
+  designed to be. The widened rule strips a real, committed HDR fact whose value is
+  `1000 cd/m2`, because that unit contains a slash, and a case written long before this
+  unit caught it. That is the false-positive cost of a loose value rule, measured
+  rather than argued.
+- Floor golden edited to carry the deferred carrier: `FAIL case=CT-045, the range floor
+  now reports the disposition carrier: revisit D-048 before exposing the facts`.
+
+**A proof-harness failure, recorded because the rule it breaks is one of ours.** The
+first attempt at the tripwire proof ran immediately after the previous mutation's
+restore, without rebuilding, so it exercised the binary still built from that mutant
+and failed at the earlier case instead of the intended one. The observation was
+invalid and was redone against a rebuilt, restored tree, with the restored state
+verified green before the mutation was applied. A proof that measures the wrong
+artifact is not a weaker proof; it is not a proof.
+
+## Open queue after 1.4
+
+- Commentary and hearing-impaired remain deferred, now under D-048 with CT-045 as the
+  tripwire. This is a decision with a re-entry condition, not an open task.
+- Container families beyond MP4, Matroska, and WebM remain a standing instruction. The
+  recipe makes a new family cheap now: author, capture both ends, assert.
+- The value rule recognizes absolute path forms only. A relative path that happens to
+  look like a title is not recognized and is not meant to be; if a consumer ever needs
+  that stricter reading, it is a new decision, not a bug fix.
+- The wire gate still asserts chapters and subtitle facts only in process; the
+  port-inspection gate names one fixture explicitly and does not enumerate the corpus.
+  Extending it is optional coverage, and its check-count pin moves when it happens.
 
 **The attesting sweep**, run against `609d20eb` on 2026-08-21, all seven gates green
 on the first attempt:
