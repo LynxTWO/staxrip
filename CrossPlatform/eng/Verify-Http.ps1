@@ -2352,6 +2352,19 @@ try {
             Confirm-ErrorResponse $oversized 400 "invalidRequest" "The request was rejected."
             $chunked = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Method "POST" -BodyText $mediaFactsBody -ContentTypeText $mediaFactsContentType -Chunked -PrivacySentinels $privacySentinels
             Confirm-ErrorResponse $chunked 400 "invalidRequest" "The request was rejected."
+
+            # D-052. A rejection that answers without reading a declared body leaves the
+            # connection unusable, because the unread bytes would be read as the next
+            # request. The server closes it; these assert that it says so, which is what
+            # lets a client retire the connection instead of pooling it and racing the
+            # close. Both directions are asserted deliberately: setting the header
+            # unconditionally would satisfy the positive cases and fail the bodyless one,
+            # so neither omitting it nor always sending it can pass.
+            Confirm-Check ((($query.Headers["Connection"]) -join ",") -ceq "close") "media-facts-query-close-announced"
+            Confirm-Check ((($wrongType.Headers["Connection"]) -join ",") -ceq "close") "media-facts-wrong-type-close-announced"
+            Confirm-Check ((($oversized.Headers["Connection"]) -join ",") -ceq "close") "media-facts-oversized-close-announced"
+            Confirm-Check ((($chunked.Headers["Connection"]) -join ",") -ceq "close") "media-facts-chunked-close-announced"
+            Confirm-Check (-not $bodyless.Headers.ContainsKey("Connection")) "media-facts-bodyless-keeps-connection"
         }
         else {
             $query = Invoke-HttpCase $anonymous $serverOne.BaseUri ($route + "?probe=$sentinel") -PrivacySentinels $privacySentinels
@@ -2360,6 +2373,12 @@ try {
             Confirm-ErrorResponse $body 400 "invalidRequest" "The request was rejected."
             $chunked = Invoke-HttpCase $anonymous $serverOne.BaseUri $route -Chunked -PrivacySentinels $privacySentinels
             Confirm-ErrorResponse $chunked 400 "invalidRequest" "The request was rejected."
+
+            # D-052 on the bodyless routes: same rule, and the query case is the negative
+            # here because it carries no body and must keep its connection.
+            Confirm-Check ((($body.Headers["Connection"]) -join ",") -ceq "close") "route-body-close-announced"
+            Confirm-Check ((($chunked.Headers["Connection"]) -join ",") -ceq "close") "route-chunked-close-announced"
+            Confirm-Check (-not $query.Headers.ContainsKey("Connection")) "route-query-keeps-connection"
         }
     }
 
