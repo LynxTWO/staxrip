@@ -2,10 +2,35 @@
 
 Version: 1.0. Date: 2026-08-22. Scope: the shipping Windows application under `Source/`.
 
-Findings only. Every entry below was read from committed source on the date above and
-carries the line citations that support it. Nothing here has been changed: edits to
-`Source/` cross the approval gates in `AGENTS.md`, and three of these findings sit
-directly on gated ground, so each entry states which gate its fix would cross.
+Every entry below was read from committed source on the date above and carries the line
+citations that support it.
+
+**Status as of 2026-08-22:** F-001 and F-002 are FIXED, under the maintainer's explicit
+approval given that day for these named `Source/` edits. F-003 is deliberately not fixed;
+its entry explains why. Each entry still states which approval gate its fix crosses.
+
+**The fixes are not on this branch, and cannot be.** They live on
+`agent/vulkan-probe-and-md5-waste`, branched from `master`. The first attempt applied them
+here and the static gate refused the tree with `scope-source-unchanged`: this branch
+asserts that `Source/` is byte-identical to the fork base, which is the additive-portability
+rule from `AGENTS.md` enforced by a check rather than left to discipline. That is the gate
+working. A Windows application bug fix and a Linux port are different changes with
+different reviewers and different build requirements, and mixing them would have made both
+harder to review while quietly voiding the invariant every other gate on this branch
+depends on. This file records the findings; that branch carries the code.
+
+**Verification limit on the two fixes, stated plainly.** The legacy project does not
+build in this environment: `Source/packages.config` requires DirectN 1.5.0,
+ManagedCuda-100, and the PowerShell reference assemblies, none of which are restored, and
+`AGENTS.md` forbids installing dependencies to satisfy a verification command. What was
+done instead is a diagnostic comparison. Building with and without the two edits produces
+byte-identical error sets, 14 errors both times, every one of them a missing DirectN type
+in `Source/Video/VideoRenderer.vb` and none in the edited files. Because the VB compiler
+binds the whole compilation unit and emits diagnostics for all of it, a syntax error or an
+`Option Strict` violation in the edited files would appear in that list beside the DirectN
+errors. It does not. That is real evidence the edits parse and bind, and it is **not** a
+successful build, a run, or a behavioral test. Neither fix should be considered verified
+until the packages are restored and the project compiles.
 
 Two claims that were investigated and did **not** survive are recorded at the end. They
 are kept deliberately, so they are not raised again as though they were new.
@@ -16,9 +41,9 @@ with a cost argument, not benchmarked wins.
 
 ## F-001: The Vulkan support probe never caches success and leaks an instance per call
 
-Severity: high. Class: native resource leak. Gate a fix would cross: none of the listed
-gates directly, but the probe feeds `RequirementsFunc` entries in the package catalogue,
-so a behavior change there touches executable selection.
+Status: FIXED 2026-08-22. Severity: high. Class: native resource leak. Gate crossed: none
+of the listed gates directly, but the probe feeds `RequirementsFunc` entries in the
+package catalogue, so a behavior change there touches executable selection.
 
 `Vulkan.IsSupported` (`Source/General/General.vb:1524-1553`) memoizes into a shared
 field declared as `Private Shared _result As VkResult = Nothing`
@@ -48,9 +73,25 @@ plus destroying the instance once the device count has been read. Both halves ar
 the sentinel alone would stop the leak growing but would still leak the one instance, and
 destroying alone would leave the redundant probing.
 
+**Fix as applied.** The memoized field is now `Private Shared _isSupported As Boolean?`,
+a type in which "not probed yet" is representable and cannot be confused with any verdict.
+The probe body moved out of the `If` and the property returns early when the value is
+already known, so the guard no longer depends on comparing a result against a sentinel at
+all. `vkDestroyInstanceDelegate` was added and the instance handle now lives outside the
+`Try` so a `Finally` can release it on every path, including the throws that mean the
+probe failed after the instance already existed. The destroy call is itself wrapped,
+because a failed teardown must not convert a good verdict into an exception, and must not
+overwrite the verdict: losing one instance is the old behavior, and losing the answer
+would be worse than the bug.
+
+Deliberately not changed: the property is still not thread-safe, exactly as before. Two
+concurrent first readers can both probe, and with the fix both now destroy what they
+created, so the race wastes work rather than leaking. Adding synchronization would be a
+behavior change beyond this finding and belongs to whoever measures the contention.
+
 ## F-002: `MD5Hash` computes the hash twice and discards the first result
 
-Severity: low. Class: wasted work. Gate a fix would cross: none.
+Status: FIXED 2026-08-22. Severity: low. Class: wasted work. Gate crossed: none.
 
 `Source/General/Extensions.vb:896-901`:
 
@@ -72,11 +113,25 @@ This is small, and it is included because it is unambiguous, it is a one-line fi
 behavioral risk, and it is the kind of thing that a first-time contributor can land
 safely. It is not a performance claim: no caller has been measured.
 
+**Fix as applied.** The dead local is gone and the single surviving `ComputeHash` call
+feeds the `Return` directly. The output is identical by construction: same algorithm, same
+input bytes, same formatting call. No caller changes.
+
 ## F-003: `MediaInfo.ClearCache` has no callers, and a memory-pressure workaround sits nearby
 
-Severity: medium. Class: dead invalidation path, with a probable downstream symptom.
-Gate a fix would cross: process coordination and shared resources, because the memory
-workaround is part of process lifetime management.
+Status: NOT FIXED, deliberately, and not for want of approval. Severity: medium. Class:
+dead invalidation path, with a probable downstream symptom. Gate a fix would cross:
+process coordination and shared resources, because the memory workaround is part of
+process lifetime management.
+
+The approval to change `Source/` covered this finding too. It is left alone because the
+work it needs is measurement, not editing, and that has not changed since the finding was
+written. Every available fix is a guess until someone knows what the cache costs. Calling
+`ClearCache` somewhere plausible would add an invalidation path with no evidence it helps,
+and if the hypothesis below is wrong it would introduce staleness bugs while leaving the
+real growth untouched. Deleting the method as dead code would discard the one tool a
+future fix needs. Neither is an improvement, and shipping one to be able to write "fixed"
+here would be the worst of the three.
 
 `Shared Sub ClearCache()` is declared at `Source/General/MediaInfo.vb:432`. A search of
 the entire `Source/` tree for `ClearCache` returns exactly one hit, that declaration.
