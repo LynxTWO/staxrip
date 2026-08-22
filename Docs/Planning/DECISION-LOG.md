@@ -1535,3 +1535,65 @@ needs its own approval under `AGENTS.md`.
 
 Revisit when: a load-bearing upstream goes dead, which reopens the forking question; or a
 binary publication case arises that the licence analysis above does not cover.
+
+## D-052: A server that closes a connection must say so
+
+Date: 2026-08-22. Status: **PROPOSED**, awaiting maintainer ratification. Owner: P-015.
+Approval-gated: it changes response headers on the loopback HTTP endpoint.
+
+Context: P-015 recorded an intermittent failure of the `port-http-windows` gate as an
+`HttpIOException` with no status. Instrumentation identified the failing request, and
+controlled measurement against a server started outside the gate identified the mechanism.
+The chunked request the failure lands on is not the defect; it is the victim.
+
+Measured on 2026-08-22:
+
+- The chunked request alone, 60 times on one client: 60 clean HTTP 400s, no failures.
+- The gate's real sequence, an oversized 1111-byte body followed immediately by the
+  chunked request on the same client, 60 pairs: 59 clean, 1 `HttpIOException`.
+- On every refusal path, the `Connection` response header is absent, over HTTP/1.1.
+
+The server closes the connection after refusing a request body and does not announce the
+close. A conforming client is entitled to treat the connection as reusable, pools it, and
+sends the next request on it, which then races the close. Because POST is not idempotent,
+a correct client will not silently retry, so the race reaches the caller as an I/O error.
+Every conforming client is exposed to this, browsers included. The gate was not flaky; it
+was reporting a real protocol defect, intermittently, because the defect is a race.
+
+Proposed decision: on any response where the server will close the connection, send
+`Connection: close`. In practice this is the body-refusal paths on the media-facts route,
+and the rule is stated generally because the next such path should inherit it rather than
+rediscover this.
+
+Because: HTTP/1.1 connection reuse is a contract between both ends. A server that intends
+to close and stays silent has not ended the exchange, it has left the client holding a
+connection it reasonably believes is alive. The fix is to make the intent explicit, which
+removes the race by construction rather than by timing. Nothing else in the request law
+changes: chunked stays refused, the 1024-byte cap stays, and the status codes stay.
+
+Options considered:
+- Announce the close on refusal paths: recommended. It is the smallest change that makes
+  a client's pooling decision correct, and it fixes every client rather than one caller.
+- Drain the refused body and keep the connection alive: rejected. It would mean reading a
+  body the endpoint has already decided to refuse, which is the opposite of a bounded
+  read and reintroduces the exposure the 1024-byte cap exists to prevent.
+- Accept the reset as a valid outcome in the gate: rejected. It converts a found defect
+  into a suppressed one, and it would leave real clients hitting the same race with no
+  record of why.
+- Have the gate use a fresh connection per request: rejected. It hides the defect behind
+  a test-only workaround and removes the gate's ability to notice connection reuse bugs
+  at all, which is coverage worth keeping.
+
+Consequences: one header on refusal responses. Connection reuse after a refusal is
+deliberately given up, which is the correct trade because the alternative is an
+unpredictable connection state. The gate should stop failing intermittently, and that is
+a consequence rather than the goal.
+
+Verification, before and after, already built: the paired oversized-then-chunked loop that
+reproduced this outside the harness must show a nonzero failure rate before the change and
+zero after, over enough pairs to be meaningful against a 1-in-60 base rate. A fix that
+cannot be shown to move that number has not been demonstrated to work.
+
+Revisit when: another endpoint gains a refusal path, which inherits this rule; or the
+transport moves to HTTP/2, where connection semantics differ and this rule needs restating
+rather than assuming.
