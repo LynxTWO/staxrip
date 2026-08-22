@@ -1,12 +1,30 @@
 # Portable Tool Matrix
 
-Version: 0.1. Date: 2026-08-18. Base: `d7e6412e`. Owned by P-004; first row per D-045.
+Version: 0.2. Date: 2026-08-22. Base: `d7e6412e`. Owned by P-004; first row per D-045;
+tiers per D-049.
 
 One row per external tool the portable side is approved to know about. A row is not
 permission to install, download, or execute anything. Confidence labels follow the
 repository convention, and a `configured` claim stays configured until a named gate runs.
 
-## MediaInfo CLI, primary inspection authority (D-045)
+## Tiers
+
+Rows are tiered by the claim they make, per D-049. Acquisition stays approval-gated at
+every tier; a tier says what a row asserts, never what may be downloaded.
+
+| Tier | Claim | Bar | Members |
+|---|---|---|---|
+| A, execution authority | The portable side launches this | Decision, full row, fixture, failure path, both range ends, independent-host capture | MediaInfo CLI |
+| B, authoring | This produced committed bytes; it never runs in the product or a gate | Path, version, SHA-256, re-runnable recipe | ffmpeg |
+| C, catalogue record | This entry exists in the legacy catalogue | Recorded facts only; no existence, availability, or compatibility claim, and no invocation | The 299 `Package.vb` entries, not yet carried across |
+
+A Tier C record may not be invoked. The portable process boundary refuses any executable
+path that is not absolute and resolvable, and a Tier C record has no approved path;
+capability payloads carry availability and reason only, never a root or an executable
+(D-046, as amended 2026-08-21). Promotion from C to A is one decision per tool, at the
+Tier A bar.
+
+## MediaInfo CLI, primary inspection authority (Tier A, D-045)
 
 | Property | Value | Confidence |
 |---|---|---|
@@ -28,7 +46,7 @@ repository convention, and a `configured` claim stays configured until a named g
 | Verification pending | Done 2026-08-19: eight goldens captured, four fixtures at each range end, committed under `eng/fixtures/media-inspection/` with a provenance manifest. Done 2026-08-21: non-WSL capture on the independent bare-metal Ubuntu host, fact-identical to the committed floor goldens with only stripped file-date metadata differing (`Docs/Verification/S-PORT-02/t540p-golden-capture.md`), and the configured pipeline verified on Linux with the real floor tool (`linux-configured-run.md`), including the reparse walk on genuine symlinks and the loader-path note for user-prefix extractions. Remaining open: re-verify when either range end moves | verified on two independent Linux hosts |
 | Windows comparison | Recorded 2026-08-20 over the four committed fixtures: the installed product library was v26.05, the exact pinned ceiling, so the comparison ran at matched versions; Re-recorded 2026-08-22 over six fixtures with the recorder's subtitle and menu sections added: 149 facts equal, 132 absent on both sides, zero one-sided absences, and 12 divergences, all structure class (text-API milliseconds versus JSON decimal seconds on `Duration` and `Video_Delay`; text-API fused profile@level), never a value disagreement, and the subtitle and chapter facts compared for the first time agreed exactly. Full record in `Docs/Verification/S-PORT-02/comparison-record.md` | verified by execution, recorder committed |
 
-## ffmpeg, fixture-authoring tool (D-047)
+## ffmpeg, fixture-authoring tool (Tier B, D-047)
 
 Authoring, not authority. This tool never runs inside the product and never runs inside
 a gate; it exists to author committed fixture bytes, and it is recorded here at the same
@@ -45,15 +63,47 @@ bar as the tools that read them.
 | Rejected alternative | The bundled MKVToolNix `mkvmerge`: measurably not reproducible, writing a random segment identifier and a wall-clock date, so two runs of one command produce different bytes | verified by execution |
 | Recipe | `CrossPlatform/eng/New-MediaFixtures.ps1`, tracked, which verifies this SHA-256 before executing the binary and writes its own inputs | verified |
 | Scope limit | The four original fixtures predate the recipe and were not authored bit-exactly; their bytes are not reproducible and the manifest says so. Only recipe-authored fixtures carry a reproducibility claim | verified |
-## ffprobe, named backup (D-045)
+
+## ffprobe, named backup (Tier A when activated, D-045)
 
 Recorded, not implemented. Activation triggers and the swappable-authority requirement
 live in D-045; the backup field mapping is already agreed in
 `Media-Inspection-Agreed-Facts.md`. A full row is written when a trigger fires or the
 ffmpeg family arrives with the encoding slices.
 
-## Everything else
+## The legacy catalogue (Tier C, D-049)
+
+Not yet carried across. Recorded here so the shape is known before S-PORT-04 designs the
+portable catalogue. Measured in `Source/General/Package.vb` on 2026-08-22:
+
+| Property | Value | Confidence |
+|---|---|---|
+| Size | 3547 lines, two classes, `Package` and `PluginPackage` | verified by enumeration |
+| Entries | 299: 62 `New Package`, 237 `New PluginPackage` | verified by enumeration |
+| Named entries | 145, declared `Shared Property <Name> As ... = Add(New ...)` | verified by enumeration |
+| Anonymous entries | 154, bare `Add(New ...)` inside the single `Shared Sub New` at line 1441, spanning lines 1442 to 2724 | verified by enumeration |
+| Sole complete enumeration | `Items`, a `SortedDictionary(Of String, Package)` at line 45, keyed by `pack.ID`, populated by `Add` at line 2741. Walking named properties reaches 145 of 299 and looks complete | verified by enumeration |
+| Registry-bound declarations | 2: line 88 reads the Haali muxer CLSID `InprocServer32`, line 465 reads MPC-BE `ExePath` | verified by enumeration |
+| Registry-backed discovery | Catalogue-wide in the resolver at lines 3209 to 3417: Python install path, `MuiCache`, `Applications\<file>\shell\open\command` | verified by enumeration |
+| Runtime availability | No claim. Tier C records what the legacy source declares, not what exists on any host | by construction, D-049 |
+
+Entries by declared `.Filename` extension, parsed from the 299 declaration blocks on
+2026-08-22. Every entry carries a `.Name`; one carries no `.Filename` and 24 carry no
+`.WebURL`:
+
+| Extension | Count | What it is | What porting it costs |
+|---|---|---|---|
+| `.dll` | 168 | AviSynth+ and VapourSynth native plugins | A Linux build per plugin, or an equivalent. The largest and least certain class |
+| `.avsi` | 55 | AviSynth script includes | Text. Portable wherever the frameserver runs, subject to path and case handling |
+| `.exe` | 51 | Standalone tools | A Linux build per tool, where upstream ships one |
+| `.py` | 21 | VapourSynth Python modules | Text. Portable wherever the frameserver runs, subject to path and case handling |
+| `.avs`, `.ax`, `.ps1`, none | 4 | One script, one DirectShow filter, one PowerShell script, one unnamed | The `.ax` is Windows-only by construction |
+
+The 55 `.avsi` and 21 `.py` entries are 76 of 299, just over a quarter of the catalogue,
+and they are text rather than binaries. They need no Linux build, only a frameserver to
+run under and correct path handling. That is the cheapest quarter of the catalogue and
+it should not be costed as though it were binary work.
 
 The fixed tool catalog the bootstrap reports remains `unverified` by design
-(`SLICE-002-LINUX-ENGINE-BOOTSTRAP.md` section 3). No other tool gains a row until a
-slice needs it and a decision names it.
+(`SLICE-002-LINUX-ENGINE-BOOTSTRAP.md` section 3). No tool gains a Tier A or Tier B row
+until a slice needs it and a decision names it.

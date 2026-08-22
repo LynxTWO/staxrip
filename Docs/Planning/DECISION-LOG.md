@@ -1263,3 +1263,93 @@ already in the corpus and the work is a normalizer read plus two members.
 
 Revisit when: CT-045 turns red, which is the floor gaining the carrier; or a consumer
 needs the facts, which would justify the floor move on its own merits.
+
+## D-049: The tool matrix gets tiers, and the bottom tier may not be executed
+
+Date: 2026-08-22. Status: CONFIRMED, ratified by the maintainer 2026-08-22. Owner:
+P-004. Binding on S-PORT-04.
+
+Context: the tool matrix carries one rule for every tool: no row until a slice needs it
+and a decision names it, with path, version, SHA-256, fixture, failure-path result, both
+range ends, and an independent-host capture. That bar is right, and it is expensive.
+Two tools have crossed it. D-045 took a full slice for MediaInfo CLI. D-047 took a
+second approval cycle for a tool that only authors fixture bytes and never runs.
+
+The legacy catalogue is larger than that bar can absorb. Measured in
+`Source/General/Package.vb` on 2026-08-22, 3547 lines declaring exactly two classes,
+`Package` and `PluginPackage`:
+
+- 299 catalogue entries: 62 `New Package` and 237 `New PluginPackage`.
+- Two registration forms. 145 entries are `Shared Property <Name> As ... = Add(New ...)`,
+  reachable by name. 154 are a bare `Add(New ...)` statement inside the single
+  `Shared Sub New` at line 1441, spanning lines 1442 to 2724, reachable only through the
+  dictionary. 145 plus 154 accounts for all 299.
+- Both forms land in `Items`, a `SortedDictionary(Of String, Package)` declared at line
+  45, keyed by `pack.ID`, through `Add` at line 2741.
+- Two entries bind a location to a Windows registry read at declaration: line 88 reads
+  the Haali muxer CLSID `InprocServer32`, line 465 reads MPC-BE `ExePath`. Separately,
+  the resolver has registry-backed discovery that applies catalogue-wide at lines 3209
+  to 3417, covering the Python install path, `MuiCache`, and
+  `Applications\<file>\shell\open\command`.
+
+The enumeration split is the fact that matters for porting. A port that walks named
+properties reaches 145 of 299, just under half, and would report a catalogue that looks
+complete and is not. The only complete enumeration is `Items`, and populating `Items`
+means running the shared constructor.
+
+Decision: the matrix gains three tiers, distinguished by what claim a row makes.
+
+- **Tier A, execution authority.** Any tool the portable side launches. The current bar,
+  unchanged: named in a decision, full row, fixture, failure path, both range ends,
+  independent-host capture. Today: MediaInfo CLI.
+- **Tier B, authoring.** Produces committed bytes, never runs in the product or a gate.
+  Row with path, version, SHA-256, and a re-runnable recipe. No support matrix, no range
+  capture, because there is no runtime claim to support. Today: ffmpeg.
+- **Tier C, catalogue record.** A legacy entry carried across as data. Records id,
+  filename, kind, declared location strategy, and a portability verdict read from the
+  declaration. It makes no claim that the tool exists, runs, is available, or is
+  compatible on any platform.
+
+The load-bearing rule is that a Tier C entry may not be invoked, and that is enforced by
+mechanism rather than by prose. The portable process boundary already refuses any
+executable path that is not absolute and resolvable, and a Tier C entry has no approved
+path to give it; the catalogue payload carries availability and reason only, never a
+root and never an executable, which is the rule D-046 was amended to on 2026-08-21.
+Promotion from C to A is one decision per tool, on demand, at the Tier A bar.
+
+This decision does not touch tool acquisition. Downloading, installing, or updating any
+tool stays fully approval-gated at every tier, per `AGENTS.md`. Tier C describes entries
+already declared in committed legacy source; it is not permission to fetch anything.
+
+Because: the single bar conflates three different claims. "We run this" needs the full
+bar. "This made our fixtures" needs provenance and reproducibility but no support
+matrix. "This appears in a menu" needs a record and nothing else. Charging all three the
+same price means either 299 approval cycles, which is not a plan, or an unwritten
+exception that lets a menu entry quietly become an execution path, which is the outcome
+the matrix exists to prevent.
+
+Options considered:
+- Three tiers with a mechanically enforced no-invoke boundary: selected. The boundary
+  reuses a constraint the process primitive already enforces, so it costs an assertion
+  rather than a new mechanism.
+- Keep one bar for all 299: rejected on measured cost. Two tools took two full cycles.
+- Port the 62 executables at the full bar and drop the 237 plugins: rejected. Plugins
+  are what the script generator names, so dropping them changes product behavior, and
+  237 entries still exceed the budget by a wide margin.
+- Port the 145 named entries and skip the 154 anonymous ones: rejected on measurement.
+  It silently loses 51 percent of the catalogue, and the split reflects VB declaration
+  style, not importance.
+- Defer until S-PORT-04: rejected. The catalogue's shape constrains the portable project
+  model's schema, and that is S-PORT-03, the next slice.
+
+Consequences: the matrix gains a tier column, and every "does the port support tool X"
+question gains a defined answer path, which is Tier C until a decision promotes it. The
+299-entry catalogue becomes portable data carrying no support claims, which is both
+honest and cheap. The risk is that Tier C's honesty depends on the no-invoke rule being
+asserted rather than merely stated, so S-PORT-04 owes a gate assertion that no Tier C
+record can reach the process boundary; until that assertion exists, the boundary is
+inferred from the resolver's absolute-path rule, not verified for this purpose.
+
+Revisit when: a Tier C entry needs to run, which is a promotion decision; or the
+catalogue gains a runtime availability probe, which would give Tier C a claim it does
+not have today and would need its own decision.
