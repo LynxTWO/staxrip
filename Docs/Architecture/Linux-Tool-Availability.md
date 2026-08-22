@@ -31,10 +31,15 @@ lock with no path at all.
 
 | Verdict | Count | Meaning |
 |---|---|---|
-| Upstream publishes Linux binaries | 15 | Download and pin, no build needed |
-| In major distro repositories | 8 | One package-manager line, build only if the version is too old |
+| Upstream publishes Linux binaries | 21 | Download and pin, no build needed |
+| In major distro repositories | 6 | One package-manager line, build only if the version is too old |
 | Source-only, builds on Linux | 2 | Real build work, no upstream artifact |
 | No Linux path found | 4 | Needs a replacement strategy |
+
+These four counts are derived from the two tables below rather than asserted beside
+them, and they sum to 33. An earlier revision of this summary carried 15, 8, 2, and 4,
+which did not reconcile with its own rows; the counts here were recomputed by parsing the
+verdict column.
 
 ## 1. Encoders
 
