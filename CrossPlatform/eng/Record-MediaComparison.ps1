@@ -110,7 +110,17 @@ $factSections = @(
         @{ Dll = 'Channel(s)'; Json = 'Channels' }, @{ Dll = 'ChannelLayout' },
         @{ Dll = 'SamplingRate' }, @{ Dll = 'BitDepth' }, @{ Dll = 'BitRate' },
         @{ Dll = 'Language' }, @{ Dll = 'Title' }, @{ Dll = 'Default' }, @{ Dll = 'Forced' },
-        @{ Dll = 'Video_Delay' }, @{ Dll = 'Compression_Mode' }) }
+        @{ Dll = 'Video_Delay' }, @{ Dll = 'Compression_Mode' }) },
+    # Subtitle and menu sections joined the recorder on 2026-08-22, when the corpus
+    # first carried tracks of either kind. Comparing zero facts over a section the
+    # payload exposes would have been a silent coverage hole in this record.
+    @{ Kind = 3; KindName = 'Text'; JsonType = 'Text'; Parameters = @(
+        @{ Dll = 'Format' }, @{ Dll = 'Codec/String'; Json = 'Codec_String' },
+        @{ Dll = 'Language' }, @{ Dll = 'Title' }, @{ Dll = 'Default' }, @{ Dll = 'Forced' },
+        @{ Dll = 'StreamSize' }, @{ Dll = 'ServiceKind' },
+        @{ Dll = 'Commentary' }, @{ Dll = 'HearingImpaired' }) },
+    @{ Kind = 4; KindName = 'Menu'; JsonType = 'Menu'; Parameters = @(
+        @{ Dll = 'Chapters_Pos_Begin' }, @{ Dll = 'Chapters_Pos_End' }) }
 )
 
 $mediaFiles = @('cfr-h264-aac.mp4', 'cfr-ffv1-10bit-pcm.mkv', 'cfr-vp9-opus.webm', 'vfr-ffv1.mkv', 'cfr-h264-aac-chapters.mp4', 'cfr-h264-aac-subtitles.mkv')

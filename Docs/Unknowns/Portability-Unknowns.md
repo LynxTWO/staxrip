@@ -161,8 +161,8 @@ P-006 is resolved only for the exact read-only SLICE-002 boundary. P-007 is reso
 - **Likely owner:** Cross-platform inspection maintainer with the tool-matrix owner
 - **Next best check:** Decide whether the range floor moves to a version that reports `ServiceKind`, or whether the two facts are recorded as ceiling-only and excluded from version 1. Either path amends the agreed-facts row to name the real carrier first.
 - **Risk level:** low
-- **Status:** open
-- **Notes:** Recorded 2026-08-21. This is the D-045 revisit trigger, "a fact is needed that the selected authority cannot supply", scoped to one end of the range rather than to the authority as a whole.
+- **Status:** resolved
+- **Notes:** Recorded 2026-08-21. Resolved 2026-08-22 by D-048: both facts stay out of version 1, the pinned range is unchanged, and the deferral is enforced by CT-045, which asserts the instability from the committed goldens and turns red if the floor ever gains the carrier.
 
 ### P-013: The value-embedded-path strip rule is specified but unimplemented
 
@@ -174,5 +174,5 @@ P-006 is resolved only for the exact read-only SLICE-002 boundary. P-007 is reso
 - **Likely owner:** Cross-platform inspection maintainer
 - **Next best check:** Decide the rule's shape before writing it: a value scan risks stripping legitimate titles that merely contain separators, so the cheaper first move may be to bound and record the exposure rather than to filter it. A hostile-label fixture is the enforcement evidence either way.
 - **Risk level:** medium
-- **Status:** open
-- **Notes:** Recorded 2026-08-21, surfaced by an independent review of a corpus-growth plan that would have routed author-controlled chapter labels to the wire verbatim.
+- **Status:** resolved
+- **Notes:** Recorded 2026-08-21, surfaced by an independent review of a corpus-growth plan that would have routed author-controlled chapter labels to the wire verbatim. Resolved 2026-08-22: the guard now judges values as well as names, removing any member whose value carries an absolute path in drive-letter, doubled-separator, or rooted-POSIX form. CT-044 proves both directions, that the three poisoned carriers are dropped and that a label containing a colon and a slash survives intact, because a value rule that strips real facts is its own defect.

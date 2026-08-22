@@ -48,6 +48,50 @@ public static class MediaFactsPrivacy
         "FolderName",
     ];
 
+    // The contract's second privacy rule: no field may carry an absolute filesystem
+    // path. Name-based banning cannot reach it, because the fields at risk are
+    // author-controlled free text, so this judges the value.
+    //
+    // The rule recognizes only absolute forms, and deliberately nothing else. A title
+    // may legitimately contain a colon, a slash, or both, so a looser rule would strip
+    // real facts to guard against a hypothetical one; a stricter rule would miss the
+    // shapes that actually leak. The three recognized forms are a drive-letter root, a
+    // doubled leading separator, and a rooted POSIX path with at least one further
+    // segment.
+    public static bool HasEmbeddedPath(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        for (int index = 0; index + 2 < value.Length; index++)
+        {
+            char letter = value[index];
+            bool driveLetter = letter is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z');
+            if (driveLetter && value[index + 1] == ':' && IsSeparator(value[index + 2]) &&
+                (index == 0 || !char.IsLetterOrDigit(value[index - 1])))
+            {
+                return true;
+            }
+        }
+
+        for (int index = 0; index + 1 < value.Length; index++)
+        {
+            if (IsSeparator(value[index]) && IsSeparator(value[index + 1]))
+                return true;
+        }
+
+        if (IsSeparator(value[0]))
+        {
+            int nextSeparator = value.IndexOfAny(['/', '\\'], 1);
+            if (nextSeparator > 1 && nextSeparator + 1 < value.Length)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsSeparator(char value) => value is '/' or '\\';
+
     public static bool IsBannedFieldName(string name)
     {
         foreach (string family in BannedFieldFamilies)
@@ -66,9 +110,17 @@ public static class MediaFactsPrivacy
         switch (node)
         {
             case JsonObject jsonObject:
+                // Two removals, one pass: banned by name, and carrying an absolute
+                // path by value. A value-carrying member is removed rather than
+                // emptied, because a redacted placeholder would be a fact the media
+                // does not contain, and absence is the payload's rule for that.
                 foreach (string name in jsonObject
+                    .Where(static member =>
+                        IsBannedFieldName(member.Key) ||
+                        (member.Value is JsonValue value &&
+                            value.TryGetValue(out string? text) &&
+                            HasEmbeddedPath(text)))
                     .Select(static member => member.Key)
-                    .Where(IsBannedFieldName)
                     .ToArray())
                 {
                     jsonObject.Remove(name);

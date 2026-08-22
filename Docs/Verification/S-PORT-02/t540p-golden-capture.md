@@ -1,6 +1,6 @@
 # S-PORT-02 Non-WSL Golden Capture, T540p
 
-Date: 2026-08-21. Recorded by `Record-T540pGoldenCapture.sh`: the four committed
+Date: 2026-08-21, re-run 2026-08-22 over six fixtures after the corpus grew. Recorded by `Record-T540pGoldenCapture.sh`: the committed
 media files and the pinned 24.01 user-prefix tool were transferred to the
 independent bare-metal Ubuntu host over the tailnet, the tool hash was verified on
 the host before execution, the recorded invocation ran from the media directory
@@ -35,6 +35,8 @@ bare-metal capture:
 | cfr-ffv1-10bit-pcm.mkv | identical modulo the two file-date lines |
 | cfr-vp9-opus.webm | identical modulo the two file-date lines |
 | vfr-ffv1.mkv | identical modulo the two file-date lines |
+| cfr-h264-aac-chapters.mp4 | identical modulo the two file-date lines |
+| cfr-h264-aac-subtitles.mkv | identical modulo the two file-date lines |
 
 The committed goldens therefore stand as host-independent at the range floor: the
 same tool version produces fact-identical documents on WSL and on independent bare

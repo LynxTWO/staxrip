@@ -1216,3 +1216,50 @@ rather than implying the whole corpus is recipe-reproducible.
 
 Revisit when: the range floor moves, which would reopen the commentary and
 hearing-impaired facts; or a container family outside the current three is needed.
+
+## D-048: The subtitle disposition facts stay deferred, and the deferral is enforced
+
+Date: 2026-08-22. Status: CONFIRMED. Owner: P-004. Closes unknown P-012.
+
+Context: The agreed-facts list carries a subtitle row for commentary and hearing
+impaired. Measurement established that the CLI carrier is `ServiceKind`, with values
+`C` and `HI`, that the range ceiling reports it, and that the range floor does not
+report it at all. The exit review had recorded these two facts as blocked by the
+fixture-first rule; that was wrong, and a committed fixture now carries both
+dispositions, so the blocker is visible in the corpus rather than only in prose.
+
+Decision: the two facts stay out of version 1 of the payload, and the pinned range
+stays `[24.01, 26.05]`. The deferral is enforced by a test rather than by a note:
+CT-045 asserts, from the committed goldens, that the ceiling reports the carrier and
+the floor does not, and that no disposition member reaches the payload. When the floor
+moves to a version that reports the carrier, that case goes red and names this
+decision, so the exclusion cannot quietly outlive its reason.
+
+Because: exposing a fact that exists at one end of a supported range and not the other
+would make the payload's own range-stability claim false, and the payload's stability
+assertion compares whole sections, so the field would fail the comparison by
+construction. Moving the floor to reach two display flags would invalidate every
+committed floor golden, require re-capture on two hosts, and acquire a new tool under
+the acquisition gate, all for facts no consumer has asked for yet. The cost is
+disproportionate to the benefit today, and the tripwire makes the deferral cheap to
+revisit.
+
+Options considered:
+- Defer both facts and enforce the deferral with a range tripwire: selected.
+- Move the range floor to a version reporting `ServiceKind`: rejected today on cost.
+  It reopens tool acquisition, invalidates four floor goldens, and re-runs the
+  independent-host capture, for two flags with no consumer.
+- Expose the facts as ceiling-only, absent at the floor: rejected. It publishes a
+  field whose presence depends on which supported tool version answered, which is the
+  silent-variability class the payload exists to prevent.
+- Read the Windows wrapper's `Commentary` and `HearingImpaired` parameter names:
+  rejected on measurement. Neither name exists in the pinned ceiling's own parameter
+  enumeration; the wrapper reads them through a different interface.
+
+Consequences: the exposed set trails the agreed tables by exactly this pair, recorded
+in the verification record and in the agreed-facts row itself. The committed fixture
+carries the dispositions permanently, so the day the floor moves the evidence is
+already in the corpus and the work is a normalizer read plus two members.
+
+Revisit when: CT-045 turns red, which is the floor gaining the carrier; or a consumer
+needs the facts, which would justify the floor move on its own merits.

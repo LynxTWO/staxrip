@@ -51,7 +51,10 @@ matched by prefix, not an exact name, because the authority splits one display f
 across variants and adds variants across the supported range; a measured ceiling
 capture of a muxer-written file reports `Encoded_Application_Name` and
 `Encoded_Application_Version` beside `Encoded_Application`. The value-embedded-path
-rule remains unimplemented and is recorded as an open unknown. The file-date fields entered the list from captured
+rule was implemented 2026-08-22: the guard removes any member whose value carries an
+absolute path in drive-letter, doubled-separator, or rooted-POSIX form, and recognizes
+only those forms, because a looser rule would strip legitimate titles that merely
+contain a colon or a slash. CT-044 proves both directions. The file-date fields entered the list from captured
 evidence: 26.05 emits them and they describe the user's filesystem, not the media.
 The guard is a named function with a self-test that feeds a synthetic raw document
 containing every stripped field and fails if any survives, and the self-test is wired

@@ -20,6 +20,8 @@ internal static class MediaFactsCases
         new("CT-041", "golden chapters mp4 two menus and grammar filter", GoldenChaptersMp4),
         new("CT-042", "golden chapters and subtitle facts mkv", GoldenSubtitlesMkv),
         new("CT-043", "subtitle stream size presence and absence", SubtitleStreamSizePair),
+        new("CT-044", "path-shaped values never reach the payload", PathShapedValueGuard),
+        new("CT-045", "subtitle disposition carrier is range unstable", SubtitleDispositionRangeTripwire),
     ];
 
     // Both range ends of a fixture, from the committed goldens. The range stability the
@@ -215,6 +217,7 @@ internal static class MediaFactsCases
                 "File_Modified_Date_Local": "2026-08-19 00:00:00",
                 "CompleteName": "synthetic.mkv",
                 "FolderName": "somewhere",
+                "Title": "C:\\Users\\someone\\Videos\\holiday.mkv",
                 "extra": { "UniqueID_Source": "container" }
               },
               {
@@ -239,9 +242,17 @@ internal static class MediaFactsCases
                 "@type": "Text",
                 "Format": "UTF-8",
                 "Language": "en",
-                "Title": "Synthetic Subtitles",
+                "Title": "/home/someone/subs/final draft.srt",
                 "Default": "Yes",
                 "Forced": "No"
+              },
+              {
+                "@type": "Menu",
+                "extra": {
+                  "_00_00_00_000": "Opening",
+                  "_00_00_01_000": "\\\\server\\share\\notes.txt",
+                  "_00_00_02_000": "Act Two: 24/7 Coverage"
+                }
               }
             ]
           }
@@ -316,6 +327,76 @@ internal static class MediaFactsCases
         context.True(mkvCeiling.Text[1].StreamSizeBytes is null, "matroska commentary stream size must be absent, not defaulted");
         context.True(mkvFloor.Text[0].StreamSizeBytes is null, "matroska subtitle stream size absent at the range floor too");
     }
+
+    private static void PathShapedValueGuard(TestContext context)
+    {
+        // The contract's second privacy rule, beside the banned-name rule: no field may
+        // carry an absolute filesystem path. Names cannot enforce this, because the
+        // fields at risk are author-controlled free text, so the guard judges values.
+        MediaFactsResponse response = MediaFactsNormalizer.Normalize(SyntheticDocument);
+        string payload = JsonSerializer.Serialize(response, ContractJson.Options);
+
+        foreach (string fragment in new[] { "C:\\\\Users", "someone", "/home/", "\\\\\\\\server", "notes.txt", "holiday.mkv" })
+            context.False(payload.Contains(fragment, StringComparison.OrdinalIgnoreCase), $"a path-shaped value reached the payload: {fragment}");
+
+        // The three carriers the synthetic document poisons are absent rather than
+        // emptied, because a redacted placeholder would be a fact the media does not
+        // contain.
+        context.True(response.Container.Title is null, "container title carrying a windows path must be absent");
+        context.True(response.Text[0].Title is null, "subtitle title carrying a posix path must be absent");
+        context.Equal(2, response.Chapters.Length, "the chapter carrying a UNC path must be dropped, the other two kept");
+
+        // False positives are the real risk of a value rule, so a legitimate label that
+        // merely contains separators is asserted to survive intact.
+        context.Equal("Opening", response.Chapters[0].Label, "plain chapter label survives");
+        context.Equal("Act Two: 24/7 Coverage", response.Chapters[1].Label, "a label with a colon and a slash is not a path and survives");
+
+        // The rule itself, exercised directly at its boundary.
+        foreach (string pathLike in new[] { "C:\\Users\\me\\a.mkv", "/etc/passwd", "\\\\host\\share\\x", "//host/share/x", "D:/media/clip.mp4" })
+            context.True(MediaFactsPrivacy.HasEmbeddedPath(pathLike), $"path shape not recognized: {pathLike}");
+
+        foreach (string ordinary in new[] { "Act One: The Setup", "24/7 Coverage", "S01E02", "ratio 16:9", "AC-3 5.1", "" })
+            context.False(MediaFactsPrivacy.HasEmbeddedPath(ordinary), $"ordinary text misread as a path: {ordinary}");
+    }
+
+    private static void SubtitleDispositionRangeTripwire(TestContext context)
+    {
+        // D-048 defers the commentary and hearing-impaired facts because their carrier
+        // exists at the range ceiling and not at the floor. This case makes that
+        // deferral falsifiable instead of merely written down: it asserts the
+        // instability directly from the committed goldens, so the day a moved floor
+        // reports the carrier, this case goes red and sends the reader to the decision
+        // rather than letting a stale exclusion sit unnoticed.
+        JsonNode ceiling = JsonNode.Parse(FixtureFiles.Read("cfr-h264-aac-subtitles.mkv.win-26.05.json"))!;
+        JsonNode floor = JsonNode.Parse(FixtureFiles.Read("cfr-h264-aac-subtitles.mkv.wsl-24.01.json"))!;
+
+        context.True(CarriesServiceKind(ceiling), "the range ceiling must still report the subtitle disposition carrier");
+        context.False(CarriesServiceKind(floor), "the range floor now reports the disposition carrier: revisit D-048 before exposing the facts");
+
+        // And the payload exposes neither fact while the deferral stands. Asserted on
+        // member names, not on a substring of the document: this fixture's own
+        // subtitle is legitimately titled "Director Commentary", and a loose scan
+        // reports that real title as a leaked fact.
+        string payload = JsonSerializer.Serialize(
+            MediaFactsNormalizer.Normalize(FixtureFiles.Read("cfr-h264-aac-subtitles.mkv.win-26.05.json")),
+            ContractJson.Options);
+        foreach (string member in new[] { "\"commentary\":", "\"hearingImpaired\":", "\"serviceKind\":" })
+            context.False(payload.Contains(member, StringComparison.OrdinalIgnoreCase), $"a deferred disposition member reached the payload: {member}");
+
+        // The legitimate title is asserted present, so the tightened check above cannot
+        // be satisfied by the title having gone missing.
+        context.Equal("Director Commentary", MediaFactsNormalizer
+            .Normalize(FixtureFiles.Read("cfr-h264-aac-subtitles.mkv.win-26.05.json")).Text[1].Title,
+            "the legitimate subtitle title must survive");
+    }
+
+    private static bool CarriesServiceKind(JsonNode document) =>
+        document["media"]?["track"] is JsonArray tracks &&
+        tracks.Any(track => track is JsonObject item &&
+            item["@type"] is JsonValue type &&
+            type.TryGetValue(out string? typeName) &&
+            typeName == "Text" &&
+            item["ServiceKind"] is not null);
 
     private static void PrivacyGuard(TestContext context)
     {

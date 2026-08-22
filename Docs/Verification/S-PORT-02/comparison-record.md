@@ -1,6 +1,6 @@
 # S-PORT-02 Windows Comparison Record
 
-Date: 2026-08-20. Recorded by Record-MediaComparison.ps1 over the four
+Date: 2026-08-22. Recorded by Record-MediaComparison.ps1 over the four
 committed media fixtures, per the comparison protocol in the agreed-facts list.
 
 ## Provenance
@@ -16,11 +16,11 @@ committed media fixtures, per the comparison protocol in the agreed-facts list.
 
 | Verdict | Count |
 |---|---|
-| equal | 85 |
-| absent-both | 79 |
+| equal | 149 |
+| absent-both | 132 |
 | absent-cli | 0 |
 | absent-dll | 0 |
-| divergent | 7 |
+| divergent | 12 |
 
 `absent-both` pairs are counted but not listed: a fact absent from both
 authorities on a fixture agrees by absence. `absent-cli`, `absent-dll`, and
@@ -37,12 +37,19 @@ authorities on a fixture agrees by absence. `absent-cli`, `absent-dll`, and
 | cfr-vp9-opus.webm | General | 0 | Duration | divergent | 2008 | 2.008 |
 | cfr-vp9-opus.webm | Audio | 0 | Video_Delay | divergent | 0 | 0.000 |
 | vfr-ffv1.mkv | General | 0 | Duration | divergent | 2966 | 2.966 |
+| cfr-h264-aac-chapters.mp4 | General | 0 | Duration | divergent | 2000 | 2.000 |
+| cfr-h264-aac-chapters.mp4 | Video | 0 | Format_Profile | divergent | High@L1.2 | High |
+| cfr-h264-aac-subtitles.mkv | General | 0 | Duration | divergent | 2023 | 2.023 |
+| cfr-h264-aac-subtitles.mkv | Video | 0 | Format_Profile | divergent | High@L1.2 | High |
+| cfr-h264-aac-subtitles.mkv | Audio | 0 | Video_Delay | divergent | 0 | 0.000 |
 
 ## Equal rows, count per file
 
 | File | Equal facts |
 |---|---|
 | cfr-ffv1-10bit-pcm.mkv | 24 |
+| cfr-h264-aac-chapters.mp4 | 30 |
+| cfr-h264-aac-subtitles.mkv | 34 |
 | cfr-h264-aac.mp4 | 24 |
 | cfr-vp9-opus.webm | 22 |
 | vfr-ffv1.mkv | 15 |
