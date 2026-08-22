@@ -41,13 +41,30 @@ The ComfyUI comparison applies to local startup, browser access, visible work st
 | 9. macOS adapter | Runs supported workflows on macOS arm64 | macOS native and distribution boundaries | Real-host tools, UI, signing, notarization, clean install |
 | 10. Public release | Publishes supported platform artifacts | Release and update authority | Provenance, SBOM, signatures, rollback, two-host Linux evidence |
 
+### What the 2026-08-22 tool survey changes about this sequence
+
+The tool supply question is largely answered, and it is less of a blocker than the stage
+list implies. Of the 33 named tools, most already ship Linux builds upstream or sit in
+distribution repositories, so stages 5 and 6 mostly need approval and pinning rather than
+porting. Four tools have no Linux path and need replacement strategies instead, and one,
+qaac's AAC encoder, has none even in principle. The evidence is in
+`../Architecture/Linux-Tool-Availability.md` and the tiering that makes 299 catalogue
+entries affordable is D-049.
+
+The real gate on stages 4 and 5 is the frameserver choice, which is now a decision rather
+than an assumption. The measured asymmetry between the AviSynth+ and VapourSynth Linux
+ecosystems is large enough to change what "one approved pipeline" should mean, and D-050
+proposes VapourSynth first. That decision is unratified, so stages 4 and 5 should not be
+planned in detail until it settles.
+
 ## Parallel work that lowers future port cost
 
 - Put new rules in UI-neutral typed modules. Keep forms and web rendering downstream.
 - Represent processes as executable identity, separate argv, explicit environment changes, working directory, owned outputs, and cancellation policy.
 - Replace ambient registry and global reads in new code with narrow platform interfaces.
 - Keep path values structured until the final tool adapter. Do not normalize Windows and Unix paths through string replacement.
-- Give every tool adapter a version policy, capability probe, executable source, license/provenance record, golden fixtures, and bounded diagnostics.
+- Give every tool adapter a version policy, capability probe, executable source, license/provenance record, golden fixtures, and bounded diagnostics. That is the Tier A bar in D-049, and it applies to tools the port launches, not to the catalogue as a whole; a catalogue record makes no support claim and may not be invoked.
+- Record executable names per platform, never once. The same tool ships as `NVEncC64.exe` and `nvencc`, so a single-name record reports an installed tool as missing.
 - Keep legacy readers behind a Windows-only compatibility adapter. Build a new versioned representation before considering new cross-platform persistence.
 - Treat temp directories and outputs as capabilities with explicit ownership. Cleanup may remove only paths created and recorded by the current operation.
 - Keep events structured and privacy-bounded. UI text, logs, and exception prose never become workflow truth.
