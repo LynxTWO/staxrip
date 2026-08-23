@@ -209,6 +209,22 @@ P-006 is resolved only for the exact read-only SLICE-002 boundary. P-007 is reso
 
   **First baseline taken 2026-08-22** by `CrossPlatform/eng/Measure-Baseline.ps1`, which verifies the pinned tool hash before executing it and writes to `CrossPlatform/artifacts/measurements/`, deliberately not into the lease-protected evidence tree. It measures the only external-tool boundary the portable side has, a MediaInfo probe, and reports the process-start floor separately so the parse cost is visible rather than folded in. On this Windows development host over the six committed fixtures at 20 and 25 repetitions: the floor, a `--Version` call that opens no file, is 53.5 to 56.0 ms median; whole-document probes are 67 to 88 ms median; parsing therefore costs 13 to 35 ms above the floor. **Process creation is roughly two thirds to four fifths of every probe on fixtures of this size**, which is the first quantified argument for batching probes or holding a resident authority rather than paying a fresh process per file. Worst spread was 2.09 and 2.23 across the two runs, at the harness's own stated noise threshold, so these are order-of-magnitude figures on one host and not a cross-platform baseline. The unknown stays open until the same harness runs on Linux and until an encoding pipeline exists to measure at all.
 
+  **Linux baseline taken 2026-08-22 on the T540p, and it inverts the conclusion above.** Same fixtures, same invocation, same statistics, measured on the host so the tailnet is never inside a timing, tool hash verified before execution, host cleaned afterward. Host: bare-metal Ubuntu 24.04.4, kernel 7.0.0-28, 4 cores, `schedutil`, machine-id SHA `08da6e19...`, MediaInfo 24.01, 25 repetitions.
+
+  | Series | Windows median | Linux median |
+  |---|---|---|
+  | Process-start floor, `--Version` | 53,540 to 56,020 us | **9,341 us** |
+  | `cfr-h264-aac.mp4` | 82,460 us | 22,792 us |
+  | `cfr-ffv1-10bit-pcm.mkv` | 76,950 us | 25,899 us |
+  | `cfr-vp9-opus.webm` | 83,850 us | 19,127 us |
+  | `vfr-ffv1.mkv` | 66,900 us | 20,787 us |
+  | `cfr-h264-aac-chapters.mp4` | 87,650 us | 28,070 us |
+  | `cfr-h264-aac-subtitles.mkv` | 88,120 us | 28,834 us |
+
+  **The Windows-only conclusion was platform-specific and I stated it as general.** I wrote that process creation is two thirds to four fifths of every probe and called that the first quantified argument for batching probes or holding a resident authority. On Linux the floor is 9.3 ms of a roughly 22 ms probe, about 42 percent, and in absolute terms **the entire Linux probe costs less than the Windows floor alone**, on a four-core laptop against a far stronger desktop. Designing the portable engine around avoiding process spawns would therefore be optimising for Windows and carrying the complexity on Linux for no reason.
+
+  **Confounders, because this is not a controlled comparison.** The tool versions differ, 24.01 on Linux against 26.05 on Windows. The hardware differs greatly, and in the direction that makes the result stronger rather than weaker. The Windows figures include whatever on-access scanning that machine does, which is part of the real cost there but is a configuration rather than a platform property. Linux spreads ran 1.21 to 2.27, with the chapters fixture above the harness's own 2.0 noise threshold, and the host had only about 5 GB of its 15.8 GB free during the run. Treat the six-fold floor difference as real and the exact multiple as soft.
+
 ### P-015: The HTTP gate fails reproducibly when it runs directly after the build wrapper
 
 - **Area or file:** `CrossPlatform/eng/Verify-Http.ps1` check `http-send`, `CrossPlatform/src/StaxRip.Server/`, and whatever `CrossPlatform/eng/Verify.ps1` leaves behind it
