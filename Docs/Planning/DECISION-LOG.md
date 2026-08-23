@@ -1636,8 +1636,47 @@ rather than assuming.
 
 ## D-053: The clone helper is the first BinaryFormatter to replace, and it is not the easy one
 
-Date: 2026-08-22. Status: **PROPOSED**, awaiting maintainer ratification. Owner: P-002.
-Approval-gated: it changes `Source/` behavior across 85 call sites.
+Date: 2026-08-22. Status: **CONFIRMED**, ratified by the maintainer 2026-08-23. Owner:
+P-002. Approval-gated: it changes `Source/` behavior across 85 call sites.
+
+**The blocker is resolved, and it was far smaller than this entry claimed.** The entry said
+a differential harness needed a host the application's static graph would tolerate, and
+implied that was architectural. It is not. `Package`'s initializer fails only because
+`Folder.Startup` resolves to `Application.StartupPath`, the **host** process's directory,
+so it hunts for StaxRip's asset tree beside the wrong executable. Two further facts settle
+it: `StaxRip.Folder` and `StaxRip.ObjectHelp` initialize cleanly in a foreign host, and
+the clone path never needs `Package` at all. Pointing `Folder.StartupValue` at a scratch
+directory is enough, and pointing it at a real installation is the wrong fix, which is how
+P-016 was discovered.
+
+**One constraint the entry did not anticipate:** the harness must run on .NET Framework.
+`BinaryFormatter` is removed from modern .NET and throws `PlatformNotSupportedException`
+there, so the reference implementation cannot execute under pwsh 7. Windows PowerShell 5.1
+is Framework 4.8 and runs both sides. That removal is also first-hand confirmation of why
+this decision exists, rather than a citation.
+
+**The design is proven before entering the tree.** A reflection-based copier written to the
+six behaviors was tested against a graph carrying all of them at once, plus both real
+graphs:
+
+| Requirement | Result |
+|---|---|
+| Distinct object | pass |
+| Field values copied, including arrays | pass |
+| `<NonSerialized>` left at default | pass |
+| Aliasing preserved, two fields to one object | pass |
+| Aliased target is the copy, not the original | pass |
+| Cycle handled, self-reference points at the copy | pass |
+| `OnDeserialized` invoked | pass |
+| `Project` and `ApplicationSettings` versus their `BinaryFormatter` clones | 0 differences |
+
+**The comparator was falsified rather than trusted**, because a differential reporting zero
+proves nothing until it can report non-zero. Feeding it the same object twice yields
+`SHARED reference with original`; feeding it a deliberately identity-losing copier yields
+`ALIASING LOST`. Against the real copier it reports exactly one difference,
+`CallbackRan: False vs True`, which is the callback legitimately mutating the copy, and
+the `BinaryFormatter` clone shows the identical difference, so candidate against reference
+is zero.
 
 Context: the P-002 map sorted fourteen `BinaryFormatter` sites into five on-disk formats and
 two in-memory clone helpers, and recommended the clone helper first because it carries no
