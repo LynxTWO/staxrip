@@ -41,6 +41,8 @@ This file records unresolved Linux and macOS port questions found during the por
 - **Confidence:** verified by enumeration and caller tracing
 - **Likely owner:** Persistence-slice maintainer
 - **Next best check:** Sequence the clone helper first. `ObjectHelp.GetCopy` is 85 call sites with **zero** on-disk compatibility risk, so replacing it removes a large share of the `BinaryFormatter` surface without touching a single file format, and it can land and be verified independently of the hard part. Only then freeze synthetic fixtures for the five on-disk formats, remembering that fixtures must cover the nested-blob path and not only simple fields, and design a Windows-only one-way importer before proposing any new writer.
+
+  **Correction, 2026-08-22, same day.** "First" is right and "easy" was wrong, so D-053 records what the clone replacement actually costs. It is not confined to small parameter objects: it copies whole `Project` graphs at 5 sites and `Me` at 16, and the tree carries **37 `<NonSerialized>` fields** and **41 serialization callbacks**, all of which `BinaryFormatter` honors. A replacement must therefore reproduce six specific behaviors, of which reference-identity preservation and callback invocation are the two a plausible-looking cloner silently omits. The failure mode is not an exception; it is an object that appears copied and behaves wrongly. Low compatibility risk is not the same as low difficulty, and the earlier wording conflated them.
 - **Risk level:** critical
 - **Status:** open
 - **Notes:** Legacy serialized bytes must never be accepted by the loopback API.

@@ -1622,3 +1622,76 @@ cannot be shown to move that number has not been demonstrated to work.
 Revisit when: another endpoint gains a refusal path, which inherits this rule; or the
 transport moves to HTTP/2, where connection semantics differ and this rule needs restating
 rather than assuming.
+
+## D-053: The clone helper is the first BinaryFormatter to replace, and it is not the easy one
+
+Date: 2026-08-22. Status: **PROPOSED**, awaiting maintainer ratification. Owner: P-002.
+Approval-gated: it changes `Source/` behavior across 85 call sites.
+
+Context: the P-002 map sorted fourteen `BinaryFormatter` sites into five on-disk formats and
+two in-memory clone helpers, and recommended the clone helper first because it carries no
+file-format compatibility burden. That recommendation stands. The characterisation of it as
+the easy piece does not, and this entry corrects it.
+
+`ObjectHelp.GetCopy(Of T)` at `Source/General/Help.vb:78-84` round-trips an object through
+`BinaryFormatter` over a `MemoryStream`. Measured on 2026-08-22:
+
+- **85 call sites.**
+- What it is asked to copy is not only small parameter objects: `ParamsStore` at 22 sites and
+  `store` at 14, but also `Me` at 16, whole `Project` graphs at 5, and settings collections.
+  These are the largest object graphs in the application.
+- The tree contains **37 `<NonSerialized>` fields** and **41 serialization callbacks**
+  (`OnDeserialized` and relatives, including `IDeserializationCallback`).
+
+That last line is the reason this is not a small change. `BinaryFormatter` has semantics a
+naive replacement silently breaks, and the breakage would not appear as an exception, it
+would appear as an object that looks copied and behaves wrongly:
+
+1. It copies **all fields**, including private and read-only ones.
+2. It **skips** `<NonSerialized>` fields, leaving them at type default. 37 fields depend on
+   this; a cloner that copies them would duplicate handles, caches, or parent links.
+3. It **preserves reference identity within the graph**: an object referenced twice is
+   copied once and referenced twice. A tree-walking copier duplicates it, and aliasing that
+   the original relied on is silently gone.
+4. It **handles cycles**. A naive recursive copier does not; it overflows the stack.
+5. It **does not run constructors**, using uninitialized allocation instead.
+6. It **invokes the serialization callbacks**. 41 of them exist, and objects that rely on
+   one to rebuild transient state come back invalid if they are skipped.
+
+Proposed decision: replace it with a reflection-based deep copier written to match those six
+behaviors deliberately, rather than with a serializer that happens to round-trip. Uninitialized
+allocation, field-wise copy including private fields, `<NonSerialized>` honored, a reference
+map keyed by object identity for both aliasing and cycles, and callback invocation in the
+order the formatter used.
+
+Options considered:
+- Reflection-based deep copier matching the six behaviors: recommended. It is portable, needs
+  no attributes the types do not already carry, and is the only option that can reproduce
+  reference identity and callbacks.
+- A JSON round-trip: rejected. It loses type fidelity on polymorphic graphs, needs public
+  setters the types do not have, cannot express cycles, and cannot preserve aliasing.
+- A `Clone` method per type: rejected on volume. There are 133 `<Serializable>` types, and
+  hand-written clones would drift from their types silently.
+- Keep `BinaryFormatter` here: rejected as a destination, since it is unavailable in modern
+  .NET and this work exists to leave it. It remains the reference implementation for
+  verification, which is a different role.
+
+Verification, which must exist before the change lands: a differential test that clones the
+same graphs through `BinaryFormatter` and through the replacement and compares them deeply,
+including reference-identity structure rather than field values alone, over the real graph
+shapes the call sites use, `ParamsStore` and `Project` at minimum. Equal field values with
+different aliasing is a failure, and a comparison that only walks values will not see it.
+
+Known obstacle, recorded because it blocks the obvious approach: the application's static
+graph cannot be loaded in isolation. `StaxRip.MediaInfo` reaches `StaxRip.Package`, whose
+type initializer throws outside a real application environment, which is how the F-003
+measurement had to be taken against a native library instead. A differential harness will
+meet the same wall, so where that harness can run needs establishing before the change is
+scheduled, not after.
+
+Consequences if ratified: the largest single block of `BinaryFormatter` usage leaves the
+tree without touching a file format, and the five on-disk formats become the only remaining
+users, which is the harder problem stated plainly rather than mixed in with this one.
+
+Revisit when: the differential harness proves impossible to host, which would make a
+per-type approach worth reconsidering despite its volume.
