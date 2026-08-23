@@ -125,6 +125,33 @@ It is a plain C ABI with an explicit version, and the loader resolves the same e
 names on both platforms. A plugin must be recompiled for Linux; it does not need to be
 rewritten.
 
+**Verified by installation, 2026-08-22, on the T540p.** D-050 is ratified and rests on this
+claim, so it was worth executing rather than citing. On bare-metal Ubuntu 24.04.4 with
+Python 3.12.3, in a throwaway virtual environment and without root, `pip install
+vapoursynth` fetched
+`vapoursynth-79-cp312-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl`, 4.5 MB, and
+installed R79. What the wheel actually contains, listed rather than assumed:
+
+- `libvapoursynth.so.4`, `libvsscript.so`, and three filter libraries including AVX2 and
+  Zen 4 variants
+- `vapoursynth.abi3.so`, the Python module
+- `include/VapourSynth4.h`, `VSHelper4.h`, `VSScript4.h`, so the plugin SDK is present
+- `pkgconfig/vapoursynth.pc`
+- `bin/vspipe`
+
+Total footprint 25 MB. The core reports R79 and API R4.2 from Python.
+
+**One caveat the survey missed, and it matters to anyone scripting an install.** `vspipe`
+ships in the wheel but does **not** work immediately. Invoking it fails with `Failed to
+initialize VSScript ... Python executable and library path couldn't be determined despite
+automatic configuration`. The remedy is a documented one-time `vapoursynth config`, which
+writes `~/.config/vapoursynth/vapoursynth.toml` recording the interpreter and libpython
+path; after that `vspipe --version` reports Core R79 and API R4.2 normally. So the claim
+"pip install delivers vspipe" is true about delivery and false about readiness, and an
+automated Linux setup needs both steps. Note also that the config is written per user, not
+per environment, which is worth knowing before assuming a virtual environment is fully
+self-contained.
+
 Two independent measurements of how much of the ecosystem is actually available:
 
 | Channel | Population | Ship Linux binaries |

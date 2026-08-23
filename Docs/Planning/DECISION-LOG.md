@@ -1438,6 +1438,17 @@ to one upstream than to 82. The PyPI channel is more distributed and should be p
 where both exist. Neither number should be treated as a stable platform property without
 re-measuring.
 
+**Foundation verified by execution, 2026-08-22.** This decision rested on documentation, so
+the load-bearing claim was executed on the T540p rather than left cited. `pip install
+vapoursynth` on bare-metal Ubuntu 24.04.4 with Python 3.12.3, no root, installed R79 from a
+manylinux wheel carrying `libvapoursynth.so.4`, `libvsscript.so`, the filter libraries,
+the Python module, all three SDK headers, `pkgconfig`, and `vspipe`, at 25 MB total. The
+distribution claim holds. One correction: `vspipe` ships but is not immediately runnable,
+failing until a documented one-time `vapoursynth config` writes a per-user TOML naming the
+interpreter and libpython path. Delivery and readiness are different things and the survey
+conflated them; an automated Linux setup needs both steps. Details in
+`Docs/Architecture/Linux-Tool-Availability.md` section 3.
+
 Revisit when: the AviSynth+ plugin ecosystem starts publishing Linux binaries, which one
 pilot project is now doing; or a specific AviSynth-only filter becomes load-bearing for a
 shipped feature, which is a promotion decision rather than a reversal of this one.
