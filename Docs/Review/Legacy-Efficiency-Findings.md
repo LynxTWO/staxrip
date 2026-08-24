@@ -201,8 +201,13 @@ wrong it would add invalidation bugs while leaving the real growth in place.
 ## Investigated and not supported
 
 Both entries below came from an earlier informal inventory and were checked against the
-source on 2026-08-22. Neither holds. They are recorded so the same wrong lead does not
-get re-opened.
+source on 2026-08-22. Neither holds *as stated*. They are recorded so the same wrong lead
+does not get re-opened.
+
+Read the 2026-08-24 updates inside each entry before skipping this section. Both claims
+were wrong about their mechanism but pointed at something real, and the follow-up trace
+confirmed a concurrency defect in the shipping application. "Not supported as stated" was
+the correct verdict on the wording; it was not a verdict on the underlying behaviour.
 
 **Claimed: `x264Enc` calls `Script.Synchronize()` unconditionally from parallel chunk
 workers while `x265Enc` guards it.** Not supported. `Source/Encoding/x264Enc.vb:101` and
@@ -210,8 +215,20 @@ workers while `x265Enc` guards it.** Not supported. `Source/Encoding/x264Enc.vb:
 overloads and do the same thing, and the same call appears at the head of essentially
 every encoder in `Source/Encoding/`. There is no asymmetry between the two encoders. The
 underlying question of whether chunk workers can call `Synchronize` concurrently is a
-real one and remains open; it is separate from this claim, and answering it means tracing
+real one; it is separate from this claim, and answering it means tracing
 `GetChunkEncodeActions`, not comparing these two files.
+
+**Update, 2026-08-24: that question is now answered — yes, they can.** The trace is
+`Docs/Review/Chunk-Encode-Synchronize-Concurrency.md` on branch
+`agent/chunk-encode-synchronize-race` (not on this branch). Summary: `CanChunkEncode()`
+returns `Chunks > 1`, so the chunk branch only runs with two or more actions, and each
+calls `Encode`, whose first statement is `p.Script.Synchronize()` on the one shared
+`VideoScript`. `Synchronize` is an unsynchronized check-then-act over five plain public
+fields. A guard normally makes each worker's call a no-op — which is why this has never
+been reported — but the compared value is recomputed through `Macro.Expand` on every
+call, so a volatile macro (`%current_time%`, `%random:N%`) in user script or filter code
+defeats it permanently. No shipped default contains such a macro, which bounds severity.
+The finding is a source reading, not an execution; it has not been reproduced at runtime.
 
 **Claimed: `MainForm.Indexing()` writes WinForms controls with no `Invoke` from
 `Parallel.Invoke` workers.** Not supported as stated. `Parallel.Invoke` does not appear
@@ -221,8 +238,21 @@ UI thread. The application's one `Parallel.Invoke` is at
 `Source/General/GlobalClass.vb:651`; whether `Indexing()` is reachable from it has not
 been traced, so there is no cross-thread finding here, only an untraced path.
 
+**Update, 2026-08-24: the path is now traced, and it is reachable.** The claim was right
+about the destination and wrong about the route, which is why searching `MainForm.vb` for
+`Parallel.Invoke` found nothing — the call arrives indirectly:
+`GlobalClass.vb:651` -> chunk-encode action -> `x264Enc.Encode` -> `p.Script.Synchronize()`
+-> `VideoScript.vb:303` -> `g.MainForm.Indexing()`. So `Indexing()` does run on a
+`Parallel.Invoke` worker whenever the guard inside `Synchronize` does not short-circuit.
+The conditions for that, and the reason it is rarely hit, are in
+`Docs/Review/Chunk-Encode-Synchronize-Concurrency.md` on branch
+`agent/chunk-encode-synchronize-race`. Not reproduced at runtime.
+
 ## Related records
 
+- `Docs/Review/Chunk-Encode-Synchronize-Concurrency.md` on branch
+  `agent/chunk-encode-synchronize-race`: the trace that closed both entries in
+  "Investigated and not supported". Read-only; no fix proposed; not reproduced at runtime.
 - P-014 in `Docs/Unknowns/Portability-Unknowns.md`: no performance baseline exists, which
   is why nothing here is stated as a speedup.
 - `Source/General/GlobalClass.vb:622-651`: audio processing, subtitle cutting, and video
