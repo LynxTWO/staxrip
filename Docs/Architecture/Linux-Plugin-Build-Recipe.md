@@ -62,23 +62,56 @@ Eight plugins built and verified loading, on a four-core laptop:
 Verified together in one core: `descratch, dfttest2_cpu, dotkill, libp2p, neo_minideen,
 timecube, vfrtocfr, vivtc` alongside the built-in `resize, std, text`.
 
-**Blocked on a system library**, needing a package install with root:
+A second pass added three more, all needing hand-compilation because they carry no build
+system at all:
 
-| Plugin | Missing | Package |
+| Plugin | API | Build | Artifact | Registered namespace |
+|---|---|---|---|---|
+| scenechange | 3, bundled | `gcc` one-liner | 20,568 B | `scd` |
+| temporalsoften | 3, bundled | same repo, same command | 20,240 B | `focus2` |
+| W3FDIF | 3 | `g++` one-liner | 20,424 B | `w3fdif` |
+
+**Eleven third-party plugins now load together** in one core: `descratch, dfttest2_cpu,
+dotkill, focus2, libp2p, neo_minideen, scd, timecube, vfrtocfr, vivtc, w3fdif`.
+
+Two more recipe rules, again learned by getting them wrong:
+
+6. **Some of these are C, not C++.** `scenechange.c` and `temporalsoften.c` fail under
+   `g++` with "jump to label crosses initialization", which is a C++ rule and legal C.
+   Compile them with `gcc`.
+7. **Include prefixes vary.** W3FDIF includes `<vapoursynth/VapourSynth.h>`, so an include
+   root containing the headers directly does not satisfy it. A prefixed root, with a
+   `vapoursynth/` directory in it, serves both styles.
+
+**Blocked on a system library**, needing a package install with root. Consolidated, since
+these are the only root-level actions the plugin work requires:
+
+| Need | Package | Unblocks |
 |---|---|---|
-| subtext | `libass` | `libass-dev` |
-| libimwri | `Magick++` | `libmagick++-dev` |
+| `libass` | `libass-dev` | subtext, and it is also the replacement path for the blocked VSFilterMod |
+| `Magick++` | `libmagick++-dev` | libimwri |
+| `libfftw3f` | `libfftw3-dev` | vcm, which also covers vcmod |
+| `nasm` | `nasm` | A real x265 build, and SVPFlow1 |
 
-**Upstream is gone**, which no build recipe can fix:
+**Upstream is gone or was never published.** No build recipe fixes these:
 
 | Plugin | Finding |
 |---|---|
-| W3FDIF | `HomeOfVapourSynthEvolution` org unreachable |
-| VagueDenoiser | Same org, same result |
+| W3FDIF | `HomeOfVapourSynthEvolution` deleted, confirmed 404 rather than renamed. **Recovered** from an archived 2018 mirror and built, but the source is eight years stale and predates the final upstream version, so behaviour may differ from the shipped DLL. Provenance risk, not a build risk |
+| VagueDenoiser | Same deleted org. No mirror identified yet |
+| SVPFlow 2 | Closed source by vendor statement. A prebuilt Linux `.so` is shipped, or `open-svpflow` is a reimplementation |
+| DGDecode | The released GPL source has no VapourSynth interface at all, and the version that added one was never published. `d2vsource` is the maintained replacement |
+| vcfreq, vcmove | Binary-only distributions, verified by downloading and listing the archives. Both folded into `vcm`, under different namespaces, so scripts referencing them need rewriting |
 
-That organisation hosting two catalogue entries has disappeared entirely, not been renamed.
-Any remaining catalogue entries pointing at it should be treated as dead until a successor
-is identified, and the same check is worth running across the AviSynth list.
+**Architecturally blocked**, confirmed rather than assumed:
+
+| Plugin | Reason |
+|---|---|
+| VSFilterMod | The VapourSynth entry point itself calls `AFX_MANAGE_STATE`, and its `StdAfx.h` pulls in MFC, ATL and DirectShow. Plus MASM and DirectX 7/9. Not a port, a rewrite. `subtext` is libass-based and already Linux-native, which is the answer |
+
+That an organisation hosting two catalogue entries disappeared entirely is worth acting on
+beyond these two: the same reachability check should be run across the whole catalogue,
+including the AviSynth list, before anyone plans work against a URL in it.
 
 ## What this changes
 
