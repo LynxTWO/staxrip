@@ -1745,3 +1745,57 @@ users, which is the harder problem stated plainly rather than mixed in with this
 
 Revisit when: the differential harness proves impossible to host, which would make a
 per-type approach worth reconsidering despite its volume.
+
+## D-054: Encoders are pinned and fully optimised, not latest and not fastest-looking
+
+Date: 2026-08-23. Status: CONFIRMED, ratified by the maintainer 2026-08-23. Owner: P-004.
+Binds every encoder the portable side gains.
+
+Context: the question was whether the port should use the best, latest and most optimised
+encoder builds. Two thirds of that is right and the middle third is a trap, so the policy is
+written down before the first encoder row is added rather than after.
+
+Decision, three parts.
+
+**Optimised: yes, and it is not optional.** An encoder built without its assembly kernels is
+not a slower version of the same thing, it is a different product. The x265 built on the
+verification host on 2026-08-23 reports `[noasm]` and `using cpu capabilities: none!`
+because no assembler was installed, and it is useless for any timing question. Every
+encoder the port names must be built or acquired with its architecture-specific code paths
+enabled, and any measurement must confirm that before reporting a number.
+
+**Latest: no. Pin, and let users opt in.** Encoders change their output for identical
+settings between versions, which is normal development and not a defect. If the port tracks
+latest, a user re-encoding the same source with the same profile after an update gets a
+different file, and any comparison they were running silently becomes invalid. This is the
+same hazard D-045 already answered for the inspection authority by pinning a range with
+recorded hashes, and it binds harder here because for an encoder the output **is** the
+product. Record a version and a hash; make moving deliberate.
+
+**Best: define it per tool, because it is three different things.** Fastest, smallest at a
+given quality, and most compatible are different builds, and the survey produced measured
+evidence that they conflict. SVT-AV1-HDR and SVT-AV1-Tritium publish PGO builds targeting
+`x86-64-v3` and `znver2` with no generic baseline, so on an older processor they do not run
+slowly, they fault. SVT-AV1-Essential renames and redefines options and forces 10-bit
+output, so "better encoder" there also means "different interface". Maximum optimisation
+and maximum compatibility are ends of one dial, and which end a given tool sits at is a
+recorded decision, not a default.
+
+Because: reproducibility is a correctness property for this product. A user comparing two
+encodes, or reporting a bug, or re-running a job, is entitled to the same bytes from the
+same inputs. Chasing latest trades that away for speed the user did not ask for, and
+chasing maximum optimisation without recording the target trades it for a crash on hardware
+the project never tested.
+
+Consequences: each encoder row records a pinned version, a hash, and the CPU baseline its
+build targets. A tool whose published builds are march-specific with no generic baseline is
+flagged in its row, because that is a support decision rather than a packaging detail.
+
+One thing this makes easier rather than harder. Because Linux users build from source
+anyway, following the upstream advice recorded in `Linux-Tool-Availability.md`, they can
+compile for their own machine. Per-machine optimisation is available to a source build and
+is not available to any binary a project distributes, so the strategy that arrived as a
+consolation is the better one on this axis.
+
+Revisit when: a pinned encoder acquires a security defect, which forces a move and is the
+one case where speed of update outranks reproducibility.
