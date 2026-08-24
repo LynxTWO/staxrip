@@ -94,12 +94,29 @@ echo "ELAPSED=$(( $(date +%s) - START ))"
 
 # The real test: does VapourSynth load and register it?
 NSLIST='import vapoursynth as vs; print(",".join(sorted(p.namespace for p in vs.core.plugins())))'
-BEFORE_NS=$("$VENV/bin/python" -c "$NSLIST" 2>/dev/null)
+probe_ns() { "$VENV/bin/python" -c "$NSLIST" 2>/tmp/ns.err; }
+
+# A stale copy of this same plugin already in PLUGDIR would put its namespace in
+# BEFORE_NS, making the diff empty and the verdict a false "not loaded" - which then
+# deletes a plugin that actually works. Clear it before taking the baseline.
+rm -f "$PLUGDIR/$(basename "$SO")"
+
+BEFORE_NS=$(probe_ns)
+if [ -z "$BEFORE_NS" ]; then
+  echo "RESULT=probe-failed (baseline namespace query returned nothing)"
+  sed -n '1,3p' /tmp/ns.err; exit 0
+fi
 cp "$SO" "$PLUGDIR/"
-AFTER_NS=$("$VENV/bin/python" -c "$NSLIST" 2>/dev/null)
+AFTER_NS=$(probe_ns)
+if [ -z "$AFTER_NS" ]; then
+  # Empty here would compare unequal to a good baseline and read as "loaded".
+  echo "RESULT=probe-failed (namespace query returned nothing after install)"
+  sed -n '1,3p' /tmp/ns.err
+  find "$PLUGDIR" -name "$(basename "$SO")" -delete; exit 0
+fi
+
 if [ "$AFTER_NS" != "$BEFORE_NS" ]; then
   NEW=$("$VENV/bin/python" -c "
-import sys
 b=set(x for x in '$BEFORE_NS'.split(',') if x)
 a=[x for x in '$AFTER_NS'.split(',') if x]
 print(','.join(x for x in a if x not in b) or 'none')")

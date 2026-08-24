@@ -82,15 +82,56 @@ A third pass added four more once triage identified their specific gates:
 
 A fourth pass, after the maintainer installed the four system libraries, added three more:
 `vcm` on fftw3f, which also covers `vcmod` since they are one artifact; `d2vsource` on the
-FFmpeg development headers; and `FixTelecinedFades` on yasm, which built clean despite a
-flagged duplicate-symbol risk in its 2017 sources.
+FFmpeg development headers; and `FixTelecinedFades`.
+
+### The harness had a destructive false negative, and it corrupted one of these findings
+
+Found by an independent session on 2026-08-24, in the script recorded here as the recipe.
+The load test snapshotted the registered namespace set, copied the `.so` in, snapshotted
+again, and treated an unchanged set as "not loaded". **If a copy of that same plugin was
+already in the plugin directory, its namespace was already in the baseline**, so the diff
+came back empty, the verdict was "not loaded", and the failure branch then **deleted the
+working plugin**. A functioning build was reported broken and then destroyed.
+
+A second defect sat alongside it: both namespace probes redirected errors to `/dev/null`,
+so a probe that crashed returned empty on both sides, compared equal, and also read as
+"not loaded".
+
+The fix, written by that session and imported here verbatim, clears any stale copy before
+taking the baseline and checks both probes for an empty result rather than hiding it. It
+also closes the inverse case I had not considered: an empty probe *after* install would
+compare unequal to a good baseline and read as a false **"loaded"**.
+
+**One reported result was wrong because of this.** `FixTelecinedFades` was never blocked by
+yasm. It builds in four seconds and needs no assembler at all; the harness was misreporting
+it, and because that misreport coincided with a genuine `libavcodec` block on `d2vsource`,
+both were attributed to the same missing-dependency batch. Only `d2vsource` was really
+blocked.
+
+`yasm` still earned its install for a different reason: it flips `HAVE_YASM` in the bundle
+repo used to recover W3FDIF, which un-gates assembly paths in fluxsmooth, nnedi3,
+imagereader and mvtools that had been building without SIMD. Reported by that session and
+not independently confirmed here.
+
+The general lesson is worth more than the fix: **a verification step that takes destructive
+action on a negative result must be certain the negative is real.** This one deleted the
+artifact it was testing, on a condition that occurs every time the harness is re-run against
+an already-installed plugin, which is the normal case during iteration.
 
 **Eighteen third-party plugins now load together** in one core: `bm3dcpu, d2v, descratch,
 dfttest2_cpu, dotkill, focus2, ftf, libp2p, neo_dfttest, neo_f3kdb, neo_fft3d,
 neo_minideen, scd, timecube, vcm, vfrtocfr, vivtc, w3fdif`.
 
 That is **18 of the 38-entry build list**, verified by namespace registration rather than
-by builds exiting zero.
+by builds exiting zero. State re-confirmed after the harness fix: 18 registered namespaces
+against 18 `.so` files in the plugin directory, so nothing was lost to the deletion bug.
+
+**One caveat on `ftf` specifically.** It is an API 3 plugin running against a core that
+reports API R4.2. It loads and registers through the compatibility path, which the load
+check confirms, but loading is not functioning. Before anything depends on it, it needs a
+functional test against real footage rather than trust in the namespace appearing. The same
+caution applies to every API 3 plugin in the list above, which is most of them; the load
+check proves the entry point resolves and nothing more.
 
 Two more rules, and the first one contradicts rule 4:
 
