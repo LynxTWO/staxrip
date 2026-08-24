@@ -404,6 +404,47 @@ as naive. This is also a real argument that the better contribution, where a pro
 willing, is a wheel rather than a release asset. That is a larger change and a separate
 judgment per project.
 
+### Tested against a real maintainer, 2026-08-22, and the strategy did not survive
+
+The vs-dfttest2 pull request was opened, built and verified end to end in a fork, and
+**declined**. The maintainer's reason was exactly the objection predicted above, in one
+sentence: *"Because of the glibc requirement, I would recommend building from source on
+Linux in general."* The pull request was closed with thanks and an open offer to look at a
+manylinux wheel instead, which was left as an offer rather than a promise.
+
+That answer very likely settles all three targets, which is why the other two were held
+back rather than sent together. It also explains the two drops from the other direction:
+L-SMASH-Works and vapoursynth-zip both migrated to manylinux wheels, and manylinux exists
+precisely to solve the glibc pinning this maintainer named. The ecosystem's answer is not
+"attach a `.so` to a release", it is "ship a wheel". D-051 identified the gap correctly and
+proposed the wrong remedy for it.
+
+### So how expensive is building a plugin from source? Measured, not estimated
+
+The maintainer's recommendation was taken literally and tested on the T540p, because the
+catalogue join found roughly 91 plugins with no Linux binary anywhere and the port had no
+idea what one costs. Building the dfttest2 CPU plugin, on a four-core laptop:
+
+| Step | Result |
+|---|---|
+| Clone with submodules | Required. `cpu_source/vectorclass` is a submodule and configure fails without it |
+| Headers | **API 3.** The source includes `VapourSynth.h`, which the pip wheel does not ship; the wheel carries API 4 headers only. Upstream's own workflow fetches the R57 source archive for this reason |
+| Configure and build, CPU only | **15 seconds**, `cmake` plus `ninja` plus `g++`, all already present |
+| Artifact | `libdfttest2_cpu.so`, 368,792 bytes |
+| Install | Copy into `<site-packages>/vapoursynth/plugins`, which the wheel does not create |
+| Load | Registers as namespace `dfttest2_cpu`, "DFTTest2 (CPU)", exposing `DFTTest`, `RDFT` and `Version` |
+
+**The 91-plugin gap is not the wall it looked like.** One representative plugin went from
+clone to loaded in a few minutes, and the build itself was 15 seconds. That materially
+changes the Tier C outlook: a documented recipe per plugin is a plausible answer where
+publishing binaries is not.
+
+Honest limits on that conclusion. This is one plugin and a simple one: CPU only, no CUDA or
+HIP, and its only dependency was a header-only submodule. The GPU variants need the CUDA or
+ROCm toolchains, which is a different order of cost. Other plugins carry heavier
+dependencies such as FFTW or libass. One sample sets a floor, not an average, and the
+API 3 header requirement is a per-plugin discovery rather than a general rule.
+
 ## 8. What this file does not license
 
 Nothing here authorizes downloading, installing, or executing any tool. Acquisition is
