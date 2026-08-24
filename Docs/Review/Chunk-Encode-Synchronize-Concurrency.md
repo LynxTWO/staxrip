@@ -7,7 +7,8 @@ required — `GetChunkEncodeActions`. This is that trace.
 
 Read-only analysis of `Source/` at commit `198223ea` (branch
 `agent/chunk-encode-synchronize-race`, branched from `master`). Nothing was built, run,
-or edited. No fix is proposed here.
+or edited *for this document*; the runtime confirmation that followed is a separate
+document and is noted below. No fix is proposed here.
 
 ## Answer
 
@@ -21,12 +22,19 @@ Confidence: the call graph and the absence of synchronization are **verified** b
 the source. The trigger condition is **verified as reachable in principle** but was not
 executed — see "What is not established".
 
+> **Status update, 2026-08-24 — confirmed at runtime.** The guard failure and concurrent
+> entry into the body have since been reproduced against the shipping v2.52.5 release
+> binary: eight threads were observed simultaneously inside the guarded body, against a
+> control in which none were. That run also **corrected consequence 1 below**. See
+> `Docs/Review/Chunk-Encode-Synchronize-Runtime-Confirmation.md`. The "What is not
+> established" section at the end of this document has been narrowed accordingly.
+
 ## The call graph
 
 `Source/General/GlobalClass.vb:632-651` builds one `actions` list and runs it under a
 single `Parallel.Invoke`:
 
-```
+```text
 GlobalClass.vb:633   p.Script.Synchronize()          <- once, on the calling thread
 GlobalClass.vb:635   p.VideoEncoder.BeforeEncoding()
 GlobalClass.vb:636   For Each i In p.VideoEncoder.GetChunkEncodeActions() : actions.Add(i)
@@ -37,7 +45,7 @@ Each action produced by `x264Enc.GetChunkEncodeActions()`
 (`Source/Encoding/x264Enc.vb:240-278`) is a closure that calls `Encode(...)`. The first
 statement of that overload is the shared-state call:
 
-```
+```text
 Source/Encoding/x264Enc.vb:100-101
     Overloads Sub Encode(passName As String, commandLine As String, priority As ...)
         p.Script.Synchronize()
@@ -93,9 +101,14 @@ There is no mutual exclusion between the test and the writes, and `LastCode`/`La
 are only assigned *inside* the body. If two workers evaluate the condition before either
 reaches the assignments, both proceed. Concurrent execution of that body means:
 
-1. **Concurrent writes to one file.** Both workers write the same `Path` — the active
-   AviSynth/VapourSynth script — via `WriteFileUTF8`/`WriteFile`. This is the script the
-   encoder processes are simultaneously reading.
+1. **Colliding writes to one file.** Both workers write the same `Path` — the active
+   AviSynth/VapourSynth script — via `WriteFileUTF8`/`WriteFile`.
+   **Corrected 2026-08-24 after the runtime run:** this does *not* corrupt the file.
+   `WriteFile` (`Source/General/Extensions.vb:622-639`) retries ten times at 150 ms and
+   then calls `g.ShowException(ex)`, so a collision costs up to ~1.5 s and, if it outlasts
+   the retry budget, raises an exception dialog **from a non-UI worker thread** — the same
+   cross-thread defect as item 2, by a second route. See
+   `Docs/Review/Chunk-Encode-Synchronize-Runtime-Confirmation.md`.
 2. **Cross-thread WinForms access.** `g.MainForm.Indexing()` at `VideoScript.vb:303` runs
    on a `Parallel.Invoke` worker. `Indexing()` writes `tbSourceFile.Text` at
    `Source/Forms/MainForm.vb:3773`, `:3786`, `:3815`, and `:3848` with no `Invoke`/`BeginInvoke`
@@ -161,16 +174,22 @@ point was not traced to a conclusion.
 
 Stated plainly, because the trigger analysis above is a source reading, not an execution:
 
-- **Not executed.** No chunk encode was run with a volatile macro in the script. The race
-  is demonstrated by construction from the source, not observed. The distinction matters:
-  a real run could reveal an outer guard not visible on this path.
-- **No timing evidence.** Whether the concurrent window is wide enough to be hit reliably,
-  or is merely possible, is unmeasured. The body performs file I/O and creates a frame
-  server, so the window is not narrow, but that is an inference.
-- **Observable symptom not characterized.** Item 2 would normally raise
-  `InvalidOperationException`, but only once the handle is created and illegal
-  cross-thread calls are being checked; whether this surfaces as a crash, a corrupted
-  script file, or silently wrong `Info` was not determined.
+- ~~**Not executed.**~~ **Resolved 2026-08-24.** Reproduced against the shipping release
+  binary; see the runtime confirmation document. What remains unexecuted is the *full
+  chunked encode* — the confirmation drives `Synchronize` directly with the cache primed
+  as `GlobalClass.vb:633` primes it, rather than going through `Parallel.Invoke` and
+  `GetChunkEncodeActions`. That the chunk workers call it concurrently is still a source
+  reading.
+- ~~**No timing evidence.**~~ **Resolved 2026-08-24.** Eight of eight threads were
+  simultaneously inside the guarded body, against zero of eight in the control. The window
+  is not narrow.
+- **Observable symptom still not fully characterized.** The runtime run reached the file
+  write and the `Package.VerifyOK` check but never reached `g.MainForm.Indexing()`,
+  because the probe process has no initialized package catalogue. Item 2 therefore remains
+  a source-level finding. Item 1's symptom *is* now characterized — a stall and an
+  off-thread exception dialog, not corruption.
+- **The trigger was injected, not encountered.** Nothing measures how often real projects
+  contain a volatile macro; only that doing so is supported and defeats the guard.
 - **Other encoders assumed, not read line-by-line.** The eight non-x264 encoders were
   confirmed to override `GetChunkEncodeActions`; they were not each traced through their
   own `Encode` overloads.
@@ -180,14 +199,22 @@ Stated plainly, because the trigger analysis above is a source reading, not an e
 
 ## Suggested next step
 
-Confirm by execution before treating this as actionable: configure a chunked x264 encode
-(`Chunks > 1`), add `# %current_time%` to a filter body or `CodeAtTop`, and observe
-whether the guarded body runs on more than one thread — a breakpoint or a thread-id log
-line at `VideoScript.vb:290` is sufficient. That converts this from a construction to an
-observation, and it is the evidence a fix should be justified by.
+~~Confirm by execution before treating this as actionable.~~ **Done, 2026-08-24** — by a
+different route than proposed here. Building a patched binary turned out to be impossible
+in this environment (`Source/packages` unrestored; `AGENTS.md:53` forbids restoring
+dependencies for a verification command), so the confirmation drives the shipping release
+binary by reflection instead. That is better evidence, not worse: it tests the artifact
+users run. See `Docs/Review/Chunk-Encode-Synchronize-Runtime-Confirmation.md`.
+
+The remaining gap is a full end-to-end chunked encode, which needs a source video and a
+buildable tree. That would close the last source-only link — that `Parallel.Invoke` over
+`GetChunkEncodeActions` is what supplies the concurrent callers.
 
 ## Related records
 
+- `Docs/Review/Chunk-Encode-Synchronize-Runtime-Confirmation.md` — the 2026-08-24 run that
+  confirmed this against the shipping binary and corrected consequence 1. Probe source and
+  output are under `Docs/Review/probes/`.
 - `Docs/Review/Legacy-Efficiency-Findings.md`, "Investigated and not supported" — the two
   open items this closes.
 - P-014 in `Docs/Unknowns/Portability-Unknowns.md` — no performance baseline exists; the
