@@ -47,7 +47,7 @@ verdict column.
 |---|---|---|---|
 | ffmpeg, ffprobe | distro-packages | https://ffmpeg.org/download.html states upstream provides source only; present in every major distro | Safe to assume present. Identical CLI |
 | x264 | official-binaries | https://artifacts.videolan.org/x264/release-debian-amd64/ hosts standalone ELF builds | Binaries are versioned bare ELF files, so a download URL must be built per revision |
-| x265 | distro-packages | https://www.videolan.org/developers/x265.html publishes source only; packaged by Debian and Arch | No `x265` tree exists under artifacts.videolan.org, unlike x264 |
+| x265 | distro-packages, **source build verified** | https://www.videolan.org/developers/x265.html publishes source only; packaged by Debian and Arch; upstream git at `bitbucket.org/multicoreware/x265_git` | No `x265` tree exists under artifacts.videolan.org, unlike x264. Built and encode-verified on Linux 2026-08-23, see below |
 | rav1e | official-binaries | https://github.com/xiph/rav1e/releases v0.8.1 ships `linux-{generic,sse4,avx2,aarch64}` tarballs | Prebuilt binaries target musl, not glibc. Release cadence looks dormant since 2025-09 |
 | aomenc | distro-packages | Arch `extra/aom`; Debian `aom-tools` | On Debian the CLI is in `aom-tools`, not `libaom3`. A dependency on the library alone does not give you `aomenc` |
 | SVT-AV1 | distro-packages | https://gitlab.com/AOMediaCodec/SVT-AV1/-/releases ships source archives only | Debian trixie carries 2.3.0 against upstream 4.2.0. Pin deliberately |
@@ -60,6 +60,35 @@ verdict column.
 | QSVEncC | official-binaries | https://github.com/rigaya/QSVEnc/releases ships `.deb` and `.rpm` | **Linux binary is `qsvencc`.** Needs the Intel media stack. Intel's own OpenCL runtime 24.35+ breaks detection on Gen11 and earlier |
 | VCEEncC | official-binaries | https://github.com/rigaya/VCEEnc/releases ships `.deb` and `.rpm` | **Linux binary is `vceencc`.** Needs AMD AMF userspace and `render`/`video` group membership. The most fragile of the three |
 | xvid_encraw | source-only | Debian and Arch `xvidcore` packages ship the library only, with no `/usr/bin` entries | The one real gap. It lives in `examples/` and no distro builds it. Upstream has had no release since 2019. Routing Xvid through ffmpeg's `libxvid` is the cheaper answer |
+
+### x265 built and encode-verified on Linux, 2026-08-23
+
+Executed on the T540p, because "packaged by distros" is a claim about packaging and says
+nothing about whether the encoder works. Upstream git clones from Bitbucket **without
+authentication**; an account is needed to open issues or pull requests there, not to read.
+
+| Step | Result |
+|---|---|
+| Clone, `bitbucket.org/multicoreware/x265_git`, shallow | 2 s |
+| Configure and build, CMake plus Ninja, static | **48 s** on four cores |
+| Binary | 2,434,592 bytes |
+| Encode, 50 frames of 320x240, `--preset ultrafast` | 383 ms |
+| Output verified by decoding it back with ffprobe | `codec_name=hevc`, 320x240, 50 frames |
+
+The round-trip is the part that matters: the encoder did not merely exit zero, it produced
+a bitstream a decoder recognises as HEVC with the expected geometry and frame count.
+
+**The build is deoptimised and should not be benchmarked.** The binary reports
+`[noasm]` and `using cpu capabilities: none!` because neither `nasm` nor `yasm` is
+installed, so every hand-written assembly kernel is compiled out. That is fine for proving
+the path and useless for measuring speed. A production build needs `nasm`, which is a
+root-level package install. Any future encoder timing on this host must confirm the build
+reports real CPU capabilities first, or it will measure the wrong thing and flatter the
+comparison in whichever direction happens to suit.
+
+This is a feasibility verification, not a support claim. x265 gains no tool-matrix row
+here: under D-049 a Tier A row asserts the portable side launches the tool, and that needs
+its own decision.
 
 ## 2. Containers, audio, subtitles, and metadata
 
