@@ -108,12 +108,19 @@ into the ignored runtime tree, and this change does not touch it.
 - **It does not run a real chunked encode.** There is no source video here and the native
   frame server was not built. That chunk workers call `Synchronize` concurrently remains
   established by source reading, not by execution.
-- **It does not address the `Error <> ""` trigger.** That is the guard's other term and it
-  is still untraced. If it is reachable during a chunked encode, the body still runs
-  concurrently and this fix does not prevent it.
+- **The `Error <> ""` trigger was traced on 2026-08-24 and is not reachable here**, so this
+  is no longer an open gap. `ProcessJob` throws at `GlobalClass.vb:590-592` if the script
+  reports an error, only closure construction happens between that gate and
+  `Parallel.Invoke` at `:651`, and `Error` has a single assignment inside `Synchronize` that
+  requires the guard to have already failed. Before this fix the term amplified the macro
+  trigger rather than acting alone: a volatile macro let `:633` enter the body, where a
+  frame-server error could set `Error` with no gate before `:651`.
 - **It does not fix the cross-thread Windows Forms access.** `g.MainForm.Indexing()` at
   `VideoScript.vb:310` and `ProcController.vb:914-916` still touch controls with no
   marshalling. The guard now keeps worker threads out of that path, so the defect is much
-  harder to reach, but it is not repaired. It stays open as its own backlog item.
+  harder to reach, but it is not repaired. It stays open as its own backlog item. Note that
+  `ProcessJob` runs on the UI thread and `Parallel.Invoke` uses its calling thread as one of
+  the workers, so one chunk action runs on the UI thread and the rest do not. That defect
+  would therefore present intermittently rather than reliably.
 - **It does not measure how often users hit this.** The probe injects the trigger. Nothing
   here says how common a volatile macro in filter code is.
