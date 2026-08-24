@@ -226,6 +226,7 @@
     <Compile Include="UI\FontManager.vb" />
     <Compile Include="General\AsyncStreamReader.vb" />
     <Compile Include="General\Documentation.vb" />
+    <Compile Include="General\DeepCopy.vb" />
     <Compile Include="General\DolbyVisionMetadataFile.vb" />
     <Compile Include="General\Extras.vb" />
     <Compile Include="General\Thumbnailer.vb" />

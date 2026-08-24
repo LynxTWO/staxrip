@@ -4,7 +4,6 @@ Imports System.Globalization
 Imports System.Management
 Imports System.Management.Automation
 Imports System.Reflection
-Imports System.Runtime.Serialization.Formatters.Binary
 Imports System.Text
 Imports System.Threading
 
@@ -74,14 +73,14 @@ Public Class ObjectHelp
         End If
     End Function
 
+    ''' <summary>
+    ''' Deep-copies <paramref name="o"/>. Formerly a <c>BinaryFormatter</c> round-trip through
+    ''' a <c>MemoryStream</c>; see <see cref="DeepCopy"/> for the semantics that had to be
+    ''' reproduced and why, and D-053 in the decision log for the reasoning.
+    ''' </summary>
     <DebuggerHidden()>
     Shared Function GetCopy(Of T)(o As T) As T
-        Using ms As New MemoryStream
-            Dim bf As New BinaryFormatter
-            bf.Serialize(ms, o)
-            ms.Position = 0
-            Return DirectCast(bf.Deserialize(ms), T)
-        End Using
+        Return DeepCopy.Clone(o)
     End Function
 End Class
 

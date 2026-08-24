@@ -1,6 +1,4 @@
 ﻿Imports System.ComponentModel
-Imports System.Runtime.Serialization
-Imports System.Runtime.Serialization.Formatters.Binary
 Imports Microsoft.VisualBasic
 Imports StaxRip.Theme
 
@@ -474,13 +472,12 @@ Public Class Theme
         End Property
 
 
+        ''' <summary>
+        ''' Deep-copies these colors. Formerly a <c>BinaryFormatter</c> round-trip; see
+        ''' <see cref="DeepCopy"/> and D-053 in the decision log.
+        ''' </summary>
         Public Function Clone() As ControlsThemeColors
-            Using stream As Stream = New MemoryStream()
-                Dim formatter As IFormatter = New BinaryFormatter()
-                formatter.Serialize(stream, Me)
-                stream.Seek(0, SeekOrigin.Begin)
-                Return DirectCast(formatter.Deserialize(stream), ControlsThemeColors)
-            End Using
+            Return DeepCopy.Clone(Me)
         End Function
 
 
