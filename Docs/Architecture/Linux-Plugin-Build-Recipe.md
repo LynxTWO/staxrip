@@ -80,9 +80,17 @@ A third pass added four more once triage identified their specific gates:
 | FFT3D Neo | Same | 688,616 B |
 | DFTTest Neo | Same, **plus a non-shallow clone**: its CMake runs `string(STRIP)` on a version tag, which is empty in a `--depth 1` clone and errors out | 241,512 B |
 
-**Fifteen third-party plugins now load together** in one core: `bm3dcpu, descratch,
-dfttest2_cpu, dotkill, focus2, libp2p, neo_dfttest, neo_f3kdb, neo_fft3d, neo_minideen,
-scd, timecube, vfrtocfr, vivtc, w3fdif`.
+A fourth pass, after the maintainer installed the four system libraries, added three more:
+`vcm` on fftw3f, which also covers `vcmod` since they are one artifact; `d2vsource` on the
+FFmpeg development headers; and `FixTelecinedFades` on yasm, which built clean despite a
+flagged duplicate-symbol risk in its 2017 sources.
+
+**Eighteen third-party plugins now load together** in one core: `bm3dcpu, d2v, descratch,
+dfttest2_cpu, dotkill, focus2, ftf, libp2p, neo_dfttest, neo_f3kdb, neo_fft3d,
+neo_minideen, scd, timecube, vcm, vfrtocfr, vivtc, w3fdif`.
+
+That is **18 of the 38-entry build list**, verified by namespace registration rather than
+by builds exiting zero.
 
 Two more rules, and the first one contradicts rule 4:
 
