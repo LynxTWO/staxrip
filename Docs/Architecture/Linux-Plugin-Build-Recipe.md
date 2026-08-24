@@ -71,8 +71,30 @@ system at all:
 | temporalsoften | 3, bundled | same repo, same command | 20,240 B | `focus2` |
 | W3FDIF | 3 | `g++` one-liner | 20,424 B | `w3fdif` |
 
-**Eleven third-party plugins now load together** in one core: `descratch, dfttest2_cpu,
-dotkill, focus2, libp2p, neo_minideen, scd, timecube, vfrtocfr, vivtc, w3fdif`.
+A third pass added four more once triage identified their specific gates:
+
+| Plugin | Gate that had to be found first | Artifact |
+|---|---|---|
+| BM3DCPU | `-DENABLE_CUDA=OFF`, and API 3 headers passed explicitly | 86,968 B |
+| f3kdb Neo | `-DENABLE_PAR=OFF`, else it fails at link on `-ltbb` | 1,140,760 B |
+| FFT3D Neo | Same | 688,616 B |
+| DFTTest Neo | Same, **plus a non-shallow clone**: its CMake runs `string(STRIP)` on a version tag, which is empty in a `--depth 1` clone and errors out | 241,512 B |
+
+**Fifteen third-party plugins now load together** in one core: `bm3dcpu, descratch,
+dfttest2_cpu, dotkill, focus2, libp2p, neo_dfttest, neo_f3kdb, neo_fft3d, neo_minideen,
+scd, timecube, vfrtocfr, vivtc, w3fdif`.
+
+Two more rules, and the first one contradicts rule 4:
+
+8. **The `neo_*` family must be built with `vapoursynth.pc` OFF `PKG_CONFIG_PATH`.** Their
+   CMake does "if pkg-config found VapourSynth, use its include dir, *else* use our
+   vendored headers" as an either/or. Those plugins are API 3 and vendor their own headers,
+   so a pip-wheel `.pc` on the path wins the branch, drops the vendored API 3 headers, and
+   the build dies on `VapourSynth.h: No such file`. Rule 4 and rule 8 are opposites and
+   which applies depends on whether the plugin vendors its headers.
+9. **A shallow clone is not always safe.** Build files that derive a version from
+   `git describe` or a tag list fail on `--depth 1`. Clone fully when a configure step
+   mentions tags or versions.
 
 Two more recipe rules, again learned by getting them wrong:
 
