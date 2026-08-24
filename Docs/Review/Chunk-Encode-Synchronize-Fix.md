@@ -20,9 +20,13 @@ so no on-disk format, no project compatibility, and no other call site is affect
 
 ## Why not a lock
 
-The first proposal was a `SyncLock` around the guarded body. A reachability trace, recorded
-in `Evidence-Gap-Check.md`, established that such a lock would **not** deadlock. It was
-withdrawn anyway, for what the same trace found instead:
+The first proposal was a `SyncLock` around the guarded body. A reachability trace over the
+four calls the body makes established that such a lock would **not** deadlock: Windows Forms
+marshalling in `ProcController` is asynchronous (`BeginInvoke`, `ProcController.vb:873`), the
+one synchronous blocking `Invoke` at `ProcController.vb:934` targets the `ProcessingForm` STA
+thread, which contains no reference to `Synchronize`, and `ProcController` takes
+`SyncLock Procs` at six sites while never calling `Synchronize`, so no lock cycle exists. The
+proposal was withdrawn anyway, for what the same trace found instead:
 
 - The guarded body can open two modal dialogs, `Package.VerifyOK` at `Package.vb:2976` and
   the retry-exhaustion path in `Extensions.WriteFile` at `Extensions.vb:634`.
@@ -97,8 +101,9 @@ last mutation was reverted and the project rebuilt.
 
 `Source/StaxRip.vbproj` Debug x64 and Release x64, both exit 0 with zero warnings and zero
 errors. Package restore of DirectN 1.5.0, ManagedCuda-100 10.0.31, and
-Microsoft.PowerShell.5.ReferenceAssemblies 1.1.0 was approved by the user on 2026-08-24 and
-removes the build blocker recorded in `Docs/Unknowns/Remediation-Pass.md`.
+Microsoft.PowerShell.5.ReferenceAssemblies 1.1.0 was approved by the maintainer of this fork
+on 2026-08-24. Before that the managed project could not be built here at all, so no managed
+fix could be compile-verified or probe-verified.
 
 The native `Source/FrameServer` project was not built. It needs VapourSynth headers staged
 into the ignored runtime tree, and this change does not touch it.
