@@ -1797,5 +1797,46 @@ compile for their own machine. Per-machine optimisation is available to a source
 is not available to any binary a project distributes, so the strategy that arrived as a
 consolation is the better one on this axis.
 
+**Measured on the T540p, 2026-08-23, after
+asm was installed.** Both claims in this
+decision were tested rather than asserted, and the second measurement found something this
+entry did not anticipate.
+
+*Optimisation is worth what the decision claims.* The same x265 source, 150 frames of
+640x480 at `--preset medium`:
+
+| Build | Run 1 | Run 2 |
+|---|---|---|
+| No assembly | 6,967 ms | 6,913 ms |
+| Assembly enabled | 2,314 ms | 2,457 ms |
+
+Roughly **2.9 times faster**, and the assembled build reports
+`MMX2 SSE2Fast LZCNT SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2` where the other reported
+`cpu capabilities: none!`. Building x265 with assembly costs 172 seconds against 48.
+
+*And output depends on the instruction set, which is the part worth acting on.* The same
+binary, same input, same settings, differing only in which ISA the encoder is allowed to
+use, produces **different bitstreams**:
+
+| Configuration | MD5 prefix | Size |
+|---|---|---|
+| No assembly | `b190518c` | 515,102 |
+| `--asm sse4` | `b9a8e5a5` | 515,102 |
+| `--asm avx2` | `2529385e` | 515,102 |
+
+Three distinct outputs at identical size. This is not run-to-run noise: three consecutive
+runs of one configuration produced byte-identical files, so the encoder is deterministic
+and the ISA is the variable.
+
+**The consequence extends this decision.** Pinning a version and a build is not sufficient
+for bit-exact reproducibility, because two users running the identical pinned binary on
+different processors get different files from the same source and settings. That is
+inherent to how the encoder dispatches, not a defect. Where bit-exactness actually matters,
+to a regression fixture or a comparison, the ISA must be pinned too, with `--asm` or its
+equivalent. Where it does not matter, which is most user encoding, nothing needs to change
+and the fastest available path should be used. What must not happen is a fixture that
+silently assumes reproducibility the encoder never promised, which would fail on the first
+machine with a different processor and look like a code defect.
+
 Revisit when: a pinned encoder acquires a security defect, which forces a move and is the
 one case where speed of update outranks reproducibility.
