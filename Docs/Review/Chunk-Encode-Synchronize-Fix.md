@@ -115,12 +115,19 @@ into the ignored runtime tree, and this change does not touch it.
   requires the guard to have already failed. Before this fix the term amplified the macro
   trigger rather than acting alone: a volatile macro let `:633` enter the body, where a
   frame-server error could set `Error` with no gate before `:651`.
-- **It does not fix the cross-thread Windows Forms access.** `g.MainForm.Indexing()` at
-  `VideoScript.vb:310` and `ProcController.vb:914-916` still touch controls with no
-  marshalling. The guard now keeps worker threads out of that path, so the defect is much
-  harder to reach, but it is not repaired. It stays open as its own backlog item. Note that
-  `ProcessJob` runs on the UI thread and `Parallel.Invoke` uses its calling thread as one of
-  the workers, so one chunk action runs on the UI thread and the rest do not. That defect
-  would therefore present intermittently rather than reliably.
+- **It does not fix the cross-thread Windows Forms access,** which is left deliberately.
+  `g.MainForm.Indexing()` at `VideoScript.vb:310` and `ProcController.vb:914-916` still
+  touch controls with no marshalling. Both are latent rather than live: the guard now keeps
+  worker threads out of the `Indexing` path, and `ProcessJob` hides the main form at
+  `GlobalClass.vb:599` before `Parallel.Invoke` at `:651`, so `ProcController` finds
+  `Visible` already `False` and skips its `Hide()`.
+
+  An earlier draft of this record said those accesses throw `InvalidOperationException`.
+  **That was wrong.** `CheckForIllegalCrossThreadCalls` is initialised to
+  `Debugger.IsAttached`, not to `True`, so for a user the check is off and the accesses are
+  silent. Measured with a positive control: with the flag on, a `.Text` write and a `.Hide()`
+  both throw; with it off, neither does; a `.Visible` read never throws either way. The real
+  failure mode is undefined Windows Forms behaviour, and it reproduces under a debugger but
+  not for a user.
 - **It does not measure how often users hit this.** The probe injects the trigger. Nothing
   here says how common a volatile macro in filter code is.
