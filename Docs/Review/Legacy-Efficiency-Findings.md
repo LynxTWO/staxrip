@@ -97,11 +97,11 @@ Status: FIXED 2026-08-22. Severity: low. Class: wasted work. Gate crossed: none.
 
 ```vbnet
 Function MD5Hash(instance As String) As String
-    Using m = MD5.Create()
-        Dim inputBuffer = Encoding.UTF8.GetBytes(instance)
-        Dim hashBuffer = m.ComputeHash(inputBuffer)
-        Return BitConverter.ToString(m.ComputeHash(inputBuffer))
-    End Using
+ Using m = MD5.Create()
+ Dim inputBuffer = Encoding.UTF8.GetBytes(instance)
+ Dim hashBuffer = m.ComputeHash(inputBuffer)
+ Return BitConverter.ToString(m.ComputeHash(inputBuffer))
+ End Using
 End Function
 ```
 
@@ -218,14 +218,14 @@ underlying question of whether chunk workers can call `Synchronize` concurrently
 real one; it is separate from this claim, and answering it means tracing
 `GetChunkEncodeActions`, not comparing these two files.
 
-**Update, 2026-08-24: that question is now answered — yes, they can.** The trace is
+**Update, 2026-08-24: that question is now answered - yes, they can.** The trace is
 `Docs/Review/Chunk-Encode-Synchronize-Concurrency.md` on branch
 `agent/chunk-encode-synchronize-race` (not on this branch). Summary: `CanChunkEncode()`
 returns `Chunks > 1`, so the chunk branch only runs with two or more actions, and each
 calls `Encode`, whose first statement is `p.Script.Synchronize()` on the one shared
 `VideoScript`. `Synchronize` is an unsynchronized check-then-act over five plain public
-fields. A guard normally makes each worker's call a no-op — which is why this has never
-been reported — but the compared value is recomputed through `Macro.Expand` on every
+fields. A guard normally makes each worker's call a no-op - which is why this has never
+been reported - but the compared value is recomputed through `Macro.Expand` on every
 call, so a volatile macro (`%current_time%`, `%random:N%`) in user script or filter code
 defeats it permanently. No shipped default contains such a macro, which bounds severity.
 The finding is a source reading, not an execution; it has not been reproduced at runtime.
@@ -240,7 +240,7 @@ been traced, so there is no cross-thread finding here, only an untraced path.
 
 **Update, 2026-08-24: the path is now traced, and it is reachable.** The claim was right
 about the destination and wrong about the route, which is why searching `MainForm.vb` for
-`Parallel.Invoke` found nothing — the call arrives indirectly:
+`Parallel.Invoke` found nothing - the call arrives indirectly:
 `GlobalClass.vb:651` -> chunk-encode action -> `x264Enc.Encode` -> `p.Script.Synchronize()`
 -> `VideoScript.vb:303` -> `g.MainForm.Indexing()`. So `Indexing()` does run on a
 `Parallel.Invoke` worker whenever the guard inside `Synchronize` does not short-circuit.
@@ -251,12 +251,12 @@ The conditions for that, and the reason it is rarely hit, are in
 ## Related records
 
 - `Docs/Review/Chunk-Encode-Synchronize-Concurrency.md` on branch
-  `agent/chunk-encode-synchronize-race`: the trace that closed both entries in
-  "Investigated and not supported". Read-only; no fix proposed; not reproduced at runtime.
+ `agent/chunk-encode-synchronize-race`: the trace that closed both entries in
+ "Investigated and not supported". Read-only; no fix proposed; not reproduced at runtime.
 - P-014 in `Docs/Unknowns/Portability-Unknowns.md`: no performance baseline exists, which
-  is why nothing here is stated as a speedup.
+ is why nothing here is stated as a speedup.
 - `Source/General/GlobalClass.vb:622-651`: audio processing, subtitle cutting, and video
-  chunk encoding are all appended to one `actions` list and run under a single
-  `Parallel.Invoke` bounded by `s.ParallelProcsNum`, default `3`
-  (`Source/General/ApplicationSettings.vb:70`). That shared budget is a candidate lever
-  recorded in P-014, not a finding here, because it has not been measured.
+ chunk encoding are all appended to one `actions` list and run under a single
+ `Parallel.Invoke` bounded by `s.ParallelProcsNum`, default `3`
+ (`Source/General/ApplicationSettings.vb:70`). That shared budget is a candidate lever
+ recorded in P-014, not a finding here, because it has not been measured.
