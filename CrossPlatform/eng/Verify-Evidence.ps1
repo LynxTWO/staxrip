@@ -3421,8 +3421,9 @@ try {
         'CT-015', 'CT-016', 'CT-017', 'CT-018', 'CT-019', 'CT-020', 'CT-021',
         'CT-022', 'CT-023', 'CT-024', 'CT-025', 'CT-026', 'CT-027', 'CT-028',
         'CT-029', 'CT-030', 'CT-031', 'CT-032', 'CT-033', 'CT-034', 'CT-035', 'CT-036', 'CT-037', 'CT-038', 'CT-039', 'CT-040', 'CT-041', 'CT-042', 'CT-043', 'CT-044', 'CT-045',
+        'CT-046', 'CT-047', 'CT-048', 'CT-049',
         'ST-001', 'ST-002', 'ST-003', 'ST-004', 'ST-005', 'ST-006', 'ST-007',
-        'ST-008', 'ST-009', 'ST-010', 'ST-011'
+        'ST-008', 'ST-009', 'ST-010', 'ST-011', 'ST-012'
     )
 
     $static = Read-JsonRecord -Name 'static-gate.json' -ExpectedSchema 'staxrip-static-gate-v1'
