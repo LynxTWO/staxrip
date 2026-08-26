@@ -1142,7 +1142,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 ### R-S2-054: The path-like-value privacy detector under- and over-matches, and adapter exception text reaches the wire
 
 - **Bucket:** approval-gated
-- **Area or slice:** `CrossPlatform/src/StaxRip.Core/MediaFactsPrivacy.cs`, `CrossPlatform/tests/StaxRip.CrossPlatform.Tests/MediaFactsCases.cs`, the handler's authority-failure reason
+- **Area or slice:** `CrossPlatform/src/StaxRip.Core/MediaFactsPrivacy.cs`, `CrossPlatform/tests/StaxRip.ContractTests/MediaFactsCases.cs`, the handler's authority-failure reason
 - **Risk level:** medium
 - **Why it matters:** The detector misses forms such as a path after a key prefix, single-segment absolute paths, file-scheme values, and encoded separators, while rejecting harmless doubled-separator text; and the handler can surface a future adapter's arbitrary exception message as a response reason. Both are privacy-boundary gaps.
 - **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`, with concrete evading and false-positive examples; current tests cover whole drive, UNC, and multisegment POSIX paths only.
