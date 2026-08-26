@@ -975,8 +975,8 @@ if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
     Stop-Gate -Message 'Contract case manifest is missing.' -Step 'contract'
 }
 $manifestCaseCount = @([System.IO.File]::ReadAllLines($manifestPath) | Where-Object { $_ -ne '' -and -not $_.StartsWith('#', [System.StringComparison]::Ordinal) }).Count
-if ($manifestCaseCount -ne 56) {
-    Stop-Gate -Message "Contract case manifest count differs from the reviewed baseline of 56: $manifestCaseCount" -Step 'contract'
+if ($manifestCaseCount -ne 61) {
+    Stop-Gate -Message "Contract case manifest count differs from the reviewed baseline of 61: $manifestCaseCount" -Step 'contract'
 }
 
 $contractCounts = @{}
