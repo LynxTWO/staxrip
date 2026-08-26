@@ -1074,7 +1074,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** open
+- **Status:** deferred until the maintainer decision its smallest-safe-step names
 
 ### R-S2-051: The child process inherits the parent environment and working directory
 
@@ -1095,7 +1095,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** open
+- **Status:** deferred until the maintainer decision its smallest-safe-step names
 
 ### R-S2-052: A post-start failure can escape without killing the child, and shutdown does not cancel probes
 
@@ -1116,7 +1116,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** open
+- **Status:** deferred until the maintainer decision its smallest-safe-step names
 
 ### R-S2-053: Capability availability does not establish that the configuration is usable
 
@@ -1137,7 +1137,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** open
+- **Status:** deferred until the maintainer decision its smallest-safe-step names
 
 ### R-S2-054: The path-like-value privacy detector under- and over-matches, and adapter exception text reaches the wire
 
@@ -1158,7 +1158,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** open
+- **Status:** deferred until the maintainer decision its smallest-safe-step names
 
 ### R-S2-055: Certification accounting drifted behind the work it certifies
 
