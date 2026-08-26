@@ -15,9 +15,10 @@ contract. The authority options gain an optional `LoaderLibraryPath`, which is t
 way a loader path reaches the tool, because the child environment is now constructed
 from a per-platform base set and nothing is inherited (D-056). The port gains
 `ProbeVersionAsync`, which the composition root executes once at activation so an
-available capability is one whose tool has run (D-058); unavailable now carries a
-reason class: inspection-unconfigured, inspection-tool-unresolvable,
-inspection-tool-unready, or inspection-version-unsupported. An admitted file is bound to
+available capability is one whose tool has run (D-058); the activation verdict,
+inspection-unconfigured, inspection-tool-unresolvable, inspection-tool-unready, or
+inspection-version-unsupported, is recorded in process while the wire keeps the pinned
+bootstrap vocabulary, because widening it is a contract decision. An admitted file is bound to
 its identity across the probe and refused publication if the binding breaks (D-055);
 probes are cancelled by application shutdown (D-057); and only members of the closed
 reason vocabulary reach the wire (D-059). The two new boundary crossings, the

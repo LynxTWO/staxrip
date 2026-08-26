@@ -23,20 +23,30 @@ public sealed class CapabilityService
     // server's composition root decides it from explicit configuration and passes
     // the verdict in, so this service never guesses and the published capability
     // always matches what the endpoint will actually do.
+    // D-058: the activation verdict is recorded here for the composition root and the
+    // contract corpus, and it is deliberately not the published reason. The wire
+    // vocabulary for this feature is pinned by the shell, the browser gate, and the
+    // Linux sandbox as exactly inspection-configured or bootstrap-unavailable, so a
+    // finer unavailable reason on the wire is a contract change, not an activation
+    // detail; until such a decision, every unavailable state publishes the bootstrap
+    // vocabulary and the verdict stays in process.
+    public string? MediaInspectionVerdict { get; }
+
     public CapabilityService(
         IHostFactsProvider hostFactsProvider,
         bool mediaInspectionAvailable = false,
-        string? mediaInspectionReason = null)
+        string? mediaInspectionVerdict = null)
     {
         ArgumentNullException.ThrowIfNull(hostFactsProvider);
         _hostFactsProvider = hostFactsProvider;
+        MediaInspectionVerdict = mediaInspectionVerdict;
         _features =
         [
             AvailableFeature(FeatureIds.LocalEngine, "Local engine"),
             AvailableFeature(FeatureIds.WebShell, "Web shell"),
             mediaInspectionAvailable
                 ? new FeatureCapability(FeatureIds.MediaInspection, "Media inspection", CapabilityAvailability.Available, "inspection-configured")
-                : new FeatureCapability(FeatureIds.MediaInspection, "Media inspection", CapabilityAvailability.Unavailable, mediaInspectionReason ?? ContractValues.BootstrapUnavailable),
+                : UnavailableFeature(FeatureIds.MediaInspection, "Media inspection"),
             UnavailableFeature(FeatureIds.Encoding, "Encoding"),
             UnavailableFeature(FeatureIds.Persistence, "Persistence"),
             UnavailableFeature(FeatureIds.RemoteAccess, "Remote access"),

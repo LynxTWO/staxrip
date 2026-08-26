@@ -1936,9 +1936,19 @@ Decision: the activation judgment stays where it is, made once at the compositio
 the published capability and the endpoint behavior can never disagree, and it becomes
 real: activation executes the configured tool once through the bounded primitive with its
 version flag, under the D-056 environment, and requires a supported version in the
-answer. A loader failure, a wrong binary, or an out-of-range version is unavailable with
-a reason class at startup. A tool that breaks mid-session still fails per-request; that
-is the accepted meaning of a startup fact, stated in the capability's documentation.
+answer. A loader failure, a wrong binary, or an out-of-range version is unavailable at
+startup, with a verdict naming why. A tool that breaks mid-session still fails
+per-request; that is the accepted meaning of a startup fact, stated in the capability's
+documentation.
+
+Implementation note, 2026-08-26: the verdict, inspection-unconfigured,
+inspection-tool-unresolvable, inspection-tool-unready, or inspection-version-unsupported,
+is recorded on the capability service in process and is not published. The first
+attested sweep after implementation refused a published verdict twice, in the shipped
+shell and in the Linux sandbox's capability contract, because both pin the wire
+vocabulary for this feature to exactly inspection-configured or bootstrap-unavailable.
+Widening that vocabulary is a contract decision touching the shell, the browser gate, and
+the sandbox, so it is left for the maintainer; the wire keeps the bootstrap vocabulary.
 
 Because: a capability claim someone can act on is a claim something was actually
 executed, and the never-disagree invariant is worth more than mid-session freshness.

@@ -33,8 +33,9 @@ public static class ServerApp
         // D-058: a capability advertised available is one whose tool has actually
         // executed. The readiness probe runs the tool once with its version flag under
         // the constructed environment; a tool that does not run, does not answer
-        // readably, or answers outside the supported range is unavailable with a
-        // reason, here, at startup, rather than available until the first request.
+        // readably, or answers outside the supported range is unavailable, here, at
+        // startup, rather than available until the first request. The verdict below
+        // names why; the wire publishes the pinned bootstrap vocabulary regardless.
         if (mediaInspectionAvailable)
         {
             var readiness = new MediaInfoCliAuthority(mediaInspection!.Authority);
