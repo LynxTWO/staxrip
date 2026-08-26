@@ -1864,6 +1864,15 @@ and the same trust boundary, and is not separately raced.
 Because: refusing publication closes the consequence that matters without pretending to
 close a window that an external-tool architecture cannot close.
 
+Implementation note, 2026-08-26: the binding is a held handle rather than a captured
+file id, because a dependency-free file id is not available on both platforms and the
+package closure is pinned. On Windows the handle is opened without delete sharing, which
+makes the swap impossible rather than detectable; on Linux the kernel is asked where the
+descriptor points after the probe, through /proc/self/fd, and a renamed or replaced file
+shows as a different target. The directory chain is re-walked for reparse points on both.
+The decision's substance, identity-bound admission with refused publication and a stated
+residual, is unchanged; only the mechanism is stronger than the text above proposed.
+
 Revisit when: the authority stops being an external process, or a configured root stops
 being maintainer-controlled.
 
@@ -1951,11 +1960,19 @@ Decision, two parts. The matcher is changed only against a ratified adversarial 
 must-match and must-not-match rows, drafted first, signed off by the maintainer, and then
 committed as the contract corpus and mutation-proven the way CT-020 was. The law's agreed
 shape: the drive-letter rule stays; rooted POSIX detection extends to mid-string
-positions after a non-alphanumeric boundary with at least two segments; the bare
-doubled-separator rule narrows to a UNC shape so scheme separators stop being collateral;
-single-segment absolutes stay deliberately unmatched. Separately and immediately, the
-authority exception surface becomes a typed reason vocabulary, so no adapter's free text
-reaches the wire.
+positions after a non-alphanumeric boundary; the bare doubled-separator rule narrows to a
+UNC shape so scheme separators stop being collateral; single-segment absolutes stay
+deliberately unmatched. Separately and immediately, the authority exception surface
+becomes a typed reason vocabulary, so no adapter's free text reaches the wire.
+
+Table ratified 2026-08-26, with one carve-out the maintainer chose over the plain draft:
+prose references such as a documentation path or a forum board must survive. The
+resulting rule for rooted POSIX paths, at the start or mid-string alike: three or more
+segments always strip; two segments strip only when the first segment is a known
+filesystem root family, currently home, Users, mnt, media, tmp, var, opt, data, Volumes,
+private, root, srv, and etc. So a home directory and a system file strip, and a two-level
+reference under any other name survives. The family list is table content and changes
+only with a row. The table itself lives in the contract corpus as CT-044's rows.
 
 Because: a privacy law enforced by regex is exactly as strong as the example set it was
 tested against, so the example set is the law and the regex is its implementation.

@@ -35,6 +35,16 @@ public sealed record BoundedProcessRequest
     public required int MaximumStdOutBytes { get; init; }
 
     public required int MaximumStdErrBytes { get; init; }
+
+    // D-056: the child's environment is constructed, never inherited. The default is
+    // empty, so a caller that states nothing hands its child nothing; whatever a tool
+    // needs is written here explicitly by the adapter that knows it.
+    public ImmutableDictionary<string, string> Environment { get; init; } =
+        ImmutableDictionary<string, string>.Empty;
+
+    // D-056: null means the executable's own directory, the portable-tool convention.
+    // A caller that needs a different working directory states it.
+    public string? WorkingDirectory { get; init; }
 }
 
 // A completed execution. A nonzero exit code is a result, not an exception; whether it
@@ -61,6 +71,18 @@ public static class BoundedProcessRunner
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        // D-057: every bound is validated before the spawn, so no post-start
+        // construction can throw over a live child for a reason known in advance.
+        // The ceiling is the largest value the cancellation source accepts.
+        if (request.Timeout <= TimeSpan.Zero ||
+            request.Timeout.TotalMilliseconds > int.MaxValue)
+        {
+            throw new BoundedProcessException("invalid-bound");
+        }
+
+        if (request.MaximumStdOutBytes <= 0 || request.MaximumStdErrBytes <= 0)
+            throw new BoundedProcessException("invalid-bound");
+
         if (!Path.IsPathFullyQualified(request.ExecutablePath))
             throw new BoundedProcessException("executable-path-not-absolute");
 
@@ -75,9 +97,17 @@ public static class BoundedProcessRunner
             RedirectStandardError = true,
             RedirectStandardInput = true,
             CreateNoWindow = true,
+            WorkingDirectory = request.WorkingDirectory
+                ?? Path.GetDirectoryName(request.ExecutablePath)!,
         };
         foreach (string argument in request.Arguments)
             startInfo.ArgumentList.Add(argument);
+
+        // D-056 enforcement point: the inherited map is emptied before the stated
+        // entries are applied, so inheritance is impossible rather than discouraged.
+        startInfo.Environment.Clear();
+        foreach (KeyValuePair<string, string> entry in request.Environment)
+            startInfo.Environment[entry.Key] = entry.Value;
 
         using var process = new Process();
         process.StartInfo = startInfo;
@@ -92,68 +122,88 @@ public static class BoundedProcessRunner
         }
 
         int processId = process.Id;
-        process.StandardInput.Close();
 
+        // D-057: from here to the return, no exception may escape over a live child.
+        // The named catches classify the expected outcomes; the final catch is the
+        // catch-all that keeps the receipt promise unconditional for the unexpected
+        // ones, killing and reaping before the original exception continues.
         using var timeoutSource = new CancellationTokenSource(request.Timeout);
         using var killSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
-
-        // An overflow in one stream cancels the shared source so the other stream's
-        // pending read unblocks; the flag keeps the classification honest afterward.
-        bool overflowed = false;
-
-        async Task<byte[]> ReadBoundedAsync(Stream stream, int maximumBytes)
-        {
-            var buffer = new byte[81920];
-            using var collected = new MemoryStream();
-            while (true)
-            {
-                int count = await stream.ReadAsync(buffer, killSource.Token).ConfigureAwait(false);
-                if (count == 0)
-                    return collected.ToArray();
-
-                if (collected.Length + count > maximumBytes)
-                {
-                    overflowed = true;
-                    await killSource.CancelAsync().ConfigureAwait(false);
-                    throw new OperationCanceledException(killSource.Token);
-                }
-
-                collected.Write(buffer, 0, count);
-            }
-        }
-
-        Task<byte[]> stdoutTask = ReadBoundedAsync(process.StandardOutput.BaseStream, request.MaximumStdOutBytes);
-        Task<byte[]> stderrTask = ReadBoundedAsync(process.StandardError.BaseStream, request.MaximumStdErrBytes);
-
         try
         {
-            byte[][] outputs = await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
-            await process.WaitForExitAsync(killSource.Token).ConfigureAwait(false);
+            process.StandardInput.Close();
 
-            return new BoundedProcessResult
+            // An overflow in one stream cancels the shared source so the other stream's
+            // pending read unblocks; the flag keeps the classification honest afterward.
+            bool overflowed = false;
+
+            async Task<byte[]> ReadBoundedAsync(Stream stream, int maximumBytes)
             {
-                ExitCode = process.ExitCode,
-                StandardOutput = Encoding.UTF8.GetString(outputs[0]),
-                StandardError = Encoding.UTF8.GetString(outputs[1]),
-            };
+                var buffer = new byte[81920];
+                using var collected = new MemoryStream();
+                while (true)
+                {
+                    int count = await stream.ReadAsync(buffer, killSource.Token).ConfigureAwait(false);
+                    if (count == 0)
+                        return collected.ToArray();
+
+                    if (collected.Length + count > maximumBytes)
+                    {
+                        overflowed = true;
+                        await killSource.CancelAsync().ConfigureAwait(false);
+                        throw new OperationCanceledException(killSource.Token);
+                    }
+
+                    collected.Write(buffer, 0, count);
+                }
+            }
+
+            Task<byte[]> stdoutTask = ReadBoundedAsync(process.StandardOutput.BaseStream, request.MaximumStdOutBytes);
+            Task<byte[]> stderrTask = ReadBoundedAsync(process.StandardError.BaseStream, request.MaximumStdErrBytes);
+
+            try
+            {
+                byte[][] outputs = await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
+                await process.WaitForExitAsync(killSource.Token).ConfigureAwait(false);
+
+                return new BoundedProcessResult
+                {
+                    ExitCode = process.ExitCode,
+                    StandardOutput = Encoding.UTF8.GetString(outputs[0]),
+                    StandardError = Encoding.UTF8.GetString(outputs[1]),
+                };
+            }
+            catch (OperationCanceledException)
+            {
+                // Kill and reap before any throw: the receipt below names a process that
+                // no longer exists by the time a caller can observe the exception. The
+                // caller's own cancellation outranks the internal reasons; a recorded
+                // overflow outranks the wall clock, which may expire while the kill runs.
+                KillAndReap(process, processId);
+
+                if (cancellationToken.IsCancellationRequested)
+                    throw new BoundedProcessException("kill-on-cancel", processId);
+
+                if (overflowed)
+                    throw new BoundedProcessException("output-overflow", processId);
+
+                if (timeoutSource.IsCancellationRequested)
+                    throw new BoundedProcessException("timeout", processId);
+
+                throw;
+            }
+        }
+        catch (BoundedProcessException)
+        {
+            throw;
         }
         catch (OperationCanceledException)
         {
-            // Kill and reap before any throw: the receipt below names a process that
-            // no longer exists by the time a caller can observe the exception. The
-            // caller's own cancellation outranks the internal reasons; a recorded
-            // overflow outranks the wall clock, which may expire while the kill runs.
+            throw;
+        }
+        catch (Exception)
+        {
             KillAndReap(process, processId);
-
-            if (cancellationToken.IsCancellationRequested)
-                throw new BoundedProcessException("kill-on-cancel", processId);
-
-            if (overflowed)
-                throw new BoundedProcessException("output-overflow", processId);
-
-            if (timeoutSource.IsCancellationRequested)
-                throw new BoundedProcessException("timeout", processId);
-
             throw;
         }
     }

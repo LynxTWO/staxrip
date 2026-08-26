@@ -19,6 +19,8 @@ internal static class BoundedProcessCases
         new("CT-026", "hard timeout kills and reaps", HardTimeout),
         new("CT-027", "cancellation kills and reaps", KillOnCancel),
         new("CT-028", "no path search and no spawn on rejection", NoPathSearch),
+        new("CT-046", "the child environment is constructed, not inherited", ConstructedEnvironmentOnly),
+        new("CT-047", "invalid bounds are rejected before any spawn", InvalidBoundsRejected),
     ];
 
     // Generous ceiling for the killed-child cases: red when a neutralized kill leaves
@@ -44,7 +46,68 @@ internal static class BoundedProcessCases
             Timeout = TimeSpan.FromSeconds(60),
             MaximumStdOutBytes = 1024 * 1024,
             MaximumStdErrBytes = 64 * 1024,
+            Environment = ConstructedEnvironment.BaseSet(),
         };
+    }
+
+    private static async Task ConstructedEnvironmentOnly(TestContext context)
+    {
+        // D-056: a canary set in this process must not reach the child, a stated
+        // entry must, and the working directory defaults to the executable's own.
+        const string canaryName = "STAXRIP_CT046_CANARY";
+        Environment.SetEnvironmentVariable(canaryName, "leaked");
+        try
+        {
+            BoundedProcessRequest request = ChildRequest("echo-env") with
+            {
+                Environment = ConstructedEnvironment.BaseSet().SetItem("STAXRIP_CT046_STATED", "present"),
+            };
+            BoundedProcessResult result = await BoundedProcessRunner.RunAsync(request, CancellationToken.None).ConfigureAwait(false);
+            context.Equal(0, result.ExitCode, "echo-env child exit");
+            string[] lines = result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            context.True(lines.Contains("STAXRIP_CT046_STATED=present", StringComparer.Ordinal), "stated entry missing from the child");
+            context.False(lines.Any(static line => line.StartsWith("STAXRIP_CT046_CANARY=", StringComparison.Ordinal)), "parent canary leaked into the child");
+            string expectedDirectory = Path.GetFullPath(Path.GetDirectoryName(request.ExecutablePath)!).TrimEnd(Path.DirectorySeparatorChar);
+            string? reported = lines.FirstOrDefault(static line => line.StartsWith("CWD=", StringComparison.Ordinal));
+            context.True(reported is not null, "child did not report its working directory");
+            context.True(
+                reported is not null &&
+                    string.Equals(Path.GetFullPath(reported[4..]).TrimEnd(Path.DirectorySeparatorChar), expectedDirectory, StringComparison.OrdinalIgnoreCase),
+                "working directory is not the executable's directory");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(canaryName, null);
+        }
+    }
+
+    private static async Task InvalidBoundsRejected(TestContext context)
+    {
+        // D-057: an invalid bound is a pre-spawn rejection with no receipt, never a
+        // post-start throw over a live child.
+        foreach ((BoundedProcessRequest request, string label) in new[]
+        {
+            (ChildRequest("exit", "0") with { Timeout = TimeSpan.Zero }, "zero timeout"),
+            (ChildRequest("exit", "0") with { Timeout = TimeSpan.FromMilliseconds(-5) }, "negative timeout"),
+            (ChildRequest("exit", "0") with { Timeout = TimeSpan.FromDays(400) }, "timeout above the cancellation ceiling"),
+            (ChildRequest("exit", "0") with { MaximumStdOutBytes = 0 }, "zero stdout cap"),
+            (ChildRequest("exit", "0") with { MaximumStdErrBytes = -1 }, "negative stderr cap"),
+        })
+        {
+            BoundedProcessException? rejection = null;
+            try
+            {
+                await BoundedProcessRunner.RunAsync(request, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (BoundedProcessException exception)
+            {
+                rejection = exception;
+            }
+
+            context.True(rejection is not null, $"{label} must be rejected");
+            context.Equal("invalid-bound", rejection?.Message ?? "", $"{label} reason class");
+            context.True(rejection?.ReapedProcessId is null, $"{label} must reject before any spawn");
+        }
     }
 
     private static void AssertProcessGone(TestContext context, BoundedProcessException exception, string message)
@@ -185,6 +248,12 @@ internal static class BoundedChild
             case "echo-args":
                 foreach (string argument in arguments.Skip(1))
                     Console.Out.Write(argument + "\n");
+                return 0;
+
+            case "echo-env":
+                foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables().Cast<System.Collections.DictionaryEntry>().OrderBy(static entry => (string)entry.Key, StringComparer.Ordinal))
+                    Console.Out.Write($"{entry.Key}={entry.Value}\n");
+                Console.Out.Write("CWD=" + Environment.CurrentDirectory + "\n");
                 return 0;
 
             case "emit":

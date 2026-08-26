@@ -351,12 +351,61 @@ internal static class MediaFactsCases
         context.Equal("Opening", response.Chapters[0].Label, "plain chapter label survives");
         context.Equal("Act Two: 24/7 Coverage", response.Chapters[1].Label, "a label with a colon and a slash is not a path and survives");
 
-        // The rule itself, exercised directly at its boundary.
-        foreach (string pathLike in new[] { "C:\\Users\\me\\a.mkv", "/etc/passwd", "\\\\host\\share\\x", "//host/share/x", "D:/media/clip.mp4" })
+        // The rule itself, exercised directly at its boundary: the D-059 ratified
+        // adversarial table. Every row below was signed off before the matcher was
+        // written to it; a change to the law adds a row here first.
+        foreach (string pathLike in new[]
+        {
+            "C:\\Users\\me\\a.mkv",
+            "c:/media/file.mp4",
+            "D:/media/clip.mp4",
+            "Encoded at D:\\renders\\x",
+            "/etc/passwd",
+            "/home/alice/file.mkv",
+            "source=/home/alice/file",
+            "file:/home/alice/file",
+            "path is /mnt/media/movies/x.mkv",
+            "file:///home/user/x",
+            "on /home/alice",
+            "\\\\host\\share\\x",
+            "\\\\server\\share\\file.mkv",
+            "//host/share/x",
+            "//server/share/file.mkv",
+            "see \\\\nas01\\videos",
+            "see /a/b/c prose",
+        })
+        {
             context.True(MediaFactsPrivacy.HasEmbeddedPath(pathLike), $"path shape not recognized: {pathLike}");
+        }
 
-        foreach (string ordinary in new[] { "Act One: The Setup", "24/7 Coverage", "S01E02", "ratio 16:9", "AC-3 5.1", "" })
+        foreach (string ordinary in new[]
+        {
+            "Act One: The Setup",
+            "24/7 Coverage",
+            "S01E02",
+            "ratio 16:9",
+            "AC-3 5.1",
+            "",
+            "https://example.com/watch",
+            "24//7 support",
+            "A/V sync",
+            "16/9",
+            "und/eng",
+            "w/ commentary",
+            "Movie: The Return / Part 2",
+            "/private",
+            "/dev",
+            "AC/DC - Back in Black",
+            "x264 - core 164 r3095",
+            "MPEG4:\\profile",
+            "path%2Fhome%2Fuser",
+            "see /docs/readme",
+            "/r/movies",
+            "posted in /r/movies today",
+        })
+        {
             context.False(MediaFactsPrivacy.HasEmbeddedPath(ordinary), $"ordinary text misread as a path: {ordinary}");
+        }
     }
 
     private static void SubtitleDispositionRangeTripwire(TestContext context)

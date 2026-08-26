@@ -113,6 +113,15 @@ internal static class FakeMediaInfo
     public const string SleepMarker = "#probe-sleep";
     public const string ExitSevenMarker = "#probe-exit-seven";
 
+    // D-058: the readiness probe's answer, in the real tool's banner shape at the
+    // range ceiling, so an activated fake reads as a supported tool.
+    public static int RunVersion()
+    {
+        Console.OutputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        Console.Out.Write("MediaInfo Command line, MediaInfoLib - v26.05\n");
+        return 0;
+    }
+
     public static int Run(string[] arguments)
     {
         Console.OutputEncoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);

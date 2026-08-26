@@ -1074,8 +1074,9 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Invalidation trigger:** Any change to admission, probe, or process-start sequencing.
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
+- **Resolution, 2026-08-26:** D-055 implemented as `MediaFileIdentity`: the admitted file is held across the probe without delete sharing on Windows, and on Linux the kernel is asked through /proc/self/fd where the descriptor points afterward; the directory chain is re-walked on both. Publication is refused with the uniform rejection if the binding broke. CT-049 proves it: on Windows the swap itself is blocked by the handle, and a mutation that adds delete sharing turns the case red because the swapped file would then be published. Not proven by execution: the Linux branch of the binding, which asks the kernel through /proc/self/fd; WSL carries no .NET SDK and a Linux contract run needs one, so that branch is verified by reading and is the first thing to execute on the T540p host, which does carry dotnet.
 - **Owner:** StaxRip Community
-- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
+- **Status:** fixed
 
 ### R-S2-051: The child process inherits the parent environment and working directory
 
@@ -1095,8 +1096,9 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Invalidation trigger:** Any launcher change.
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
+- **Resolution, 2026-08-26:** D-056 implemented: `BoundedProcessRequest` carries an explicit `Environment`, empty by default, and the primitive clears the inherited map before applying it; `ConstructedEnvironment.BaseSet` is the one per-platform base set; `MediaInfoCliOptions.LoaderLibraryPath` is the configured loader path; the working directory defaults to the executable directory. CT-046 proves a parent canary does not cross and a stated entry does; the mutation that stops clearing turns it red.
 - **Owner:** StaxRip Community
-- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
+- **Status:** fixed
 
 ### R-S2-052: A post-start failure can escape without killing the child, and shutdown does not cancel probes
 
@@ -1116,8 +1118,9 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Invalidation trigger:** Launcher or host-lifetime changes.
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
+- **Resolution, 2026-08-26:** D-057 implemented: every bound is validated before the spawn as `invalid-bound`; everything after a successful start runs under a catch-all that kills and reaps before any exception escapes; the handler links `ApplicationStopping` into probe cancellation. CT-047 proves the pre-spawn rejection carries no receipt; ST-012 starts a thirty-second probe, stops the host, and requires shutdown inside its budget with no surviving child.
 - **Owner:** StaxRip Community
-- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
+- **Status:** fixed
 
 ### R-S2-053: Capability availability does not establish that the configuration is usable
 
@@ -1137,8 +1140,9 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Invalidation trigger:** Capability computation or configuration-surface changes.
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
+- **Resolution, 2026-08-26:** D-058 implemented: activation executes the configured tool once with its version flag through the port's new `ProbeVersionAsync`, under the constructed environment, and requires a supported version; unavailable now carries one of inspection-unconfigured, inspection-tool-unresolvable, inspection-tool-unready, or inspection-version-unsupported. A mutation that makes the probe always unready turns ST-011 red because the configured host then reads unavailable.
 - **Owner:** StaxRip Community
-- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
+- **Status:** fixed
 
 ### R-S2-054: The path-like-value privacy detector under- and over-matches, and adapter exception text reaches the wire
 
@@ -1158,8 +1162,9 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Invalidation trigger:** Guard, schema, or exception-surface changes.
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
+- **Resolution, 2026-08-26:** D-059 implemented against the ratified table, which is now CT-044's rows: mid-string rooted paths strip at three segments, at two only under a root family, so a forum or documentation reference survives while a home directory does not; the UNC rule excludes scheme separators so URLs survive; `MediaFactAuthorityReasons.Surface` confines every wire reason to the closed vocabulary, proven by CT-048 with a path-shaped exception message. Mutations dropping the etc family and the scheme exclusion each turn CT-044 red.
 - **Owner:** StaxRip Community
-- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
+- **Status:** fixed
 
 ### R-S2-055: Certification accounting drifted behind the work it certifies
 

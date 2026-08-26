@@ -980,7 +980,7 @@ if ($manifestCaseCount -ne 56) {
 }
 
 $contractCounts = @{}
-$contractPattern = '^PASS port-contract cases=(56) assertions=(691) failures=0 elapsed_ms=[0-9]+\s*$'
+$contractPattern = '^PASS port-contract cases=(61) assertions=(747) failures=0 elapsed_ms=[0-9]+\s*$'
 foreach ($configuration in @('Debug', 'Release')) {
     $step = "contract-$($configuration.ToLowerInvariant())"
     $arguments = @(

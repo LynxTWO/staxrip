@@ -52,12 +52,24 @@ public static class MediaFactsPrivacy
     // path. Name-based banning cannot reach it, because the fields at risk are
     // author-controlled free text, so this judges the value.
     //
-    // The rule recognizes only absolute forms, and deliberately nothing else. A title
-    // may legitimately contain a colon, a slash, or both, so a looser rule would strip
-    // real facts to guard against a hypothetical one; a stricter rule would miss the
-    // shapes that actually leak. The three recognized forms are a drive-letter root, a
-    // doubled leading separator, and a rooted POSIX path with at least one further
-    // segment.
+    // D-059: the law is the ratified adversarial table in the contract corpus, and
+    // this is its implementation. Four forms are recognized. A drive-letter root,
+    // anywhere, after a non-alphanumeric boundary. A UNC root, a doubled separator at
+    // the start or after a non-alphanumeric boundary other than a colon, followed by a
+    // server segment and a further separator; a colon before the doubled separator is
+    // a URL scheme, not a share. And a rooted POSIX path, at the start or mid-string
+    // after a non-alphanumeric boundary, which strips at three or more segments
+    // always, and at two segments only when the first segment is a known filesystem
+    // root family; that carve-out is what lets a documentation or forum reference
+    // survive, whether it is the whole value or embedded in prose, while a home
+    // directory or a system file does not. A path candidate ends at whitespace.
+    // Single-segment absolutes are deliberately unmatched.
+    private static readonly ImmutableHashSet<string> RootFamilies =
+        ImmutableHashSet.Create(
+            StringComparer.OrdinalIgnoreCase,
+            "home", "Users", "mnt", "media", "tmp", "var", "opt", "data", "Volumes",
+            "private", "root", "srv", "etc");
+
     public static bool HasEmbeddedPath(string? value)
     {
         if (string.IsNullOrEmpty(value))
@@ -76,18 +88,43 @@ public static class MediaFactsPrivacy
 
         for (int index = 0; index + 1 < value.Length; index++)
         {
-            if (IsSeparator(value[index]) && IsSeparator(value[index + 1]))
+            if (!IsSeparator(value[index]) || !IsSeparator(value[index + 1]))
+                continue;
+
+            bool atBoundary = index == 0 ||
+                (!char.IsLetterOrDigit(value[index - 1]) && value[index - 1] != ':');
+            if (atBoundary && SegmentsFrom(value, index).Length >= 2)
                 return true;
         }
 
-        if (IsSeparator(value[0]))
+        for (int index = 0; index < value.Length; index++)
         {
-            int nextSeparator = value.IndexOfAny(['/', '\\'], 1);
-            if (nextSeparator > 1 && nextSeparator + 1 < value.Length)
+            if (!IsSeparator(value[index]))
+                continue;
+
+            if (index > 0 && (char.IsLetterOrDigit(value[index - 1]) || IsSeparator(value[index - 1])))
+                continue;
+
+            string[] segments = SegmentsFrom(value, index);
+            if (segments.Length >= 3)
+                return true;
+
+            if (segments.Length == 2 && RootFamilies.Contains(segments[0]))
                 return true;
         }
 
         return false;
+    }
+
+    // The path candidate that begins at a separator: the text up to the first
+    // whitespace, split on separators, empties removed.
+    private static string[] SegmentsFrom(string value, int start)
+    {
+        int end = start;
+        while (end < value.Length && !char.IsWhiteSpace(value[end]))
+            end++;
+
+        return value[start..end].Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
     }
 
     private static bool IsSeparator(char value) => value is '/' or '\\';

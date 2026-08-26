@@ -3962,10 +3962,10 @@ try {
             $stepFields = Assert-JsonObjectShape -Element $stepItems[$index] -ExpectedNames @(
                 'id', 'exit', 'cases', 'assertions') -Id 'summary-contract-step-shape'
             Confirm-Check (
-                (Get-JsonIntegerField -Fields $stepFields -Name 'cases' -Id 'summary-contract-cases') -eq 56) `
+                (Get-JsonIntegerField -Fields $stepFields -Name 'cases' -Id 'summary-contract-cases') -eq 61) `
                 'summary-contract-cases-value'
             Confirm-Check (
-                (Get-JsonIntegerField -Fields $stepFields -Name 'assertions' -Id 'summary-contract-assertions') -eq 691) `
+                (Get-JsonIntegerField -Fields $stepFields -Name 'assertions' -Id 'summary-contract-assertions') -eq 747) `
                 'summary-contract-assertions-value'
         }
         elseif ($expectedStepId -ceq 'port-contract-failure') {

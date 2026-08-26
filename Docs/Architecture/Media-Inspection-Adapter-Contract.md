@@ -10,6 +10,18 @@ committed under `eng/fixtures/media-inspection/`. Configured runs beyond Windows
 recorded in `Docs/Verification/S-PORT-02/linux-configured-run.md` and
 `Docs/Verification/S-PORT-02/t540p-golden-capture.md`.
 
+Ratified-design note, 2026-08-26: D-055 through D-059 are implemented on top of this
+contract. The authority options gain an optional `LoaderLibraryPath`, which is the only
+way a loader path reaches the tool, because the child environment is now constructed
+from a per-platform base set and nothing is inherited (D-056). The port gains
+`ProbeVersionAsync`, which the composition root executes once at activation so an
+available capability is one whose tool has run (D-058); unavailable now carries a
+reason class: inspection-unconfigured, inspection-tool-unresolvable,
+inspection-tool-unready, or inspection-version-unsupported. An admitted file is bound to
+its identity across the probe and refused publication if the binding breaks (D-055);
+probes are cancelled by application shutdown (D-057); and only members of the closed
+reason vocabulary reach the wire (D-059).
+
 ## Layering
 
 - `StaxRip.Contracts` gains the typed payload: `MediaFactsResponse` and its parts. Pure

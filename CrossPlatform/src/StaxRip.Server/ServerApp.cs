@@ -26,6 +26,31 @@ public static class ServerApp
         bool mediaInspectionAvailable = mediaInspection is not null &&
             !mediaInspection.PathPolicy.MediaRoots.IsDefaultOrEmpty &&
             MediaFileProbe.IsRegularFile(mediaInspection.Authority.ExecutablePath);
+        string? mediaInspectionReason = mediaInspection is null
+            ? "inspection-unconfigured"
+            : mediaInspectionAvailable ? null : "inspection-tool-unresolvable";
+
+        // D-058: a capability advertised available is one whose tool has actually
+        // executed. The readiness probe runs the tool once with its version flag under
+        // the constructed environment; a tool that does not run, does not answer
+        // readably, or answers outside the supported range is unavailable with a
+        // reason, here, at startup, rather than available until the first request.
+        if (mediaInspectionAvailable)
+        {
+            var readiness = new MediaInfoCliAuthority(mediaInspection!.Authority);
+            using var readinessTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            string? reportedVersion = readiness.ProbeVersionAsync(readinessTimeout.Token).GetAwaiter().GetResult();
+            if (reportedVersion is null)
+            {
+                mediaInspectionAvailable = false;
+                mediaInspectionReason = "inspection-tool-unready";
+            }
+            else if (!readiness.IsSupportedDocumentVersion(reportedVersion))
+            {
+                mediaInspectionAvailable = false;
+                mediaInspectionReason = "inspection-version-unsupported";
+            }
+        }
 
         var options = new WebApplicationOptions
         {
@@ -70,7 +95,7 @@ public static class ServerApp
         builder.Services.AddRouting();
         IHostFactsProvider factsProvider = hostFactsProvider ?? new RuntimeHostFactsProvider();
         builder.Services.AddSingleton(factsProvider);
-        builder.Services.AddSingleton(new CapabilityService(factsProvider, mediaInspectionAvailable));
+        builder.Services.AddSingleton(new CapabilityService(factsProvider, mediaInspectionAvailable, mediaInspectionReason));
         builder.Services.AddSingleton<ProcessSession>();
         builder.Services.AddSingleton<BoundLoopbackAuthority>();
         builder.Services.AddSingleton(
@@ -280,7 +305,7 @@ public static class ServerApp
                 return;
             }
 
-            await MediaFactsHandler.HandleAsync(context, mediaInspection, mediaAuthority).ConfigureAwait(false);
+            await MediaFactsHandler.HandleAsync(context, mediaInspection, mediaAuthority, app.Lifetime.ApplicationStopping).ConfigureAwait(false);
         });
 
     }

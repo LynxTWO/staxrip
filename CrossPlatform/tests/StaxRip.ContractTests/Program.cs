@@ -19,6 +19,8 @@ internal static class Program
             return BoundedChild.Run(args[1..]);
         if (args.Length >= 1 && args[0] == "--Output=JSON")
             return FakeMediaInfo.Run(args);
+        if (args.Length == 1 && args[0] == "--Version")
+            return FakeMediaInfo.RunVersion();
         if (args.Length == 3 && args[0] == "--serve-configured")
             return await ConfiguredServerHost.RunAsync(args[1], args[2]).ConfigureAwait(false);
 

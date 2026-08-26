@@ -23,7 +23,10 @@ public sealed class CapabilityService
     // server's composition root decides it from explicit configuration and passes
     // the verdict in, so this service never guesses and the published capability
     // always matches what the endpoint will actually do.
-    public CapabilityService(IHostFactsProvider hostFactsProvider, bool mediaInspectionAvailable = false)
+    public CapabilityService(
+        IHostFactsProvider hostFactsProvider,
+        bool mediaInspectionAvailable = false,
+        string? mediaInspectionReason = null)
     {
         ArgumentNullException.ThrowIfNull(hostFactsProvider);
         _hostFactsProvider = hostFactsProvider;
@@ -33,7 +36,7 @@ public sealed class CapabilityService
             AvailableFeature(FeatureIds.WebShell, "Web shell"),
             mediaInspectionAvailable
                 ? new FeatureCapability(FeatureIds.MediaInspection, "Media inspection", CapabilityAvailability.Available, "inspection-configured")
-                : UnavailableFeature(FeatureIds.MediaInspection, "Media inspection"),
+                : new FeatureCapability(FeatureIds.MediaInspection, "Media inspection", CapabilityAvailability.Unavailable, mediaInspectionReason ?? ContractValues.BootstrapUnavailable),
             UnavailableFeature(FeatureIds.Encoding, "Encoding"),
             UnavailableFeature(FeatureIds.Persistence, "Persistence"),
             UnavailableFeature(FeatureIds.RemoteAccess, "Remote access"),

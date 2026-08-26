@@ -17,6 +17,11 @@ public sealed record MediaInfoCliOptions
     public int MaximumDocumentBytes { get; init; } = 16 * 1024 * 1024;
 
     public int MaximumDiagnosticBytes { get; init; } = 64 * 1024;
+
+    // D-056: the loader path a portable Linux build needs is configuration, stated
+    // here, never inherited from the parent. Ignored where the platform has no such
+    // variable.
+    public string? LoaderLibraryPath { get; init; }
 }
 
 // The MediaInfo CLI adapter, the primary implementation of the authority port under
@@ -47,6 +52,61 @@ public sealed class MediaInfoCliAuthority : IMediaFactAuthority
 
     public bool IsSupportedDocumentVersion(string? version) => IsSupportedVersion(version);
 
+    // D-056: the child's whole environment, constructed from the platform base set
+    // plus the configured loader path. Nothing else crosses.
+    public ImmutableDictionary<string, string> BuildEnvironment()
+    {
+        ImmutableDictionary<string, string> environment = ConstructedEnvironment.BaseSet();
+        if (!string.IsNullOrEmpty(options.LoaderLibraryPath) &&
+            !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+        {
+            environment = environment.SetItem("LD_LIBRARY_PATH", options.LoaderLibraryPath);
+        }
+
+        return environment;
+    }
+
+    // D-058: the tool's version flag, run under the same bounds and environment as a
+    // probe. The answer is parsed into the document-version vocabulary so the same
+    // range judges both; anything unreadable is null, and the composition root treats
+    // null as not ready.
+    public async Task<string?> ProbeVersionAsync(CancellationToken cancellationToken)
+    {
+        var request = new BoundedProcessRequest
+        {
+            ExecutablePath = options.ExecutablePath,
+            Arguments = ImmutableArray.Create("--Version"),
+            Timeout = options.ProbeTimeout,
+            MaximumStdOutBytes = options.MaximumDiagnosticBytes,
+            MaximumStdErrBytes = options.MaximumDiagnosticBytes,
+            Environment = BuildEnvironment(),
+        };
+
+        BoundedProcessResult result;
+        try
+        {
+            result = await BoundedProcessRunner.RunAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        catch (BoundedProcessException)
+        {
+            return null;
+        }
+
+        return result.ExitCode == 0 ? ParseVersionOutput(result.StandardOutput) : null;
+    }
+
+    // The CLI prints its library version as "vMAJOR.MINOR" somewhere in its banner;
+    // the first such token is the version. Exposed for the contract corpus.
+    public static string? ParseVersionOutput(string output)
+    {
+        System.Text.RegularExpressions.Match match = System.Text.RegularExpressions.Regex.Match(
+            output,
+            @"\bv?(\d{2}\.\d{2})\b",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+            TimeSpan.FromSeconds(1));
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
     public static bool IsSupportedVersion(string? version)
     {
         if (version is null)
@@ -73,6 +133,7 @@ public sealed class MediaInfoCliAuthority : IMediaFactAuthority
             Timeout = options.ProbeTimeout,
             MaximumStdOutBytes = options.MaximumDocumentBytes,
             MaximumStdErrBytes = options.MaximumDiagnosticBytes,
+            Environment = BuildEnvironment(),
         };
 
         BoundedProcessResult result;

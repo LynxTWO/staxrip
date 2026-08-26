@@ -29,7 +29,8 @@ public static class MediaFactsHandler
     public static async Task HandleAsync(
         HttpContext context,
         MediaInspectionConfiguration configuration,
-        IMediaFactAuthority authority)
+        IMediaFactAuthority authority,
+        CancellationToken applicationStopping = default)
     {
         // The request law already required a declared length within the bound; the
         // handler re-checks and reads exactly that many bytes, so a lying stream
@@ -86,17 +87,49 @@ public static class MediaFactsHandler
             return;
         }
 
+        // D-055: the admitted file is bound to its identity for the rest of the
+        // request. A file that cannot be bound is inadmissible like any other.
+        using MediaFileIdentity? identity = MediaFileIdentity.TryBind(mediaPath);
+        if (identity is null)
+        {
+            await ContractResponses.WriteErrorAsync(
+                context.Response,
+                StatusCodes.Status422UnprocessableEntity,
+                ApiErrorCode.MediaRejected,
+                RejectionMessage,
+                context.RequestAborted).ConfigureAwait(false);
+            return;
+        }
+
         // Past acceptance the ratified error contract takes over: failures carry a
         // typed reason class describing the authority, never tool output or a path.
-        // Cancellation is not caught; a killed probe already reaped its child.
+        // Cancellation is not caught; a killed probe already reaped its child. D-057:
+        // the probe is cancelled by either the request aborting or the application
+        // stopping, so shutdown never waits on a child it cannot see.
+        using var probeCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            context.RequestAborted, applicationStopping);
         MediaFactAuthorityDocument document;
         try
         {
-            document = await authority.ProbeAsync(mediaPath, context.RequestAborted).ConfigureAwait(false);
+            document = await authority.ProbeAsync(mediaPath, probeCancellation.Token).ConfigureAwait(false);
         }
         catch (MediaFactAuthorityException exception)
         {
             await WriteAuthorityFailureAsync(context, exception.Message).ConfigureAwait(false);
+            return;
+        }
+
+        // D-055: facts are published only if the admitted identity held for the whole
+        // probe; otherwise the answer is the uniform rejection, and the facts of a file
+        // the policy never admitted go nowhere.
+        if (!identity.IsStillBound())
+        {
+            await ContractResponses.WriteErrorAsync(
+                context.Response,
+                StatusCodes.Status422UnprocessableEntity,
+                ApiErrorCode.MediaRejected,
+                RejectionMessage,
+                context.RequestAborted).ConfigureAwait(false);
             return;
         }
 
@@ -128,11 +161,13 @@ public static class MediaFactsHandler
             "The request was rejected.",
             context.RequestAborted);
 
+    // D-059: only vocabulary members reach the wire; anything else is the generic
+    // member, so no adapter's free text can become a response reason.
     private static Task WriteAuthorityFailureAsync(HttpContext context, string reasonClass) =>
         ContractResponses.WriteErrorAsync(
             context.Response,
             StatusCodes.Status502BadGateway,
             ApiErrorCode.AuthorityFailure,
-            reasonClass,
+            MediaFactAuthorityReasons.Surface(reasonClass),
             context.RequestAborted);
 }
