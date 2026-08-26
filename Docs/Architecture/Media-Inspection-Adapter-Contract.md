@@ -20,7 +20,10 @@ reason class: inspection-unconfigured, inspection-tool-unresolvable,
 inspection-tool-unready, or inspection-version-unsupported. An admitted file is bound to
 its identity across the probe and refused publication if the binding breaks (D-055);
 probes are cancelled by application shutdown (D-057); and only members of the closed
-reason vocabulary reach the wire (D-059).
+reason vocabulary reach the wire (D-059). The two new boundary crossings, the
+environment read in `ConstructedEnvironment.cs` and the held handle in
+`MediaFileIdentity.cs`, are each a named sanctioned crossing in the static gate with a
+narrowed ban of its own, exactly as the probe and the execution primitive are.
 
 ## Layering
 

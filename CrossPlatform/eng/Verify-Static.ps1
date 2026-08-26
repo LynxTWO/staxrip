@@ -1779,15 +1779,26 @@ $productBanPattern = '\b(?:System\.Diagnostics\.)?Process(?:StartInfo)?\b|\bProc
 # every other product file keeps the full ban. The bounded-execution primitive may use
 # process APIs and the single File.Exists its no-search rule requires; the media file
 # probe may read file and directory-chain metadata through FileInfo and nothing
-# else, and process APIs stay banned inside it. A second execution path, a second filesystem reader, or scope
-# creep inside either named file still stops this gate.
+# else, and process APIs stay banned inside it. D-055 and D-056 add one crossing each,
+# sanctioned the same way: the constructed-environment builder may read the parent's
+# environment variables and nothing else, because the per-platform base set copies a
+# few machine facts from them; the media file identity may hold a read handle through
+# FileStream and read link metadata through FileInfo and nothing else, because the
+# binding is the handle. A second execution path, a second filesystem reader, or scope
+# creep inside any named file still stops this gate.
 $boundedPrimitivePath = Resolve-SafeCrossPlatformLeaf 'BoundedProcess.cs' (Join-Path $crossPlatformRoot 'src\StaxRip.Platform') 'BoundedProcess.cs'
 $boundedPrimitiveBanPattern = '\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\bFile\.(?!Exists\b)\w+|\b(?:Directory|FileInfo|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
 $mediaProbePath = Resolve-SafeCrossPlatformLeaf 'MediaFileProbe.cs' (Join-Path $crossPlatformRoot 'src\StaxRip.Platform') 'MediaFileProbe.cs'
 $mediaProbeBanPattern = '\b(?:System\.Diagnostics\.)?Process(?:StartInfo)?\b|\bProcess\.Start\s*\(|\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\bFile\.\w+|\b(?:Directory|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
+$constructedEnvironmentPath = Resolve-SafeCrossPlatformLeaf 'ConstructedEnvironment.cs' (Join-Path $crossPlatformRoot 'src\StaxRip.Platform') 'ConstructedEnvironment.cs'
+$constructedEnvironmentBanPattern = '\b(?:System\.Diagnostics\.)?Process(?:StartInfo)?\b|\bProcess\.Start\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\b(?:File|Directory|FileInfo|DirectoryInfo|DriveInfo|FileStream|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
+$mediaIdentityPath = Resolve-SafeCrossPlatformLeaf 'MediaFileIdentity.cs' (Join-Path $crossPlatformRoot 'src\StaxRip.Platform') 'MediaFileIdentity.cs'
+$mediaIdentityBanPattern = '\b(?:System\.Diagnostics\.)?Process(?:StartInfo)?\b|\bProcess\.Start\s*\(|\bEnvironment\.GetEnvironmentVariable\s*\(|\bEnvironment\.(?:CommandLine|CurrentDirectory)\b|\bDirectory\.GetCurrentDirectory\s*\(|\bFile\.\w+|\b(?:Directory|DirectoryInfo|DriveInfo|FileSystemWatcher)\s*[\.(]|\b(?:HttpClient|WebClient|WebRequest)\b|\b(?:BinaryFormatter|LosFormatter)\b|\b(?:UseStaticFiles|MapStaticAssets|PhysicalFileProvider)\s*\('
 foreach ($file in $sourceFiles) {
     $banPattern = if ($file.FullName -eq $boundedPrimitivePath) { $boundedPrimitiveBanPattern }
     elseif ($file.FullName -eq $mediaProbePath) { $mediaProbeBanPattern }
+    elseif ($file.FullName -eq $constructedEnvironmentPath) { $constructedEnvironmentBanPattern }
+    elseif ($file.FullName -eq $mediaIdentityPath) { $mediaIdentityBanPattern }
     else { $productBanPattern }
     if ((Read-Text $file.FullName) -cmatch $banPattern) {
         Stop-Gate -Message "Product source crosses the bootstrap process, filesystem, external-network, serialization, or physical-asset boundary: $(Get-CrossPlatformRelativePath $file.FullName)"
@@ -1901,8 +1912,9 @@ if (Test-Path -LiteralPath $testManifestPath -PathType Leaf) {
         'CT-015', 'CT-016', 'CT-017', 'CT-018', 'CT-019', 'CT-020', 'CT-021',
         'CT-022', 'CT-023', 'CT-024', 'CT-025', 'CT-026', 'CT-027', 'CT-028',
         'CT-029', 'CT-030', 'CT-031', 'CT-032', 'CT-033', 'CT-034', 'CT-035', 'CT-036', 'CT-037', 'CT-038', 'CT-039', 'CT-040', 'CT-041', 'CT-042', 'CT-043', 'CT-044', 'CT-045',
+        'CT-046', 'CT-047', 'CT-048', 'CT-049',
         'ST-001', 'ST-002', 'ST-003', 'ST-004', 'ST-005', 'ST-006', 'ST-007',
-        'ST-008', 'ST-009', 'ST-010', 'ST-011'
+        'ST-008', 'ST-009', 'ST-010', 'ST-011', 'ST-012'
     )
     Assert-EqualSet -Label 'reviewed contract test id baseline' -Actual $testCaseIds -Expected $expectedTestCaseIds
 

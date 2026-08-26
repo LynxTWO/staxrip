@@ -995,8 +995,8 @@ foreach ($configuration in @('Debug', 'Release')) {
     $match = [regex]::Match($result.StdOut.TrimEnd([char[]]"`r`n"), $contractPattern)
     $caseCount = [int]$match.Groups[1].Value
     $assertionCount = [int]$match.Groups[2].Value
-    if ($caseCount -ne $manifestCaseCount -or $assertionCount -ne 691) {
-        Stop-Gate -Message "Contract $configuration counts do not match the reviewed 56-case, 691-assertion baseline." -Output $result.StdOut -Step $step
+    if ($caseCount -ne $manifestCaseCount -or $assertionCount -ne 747) {
+        Stop-Gate -Message "Contract $configuration counts do not match the reviewed 61-case, 747-assertion baseline." -Output $result.StdOut -Step $step
     }
     $contractCounts[$configuration] = [pscustomobject]@{ Cases = $caseCount; Assertions = $assertionCount }
     $steps.Add([ordered]@{ id = "port-contract-$($configuration.ToLowerInvariant())"; exit = 0; cases = $caseCount; assertions = $assertionCount })
