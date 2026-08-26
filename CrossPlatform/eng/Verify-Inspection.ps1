@@ -567,6 +567,7 @@ if ($LASTEXITCODE -ne 0) { Stop-Gate -Message 'Unable to resolve repository head
 # held handle is the ownership receipt, not the file.
 $script:CurrentCheck = 'task-root-lease'
 Confirm-Check -Condition (Test-SafeArtifactDirectory -Path $taskLeaseRoot -Create) -Name 'task-lease-parent-safe'
+$script:CurrentCheck = 'task-lease-acquire'
 try {
     $script:TaskLeaseStream = [System.IO.File]::Open(
         $taskLeasePath,
