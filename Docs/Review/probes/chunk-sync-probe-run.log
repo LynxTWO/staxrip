@@ -1,0 +1,65 @@
+Binary under test: StaxRip, Version=2.52.5.0, Culture=neutral, PublicKeyToken=null
+Path: C:/DEV/StaxRip/.anti-dark-code/scratch/portable-validation/release-extracted/StaxRip-v2.52.5-x64/StaxRip.exe
+
+================ EXPERIMENT A: Macro.Expand determinism ================
+  control (no volatile macro)    stable=True
+      call1: BlankClip()
+      call2: BlankClip()
+  %current_time%                 stable=False
+      call1: BlankClip() # 12-26-24
+      call2: BlankClip() # 12-26-25
+  %random:6%                     stable=False
+      call1: BlankClip() # 826068
+      call2: BlankClip() # 195741
+
+================ EXPERIMENT B: concurrent entry into the guarded body ================
+
+  --- control (no volatile macro) ---
+    thread 0: no exception -> guard SHORT-CIRCUITED
+    thread 1: no exception -> guard SHORT-CIRCUITED
+    thread 2: no exception -> guard SHORT-CIRCUITED
+    thread 3: no exception -> guard SHORT-CIRCUITED
+    => 0 of 4 threads entered the guarded body
+    => script file written by the run: False
+
+  --- treatment (%current_time%) ---
+    thread 0: ENTERED BODY (past the write, threw at the Package.VerifyOK check)
+    thread 1: ENTERED BODY (past the write, threw at the Package.VerifyOK check)
+    thread 2: ENTERED BODY (past the write, threw at the Package.VerifyOK check)
+    thread 3: ENTERED BODY (past the write, threw at the Package.VerifyOK check)
+    => 4 of 4 threads entered the guarded body
+    => script file written by the run: True
+
+================ EXPERIMENT C: simultaneous presence inside the body ================
+  This process holds the script file open with FileShare.None for the whole run.
+  A thread can only fail on that file by executing the write statement, which is
+  INSIDE the guarded body. Every thread that fails was therefore inside the body
+  during the one window the lock was held -- i.e. all of them at the same time.
+
+  --- control (no volatile macro), 8 threads ---
+    while the lock was held: 8 of 8 threads had entered Synchronize,
+                             0 of 8 were blocked inside it
+    => 0 threads were simultaneously inside the guarded body
+    after releasing the lock:
+      thread 0: no exception -> guard SHORT-CIRCUITED
+      thread 1: no exception -> guard SHORT-CIRCUITED
+      thread 2: no exception -> guard SHORT-CIRCUITED
+      thread 3: no exception -> guard SHORT-CIRCUITED
+      thread 4: no exception -> guard SHORT-CIRCUITED
+      thread 5: no exception -> guard SHORT-CIRCUITED
+      thread 6: no exception -> guard SHORT-CIRCUITED
+      thread 7: no exception -> guard SHORT-CIRCUITED
+
+  --- treatment (%current_time%), 8 threads ---
+    while the lock was held: 8 of 8 threads had entered Synchronize,
+                             8 of 8 were blocked inside it
+    => 8 threads were simultaneously inside the guarded body
+    after releasing the lock:
+      thread 0: still running (did not finish within 15s)
+      thread 1: still running (did not finish within 15s)
+      thread 2: still running (did not finish within 15s)
+      thread 3: still running (did not finish within 15s)
+      thread 4: still running (did not finish within 15s)
+      thread 5: still running (did not finish within 15s)
+      thread 6: still running (did not finish within 15s)
+      thread 7: still running (did not finish within 15s)
