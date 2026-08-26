@@ -1064,7 +1064,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Why it matters:** Between admission and the child's open, the file can be replaced by a symlink or a different inode, so the authority can read a file admission never approved. The executable has the same exists-then-start window.
 - **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`, verified by reading the sites; no exploit was executed.
 - **Confidence:** verified
-- **Approval needed:** yes; the fix needs a stable handle or identity design across the admission-to-open window, which is a product-behavior decision
+- **Approval needed:** yes. Ratified 2026-08-26 as D-055: identity-bind at admission, recheck after the probe, refuse publication on mismatch, residual documented as the configured-root trust boundary.
 - **Recommended next pass:** 11
 - **Smallest safe next step:** Design first: hold an open handle from admission through probe, or bind a file identity and recheck at open. Pathname rechecking alone does not close the window.
 - **Verification capability ids:** V03, V08, V15
@@ -1075,7 +1075,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** deferred until the maintainer decision its smallest-safe-step names
+- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
 
 ### R-S2-051: The child process inherits the parent environment and working directory
 
@@ -1085,7 +1085,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Why it matters:** The launcher sets no explicit child environment or working directory, so the child inherits secrets, proxy settings, loader overrides, HOME, and XDG state, and its behavior depends on where the parent happened to start. The recorded configured Linux run shows the dependency in practice: probes failed until the parent supplied the loader path variable.
 - **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`; the Linux run record documents the loader-path dependency.
 - **Confidence:** verified
-- **Approval needed:** yes; the environment allowlist contents are a product decision per platform
+- **Approval needed:** yes. Ratified 2026-08-26 as D-056: allowlist-by-construction with a per-platform base set, the loader path as an explicit configuration field, and the executable directory as the working directory.
 - **Recommended next pass:** 11
 - **Smallest safe next step:** Design an explicit environment allowlist and a deterministic working directory, then verify MediaInfo on both platforms under them.
 - **Verification capability ids:** V03, V08, V12
@@ -1096,7 +1096,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** deferred until the maintainer decision its smallest-safe-step names
+- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
 
 ### R-S2-052: A post-start failure can escape without killing the child, and shutdown does not cancel probes
 
@@ -1106,7 +1106,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Why it matters:** The timeout cancellation source is constructed after the process start, so an invalid timeout or any post-start exception can leave a live child with no kill path. Host shutdown has a five-second budget against a thirty-second default probe, with no application-stopping token or active-process registry, so in-flight probes outlive shutdown.
 - **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`, by reading both files. Actual Kestrel request-abort behavior during shutdown and whether any deployed MediaInfo build creates descendants remain unknown.
 - **Confidence:** verified for the code paths; unknown for the host runtime behavior
-- **Approval needed:** yes; process coordination and cancellation
+- **Approval needed:** yes. Ratified 2026-08-26 as D-057: pre-spawn bound validation, catch-all post-start kill-and-reap, application-stopping linked into probe cancellation, and the in-flight-shutdown test, one unit.
 - **Recommended next pass:** 11
 - **Smallest safe next step:** Validate every bound before spawn, install a general post-spawn kill and reap path, link application shutdown to probe cancellation, then add an in-flight shutdown test including descendants.
 - **Verification capability ids:** V03, V10, V15
@@ -1117,7 +1117,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** deferred until the maintainer decision its smallest-safe-step names
+- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
 
 ### R-S2-053: Capability availability does not establish that the configuration is usable
 
@@ -1127,7 +1127,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Why it matters:** Availability requires only nonempty roots and an executable that looks like a regular file, not that roots are readable, the executable runs, or its loader dependencies resolve. The recorded Linux loader failure is a live trigger: capability advertises available while every request returns 502.
 - **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`; the configured Linux run record supplies the trigger.
 - **Confidence:** verified
-- **Approval needed:** yes; whether capability is startup-fixed or dynamically invalidated is a product decision
+- **Approval needed:** yes. Ratified 2026-08-26 as D-058: startup-fixed, proven by executing the tool once with its version flag at activation.
 - **Recommended next pass:** 11
 - **Smallest safe next step:** Decide the capability lifetime semantics, then add a bounded readiness and identity probe behind that decision.
 - **Verification capability ids:** V03, V08
@@ -1138,7 +1138,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** deferred until the maintainer decision its smallest-safe-step names
+- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
 
 ### R-S2-054: The path-like-value privacy detector under- and over-matches, and adapter exception text reaches the wire
 
@@ -1148,7 +1148,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Why it matters:** The detector misses forms such as a path after a key prefix, single-segment absolute paths, file-scheme values, and encoded separators, while rejecting harmless doubled-separator text; and the handler can surface a future adapter's arbitrary exception message as a response reason. Both are privacy-boundary gaps.
 - **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`, with concrete evading and false-positive examples; current tests cover whole drive, UNC, and multisegment POSIX paths only.
 - **Confidence:** verified
-- **Approval needed:** yes; D-045 makes identifier stripping an exit criterion, so the exact privacy law is a ratification, not a patch
+- **Approval needed:** yes. Ratified 2026-08-26 as D-059: the matcher changes only against a maintainer-ratified adversarial table, still to be signed off; the typed reason vocabulary proceeds immediately.
 - **Recommended next pass:** 11
 - **Smallest safe next step:** Ratify the privacy law against an adversarial example table before widening the matcher, and constrain the authority-exception surface to a typed reason vocabulary.
 - **Verification capability ids:** V03, V08, V13, V17
@@ -1159,7 +1159,7 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Rollback note:** not applicable; no change applied
 - **Observability note:** none yet
 - **Owner:** StaxRip Community
-- **Status:** deferred until the maintainer decision its smallest-safe-step names
+- **Status:** deferred for implementation under its ratified decision, D-055 through D-059 per row
 
 ### R-S2-055: Certification accounting drifted behind the work it certifies
 

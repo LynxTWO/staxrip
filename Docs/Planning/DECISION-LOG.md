@@ -1840,3 +1840,125 @@ machine with a different processor and look like a code defect.
 
 Revisit when: a pinned encoder acquires a security defect, which forces a move and is the
 one case where speed of update outranks reproducibility.
+
+## D-055: Admitted media is identity-bound, and a swapped file is refused publication
+
+Date: 2026-08-26. Status: CONFIRMED, ratified by the maintainer 2026-08-26. Owner:
+R-S2-050. Binds the media-facts pipeline.
+
+Context: admission validates a pathname and the authority later opens that pathname,
+and between the two the file can be replaced. The textbook stable-handle repair cannot
+apply, because MediaInfo is an external process that re-opens by path; no handle this
+process holds can be handed to it.
+
+Decision: capture the file's identity at admission, volume and file id on Windows, device
+and inode on Linux, and compare it after the probe returns. On mismatch the result is
+discarded and the requester receives the uniform rejection, so facts from a file the
+policy never admitted are never published. The residual is stated rather than hidden: the
+tool may briefly read a swapped file whose content reaches nobody, and exploiting even
+that requires write access inside a media root the maintainer explicitly configured, on a
+loopback, session-gated server. That residual is the configured-root trust boundary. The
+executable's own exists-then-start window is covered by D-058's startup identity probe
+and the same trust boundary, and is not separately raced.
+
+Because: refusing publication closes the consequence that matters without pretending to
+close a window that an external-tool architecture cannot close.
+
+Revisit when: the authority stops being an external process, or a configured root stops
+being maintainer-controlled.
+
+## D-056: The child process gets a constructed environment, never an inherited one
+
+Date: 2026-08-26. Status: CONFIRMED, ratified by the maintainer 2026-08-26. Owner:
+R-S2-051. Binds the bounded-process launcher.
+
+Context: the sole launcher inherited the parent's whole environment and working
+directory, which admits secrets, proxy settings, loader overrides, and location-dependent
+behavior; the configured Linux run only worked because the parent exported a loader path
+by hand.
+
+Decision: the environment is allowlist-by-construction. The child receives a cleared
+environment plus a per-platform base set, SystemRoot, SystemDrive, TEMP and TMP on
+Windows, LANG=C.UTF-8 on Linux for deterministic tool output, plus an optional loader
+path that is an explicit field of the media-inspection configuration rather than an
+inherited variable. The working directory is the executable's own directory, the portable
+tool convention the legacy application already follows. Nothing else crosses.
+
+Because: what a child needs is a contract, and a contract is written down and versioned,
+not inherited from whatever the parent happened to carry.
+
+Revisit when: a tool demonstrably needs a variable the base set lacks; the variable joins
+the configuration, not the inheritance.
+
+## D-057: No spawn without validated bounds, no exception without a reaped child
+
+Date: 2026-08-26. Status: CONFIRMED, ratified by the maintainer 2026-08-26. Owner:
+R-S2-052. Binds the bounded-process launcher and the server's lifetime.
+
+Context: the timeout cancellation source is constructed after the process starts, so an
+invalid bound or any other post-start exception can escape without killing the child; and
+host shutdown's five-second budget cannot cancel a thirty-second probe it knows nothing
+about.
+
+Decision, four parts, one unit. Every bound is validated before the spawn and rejected as
+a pre-spawn reason class. Everything after a successful start runs under a catch-all that
+kills and reaps the child before any exception escapes, widening the existing
+kill-and-reap from cancellation-only to always. The server links its application-stopping
+signal into every probe's cancellation token, so shutdown cancels in-flight probes and
+the five-second budget holds because the primitive already kills on cancel. And the unit
+ships with an in-flight-shutdown contract test that covers descendants, red first.
+
+Because: the primitive's own documentation promises that a throw carries a reaped
+receipt; this makes the promise unconditional instead of path-dependent.
+
+Revisit when: probes gain descendants that outlive a tree kill, which the test exists to
+catch.
+
+## D-058: Capability availability is a startup fact, proven by running the tool once
+
+Date: 2026-08-26. Status: CONFIRMED, ratified by the maintainer 2026-08-26. Owner:
+R-S2-053. Binds the composition root's activation judgment.
+
+Context: availability required only nonempty roots and an executable that looks like a
+regular file, so a tool with a broken loader dependency advertised available while every
+request failed; the recorded Linux run hit exactly that.
+
+Decision: the activation judgment stays where it is, made once at the composition root so
+the published capability and the endpoint behavior can never disagree, and it becomes
+real: activation executes the configured tool once through the bounded primitive with its
+version flag, under the D-056 environment, and requires a supported version in the
+answer. A loader failure, a wrong binary, or an out-of-range version is unavailable with
+a reason class at startup. A tool that breaks mid-session still fails per-request; that
+is the accepted meaning of a startup fact, stated in the capability's documentation.
+
+Because: a capability claim someone can act on is a claim something was actually
+executed, and the never-disagree invariant is worth more than mid-session freshness.
+
+Revisit when: a session-length deployment makes mid-session tool loss common enough to
+observe, which reopens the dynamic-invalidation question with evidence.
+
+## D-059: The privacy matcher's law is a ratified adversarial table, not an opinion
+
+Date: 2026-08-26. Status: CONFIRMED, ratified by the maintainer 2026-08-26; the table
+itself awaits its own ratification before any matcher change. Owner: R-S2-054. Binds the
+media-facts privacy guard and the authority error surface.
+
+Context: the embedded-path detector misses mid-string rooted paths, key-prefixed and
+scheme-prefixed forms, while stripping innocent doubled-separator text such as URLs; and
+a future adapter's arbitrary exception message can reach the wire as a response reason.
+
+Decision, two parts. The matcher is changed only against a ratified adversarial table of
+must-match and must-not-match rows, drafted first, signed off by the maintainer, and then
+committed as the contract corpus and mutation-proven the way CT-020 was. The law's agreed
+shape: the drive-letter rule stays; rooted POSIX detection extends to mid-string
+positions after a non-alphanumeric boundary with at least two segments; the bare
+doubled-separator rule narrows to a UNC shape so scheme separators stop being collateral;
+single-segment absolutes stay deliberately unmatched. Separately and immediately, the
+authority exception surface becomes a typed reason vocabulary, so no adapter's free text
+reaches the wire.
+
+Because: a privacy law enforced by regex is exactly as strong as the example set it was
+tested against, so the example set is the law and the regex is its implementation.
+
+Revisit when: a real leak or a real false positive lands outside the table; the row joins
+the table first and the matcher follows.
