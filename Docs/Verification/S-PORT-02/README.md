@@ -705,7 +705,8 @@ redone commit-first and every observation above is against committed code.
 rejected any capability payload reporting media inspection available; it now accepts
 and renders both honest states, so a configured server and the shipped shell no
 longer contradict. The version-range judgment moved behind the authority port as
-`IsSupportedDocumentVersion`, so no layer above the port names a concrete adapter,
+`IsSupportedDocumentVersion`, so request handling names no concrete adapter, with
+the composition root as the deliberate exception the adapter contract records,
 and the adapter contract records that backup activation includes a per-authority
 normalization strategy. D-046 is amended rather than half-implemented: the capability
 payload deliberately carries availability and reason only, never configured roots,

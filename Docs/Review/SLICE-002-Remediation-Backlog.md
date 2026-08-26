@@ -1046,12 +1046,13 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Recommended next pass:** none
 - **Smallest safe next step:** Applied. A task-root lease, a share-none handle on `tmp/port-inspection.lock` held from before preflight enumeration through post-cleanup, owns the task root for the run's whole lifetime. Acquisition proves no live run exists, so preflight recovery only ever deletes directories whose creating process is dead, the operating system having released its handle. Contention fails closed before the task root is touched. The failure path disposes the handle it owns; the lock file persists by design because the held handle, not the file, is the receipt.
 - **Verification capability ids:** V03, V10, V15, V19
-- **Reproducer:** Hold `tmp/port-inspection.lock` share-none from another process and start the gate; pre-fix it proceeds, post-fix it fails closed at `task-root-lease`. For stale recovery, place a dead run directory with a valid nonce name in the task root with no holder and start the gate; it must be swept and the gate must pass.
+- **Reproducer:** Hold `tmp/port-inspection.lock` share-none from another process and start the gate; pre-fix it proceeds, post-fix it fails closed at `task-lease-acquire`. For stale recovery, place a dead run directory with a valid nonce name in the task root with no holder and start the gate; it must be swept and the gate must pass.
 - **Verification plan:** Execute both reproducer branches, then a full attested sweep with the gate's new check count.
 - **Failure packet:** none; found by reading before any failing execution
 - **Invalidation trigger:** Changes to the task-root path, the run-directory naming, the preflight recovery, or the lease acquisition order.
 - **Rollback note:** Remove the lease block, the release, and the failure-path disposal; the gate returns to unowned task roots.
-- **Observability note:** The gate gains two counted checks, `task-lease-parent-safe` and `task-lease-acquired`, moving its count from 66 to 68; the auditor pin moves with it in the same commit.
+- **Observability note:** The gate gains two counted checks, `task-lease-parent-safe` and `task-lease-acquired`, moving its published count from 66 to 68; the auditor pin moves with it in the same commit. Contention failures are attributed to `task-lease-acquire`.
+- **Boundary note, 2026-08-26, from the closure verification:** no outer try/finally spans lease acquisition through release. The controlled failure path disposes the handle it owns, and an unexpected exception relies on the supported invocation, `pwsh -File` in its own process, terminating so the operating system closes the handle; the replay line in every failure packet records exactly that invocation. An in-process or dot-sourced lifecycle is therefore not proven and is not a supported way to run this gate. Wrapping the gate body is deliberately not done post-attestation, because the repaired script's byte-stability since the audited head is itself a verified property; a future hardening pass may add the wrapper and re-attest in one unit.
 - **Owner:** StaxRip Community
 - **Status:** fixed
 
