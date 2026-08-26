@@ -679,7 +679,7 @@ releases the lease only on proven exact-receipt ownership, leaving it otherwise.
 auditor enforces the inspection task root at its primary read and both closeouts. Two
 determinism defects found while repairing were fixed the same way: stale-audit
 invalidation and stale-run recovery both enforce uncounted, so the gate's check count
-and its published record value, 97 and 66, do not depend on prior-run state, proven
+and its published record value, 99 and 68 since the R-S2-049 task-root lease added two counted checks, do not depend on prior-run state, proven
 by paired runs across a deliberately crashed predecessor.
 
 **Contention proofs, observed against the committed baseline and restored.**
