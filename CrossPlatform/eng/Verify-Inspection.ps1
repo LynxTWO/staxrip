@@ -15,8 +15,14 @@
 # receipt owns removal; invalidates the audit sidecar and then its JSON before
 # changing audited records; publishes atomically in canonical form; and cleans a
 # receipt-named run directory under its task root with the reparse safeguards, so the
-# auditor's empty-task-root law holds. Lease contention fails closed: a concurrent
-# holder means this gate reports failure and touches nothing.
+# auditor's empty-task-root law holds. Two leases fail closed. The evidence-writer
+# lease covers publication only, so a concurrent holder means no evidence mutation,
+# though staged task work may remain for the next run's recovery. The task-root lease
+# is a share-none handle held from preflight through cleanup: a concurrent inspection
+# run cannot acquire it, so it can neither delete this run's live directory nor stage
+# beside it, and stale recovery only ever executes with the lease held, when every
+# surviving run directory is provably from a crashed run whose handle the operating
+# system has already released.
 [CmdletBinding()]
 param(
     [string]$Configuration = 'Debug'
@@ -33,6 +39,8 @@ $artifactsRoot = [System.IO.Path]::GetFullPath((Join-Path $crossPlatformRoot 'ar
 $evidenceRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'evidence'))
 $failureRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'failures'))
 $taskRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'tmp\port-inspection'))
+$taskLeaseRoot = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'tmp'))
+$taskLeasePath = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot 'tmp\port-inspection.lock'))
 $leasePath = [System.IO.Path]::GetFullPath((Join-Path $evidenceRoot '.evidence-writer.lock'))
 $auditPath = [System.IO.Path]::GetFullPath((Join-Path $evidenceRoot 'evidence-audit.json'))
 $auditSidecarPath = [System.IO.Path]::GetFullPath((Join-Path $evidenceRoot 'evidence-audit.json.sha256'))
@@ -43,6 +51,7 @@ $script:LeaseStream = $null
 $script:LeaseBytes = $null
 $script:LeaseNonce = $null
 $script:AuditInvalidated = $false
+$script:TaskLeaseStream = $null
 
 function Stop-Gate {
     param([Parameter(Mandatory)][string]$Message)
@@ -72,6 +81,14 @@ function Stop-Gate {
         catch {
             # Leave the lock in place; fail closed.
         }
+    }
+
+    # The task-root lease is owned by the held handle alone, so release is a plain
+    # dispose; the lock file stays behind on purpose, because an unheld file never
+    # blocks the next acquisition.
+    if ($null -ne $script:TaskLeaseStream) {
+        try { $script:TaskLeaseStream.Dispose() } catch { }
+        $script:TaskLeaseStream = $null
     }
 
     New-Item -ItemType Directory -Force -Path $failureRoot | Out-Null
@@ -541,9 +558,30 @@ $fixtureRoot = (Resolve-Path -LiteralPath (Join-Path $crossPlatformRoot 'eng\fix
 $baseCommit = (& git -C $repositoryRoot rev-parse 'HEAD') 2>$null
 if ($LASTEXITCODE -ne 0) { Stop-Gate -Message 'Unable to resolve repository head.' }
 
-# Preflight: the task root must contain only receipt-named run directories from
-# crashed prior runs, each removed through the validated path; anything else stops
-# the gate.
+# The task-root lease: one share-none handle owns the task root from here through
+# cleanup. Acquisition proves no live inspection run exists, because every live run
+# holds this handle for its whole lifetime; so everything preflight finds below is
+# from a crashed run, whose handle the operating system released at process death.
+# Contention means a live concurrent run, and this gate fails closed without
+# touching the task root. The lock file itself persists across runs by design; the
+# held handle is the ownership receipt, not the file.
+$script:CurrentCheck = 'task-root-lease'
+Confirm-Check -Condition (Test-SafeArtifactDirectory -Path $taskLeaseRoot -Create) -Name 'task-lease-parent-safe'
+try {
+    $script:TaskLeaseStream = [System.IO.File]::Open(
+        $taskLeasePath,
+        [System.IO.FileMode]::OpenOrCreate,
+        [System.IO.FileAccess]::ReadWrite,
+        [System.IO.FileShare]::None)
+}
+catch {
+    Stop-Gate -Message 'Task-root lease is held; a concurrent inspection run owns the task root.'
+}
+Confirm-Check -Condition ($null -ne $script:TaskLeaseStream) -Name 'task-lease-acquired'
+
+# Preflight, under the task-root lease: the task root must contain only receipt-named
+# run directories from crashed prior runs, each removed through the validated path;
+# anything else stops the gate.
 $script:CurrentCheck = 'task-root-preflight'
 Confirm-Check -Condition (Test-SafeArtifactDirectory -Path $taskRoot -Create) -Name 'task-root-safe'
 foreach ($entry in @(Get-ChildItem -LiteralPath $taskRoot -Force)) {
@@ -757,10 +795,14 @@ if (Test-Path -LiteralPath (Join-Path $failureRoot 'port-inspection.txt')) {
     Remove-Item -LiteralPath (Join-Path $failureRoot 'port-inspection.txt') -Force
 }
 
-# Receipt-bound cleanup, then the task root must be empty for the auditor's law.
+# Receipt-bound cleanup, then the task root must be empty for the auditor's law,
+# and only then does the task-root lease release.
 $script:CurrentCheck = 'cleanup'
 Remove-ValidatedRunDirectory -Path $runRoot
 Confirm-Check -Condition (@(Get-ChildItem -LiteralPath $taskRoot -Force).Count -eq 0) -Name 'task-root-empty-after'
+$script:CurrentCheck = 'task-lease-release'
+$script:TaskLeaseStream.Dispose()
+$script:TaskLeaseStream = $null
 
 $stopwatch.Stop()
 Write-Output "PASS port-inspection checks=$script:CheckCount elapsed_ms=$($stopwatch.ElapsedMilliseconds) evidence=CrossPlatform/artifacts/evidence/inspection.json"

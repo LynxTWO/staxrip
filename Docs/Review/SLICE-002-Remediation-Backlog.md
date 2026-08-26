@@ -1013,6 +1013,175 @@ Ranked findings from the Linux engine bootstrap implementation, static gate, adv
 - **Owner:** StaxRip Community
 - **Status:** fixed
 
+### R-S2-048: The auditor accepted inspection evidence without binding it to the audited commit
+
+- **Bucket:** safe to fix now
+- **Area or slice:** `CrossPlatform/eng/Verify-Evidence.ps1`, the inspection-record validation, audit inputs, and published records
+- **Risk level:** high
+- **Why it matters:** The audit's core claim is that the certified set belongs to one commit. The inspection record's head and test-binary hash were checked for grammar only, and the record was absent from the audit inputs and the published records section, so a stale or fabricated record with well-formed values could be stamped into a certified set for a commit it never ran against.
+- **Evidence found:** Found by the independent certification reviewer at head `a2240b52` and confirmed by reading: `inspection-head-grammar` matched shape only with no comparison against the audited head, `inspection-binary-hash-grammar` likewise, and `inspection.json` appeared nowhere in the audit-input list or the records map while every other producer record appeared in both. The reviewer traced a concrete trigger, replacing head and binary hash with grammar-valid values while keeping schema and counts intact, and two adversarial reviewers could not refute that the auditor accepts it. The reliances array was shape-checked but content-unvalidated.
+- **Confidence:** verified
+- **Approval needed:** no; the change adds auditor checks and audit inputs, and removes nothing
+- **Recommended next pass:** none
+- **Smallest safe next step:** Applied. The head now binds exactly to the audited commit, the test-binary hash binds to an independent rehash of the configuration-specific binary the auditor computes itself, the record and the binary join the audit inputs so both closeout rehashes cover them, the records map names the inspection record, and both reliances are pinned as exact text so a drifted claim fails rather than certifying.
+- **Verification capability ids:** V03, V09, V10, V17, V19
+- **Reproducer:** Rewrite the head in `inspection.json` to any other 40-hex value after the producer runs and before the auditor; the pre-fix auditor certifies it.
+- **Verification plan:** Run that reproducer against the repaired auditor and require a failure at `inspection-head-current`; then a full attested sweep must pass with the new checks included.
+- **Failure packet:** none; found by reading before any failing execution
+- **Invalidation trigger:** Changes to the inspection record schema, the gate's check count, the reliances text, the test-binary path convention, or the audit-input assembly.
+- **Rollback note:** Remove the added checks and inputs; the auditor returns to grammar-only acceptance.
+- **Observability note:** The audit record's records map now names the inspection evidence, which it previously omitted.
+- **Owner:** StaxRip Community
+- **Status:** fixed
+
+### R-S2-049: One inspection run could delete another live run's task directory
+
+- **Bucket:** approval-gated
+- **Area or slice:** `CrossPlatform/eng/Verify-Inspection.ps1`, preflight stale recovery, run staging, cleanup, and the gate's lease ordering
+- **Risk level:** high
+- **Why it matters:** Preflight treated every directory matching the run-name shape as a crashed leftover and deleted it, but a live concurrent run's directory matches the same shape, so two concurrent gate runs could destroy each other's staged media worlds mid-flight. The evidence-writer lease could not prevent this because it was acquired only at publication, after all task work; and a publication-time lease failure stopped the gate after staging, leaving its run directory behind for the auditor's empty-task-root law to trip over. The header's claim that a concurrent holder means the gate touches nothing was therefore false.
+- **Evidence found:** Found by the independent certification reviewer at head `a2240b52` and confirmed by reading: cleanup validated parentage and name shape but no ownership, the run directory carried a nonce and no receipt or held lock, and the lease entry sat after task execution.
+- **Confidence:** verified
+- **Approval needed:** yes; concurrency and deletion behavior. Granted as the maintainer's written overnight delegation of 2026-08-26 covering autonomous work on this port, recorded here as the human decision of record.
+- **Recommended next pass:** none
+- **Smallest safe next step:** Applied. A task-root lease, a share-none handle on `tmp/port-inspection.lock` held from before preflight enumeration through post-cleanup, owns the task root for the run's whole lifetime. Acquisition proves no live run exists, so preflight recovery only ever deletes directories whose creating process is dead, the operating system having released its handle. Contention fails closed before the task root is touched. The failure path disposes the handle it owns; the lock file persists by design because the held handle, not the file, is the receipt.
+- **Verification capability ids:** V03, V10, V15, V19
+- **Reproducer:** Hold `tmp/port-inspection.lock` share-none from another process and start the gate; pre-fix it proceeds, post-fix it fails closed at `task-root-lease`. For stale recovery, place a dead run directory with a valid nonce name in the task root with no holder and start the gate; it must be swept and the gate must pass.
+- **Verification plan:** Execute both reproducer branches, then a full attested sweep with the gate's new check count.
+- **Failure packet:** none; found by reading before any failing execution
+- **Invalidation trigger:** Changes to the task-root path, the run-directory naming, the preflight recovery, or the lease acquisition order.
+- **Rollback note:** Remove the lease block, the release, and the failure-path disposal; the gate returns to unowned task roots.
+- **Observability note:** The gate gains two counted checks, `task-lease-parent-safe` and `task-lease-acquired`, moving its count from 66 to 68; the auditor pin moves with it in the same commit.
+- **Owner:** StaxRip Community
+- **Status:** fixed
+
+### R-S2-050: Admission checks a pathname and the authority later opens the same pathname
+
+- **Bucket:** approval-gated
+- **Area or slice:** `CrossPlatform/src/StaxRip.Server/MediaFactsHandler.cs`, `CrossPlatform/src/StaxRip.Platform/MediaFileProbe.cs`, `CrossPlatform/src/StaxRip.Platform/MediaInfoCliAuthority.cs`, `CrossPlatform/src/StaxRip.Platform/BoundedProcess.cs`
+- **Risk level:** high
+- **Why it matters:** Between admission and the child's open, the file can be replaced by a symlink or a different inode, so the authority can read a file admission never approved. The executable has the same exists-then-start window.
+- **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`, verified by reading the sites; no exploit was executed.
+- **Confidence:** verified
+- **Approval needed:** yes; the fix needs a stable handle or identity design across the admission-to-open window, which is a product-behavior decision
+- **Recommended next pass:** 11
+- **Smallest safe next step:** Design first: hold an open handle from admission through probe, or bind a file identity and recheck at open. Pathname rechecking alone does not close the window.
+- **Verification capability ids:** V03, V08, V15
+- **Reproducer:** Replace an admitted media file with a symlink to an unapproved target between admission and probe; requires a timing harness.
+- **Verification plan:** To be designed with the fix; must include the executable window.
+- **Failure packet:** none
+- **Invalidation trigger:** Any change to admission, probe, or process-start sequencing.
+- **Rollback note:** not applicable; no change applied
+- **Observability note:** none yet
+- **Owner:** StaxRip Community
+- **Status:** open
+
+### R-S2-051: The child process inherits the parent environment and working directory
+
+- **Bucket:** approval-gated
+- **Area or slice:** `CrossPlatform/src/StaxRip.Platform/BoundedProcess.cs`, the sole launcher
+- **Risk level:** high
+- **Why it matters:** The launcher sets no explicit child environment or working directory, so the child inherits secrets, proxy settings, loader overrides, HOME, and XDG state, and its behavior depends on where the parent happened to start. The recorded configured Linux run shows the dependency in practice: probes failed until the parent supplied the loader path variable.
+- **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`; the Linux run record documents the loader-path dependency.
+- **Confidence:** verified
+- **Approval needed:** yes; the environment allowlist contents are a product decision per platform
+- **Recommended next pass:** 11
+- **Smallest safe next step:** Design an explicit environment allowlist and a deterministic working directory, then verify MediaInfo on both platforms under them.
+- **Verification capability ids:** V03, V08, V12
+- **Reproducer:** Launch the host with a hostile loader-preload or proxy variable and observe the child inherit it.
+- **Verification plan:** To be designed with the fix; both platforms.
+- **Failure packet:** none
+- **Invalidation trigger:** Any launcher change.
+- **Rollback note:** not applicable; no change applied
+- **Observability note:** none yet
+- **Owner:** StaxRip Community
+- **Status:** open
+
+### R-S2-052: A post-start failure can escape without killing the child, and shutdown does not cancel probes
+
+- **Bucket:** approval-gated
+- **Area or slice:** `CrossPlatform/src/StaxRip.Platform/BoundedProcess.cs`, `CrossPlatform/src/StaxRip.Server/ServerApp.cs`
+- **Risk level:** high
+- **Why it matters:** The timeout cancellation source is constructed after the process start, so an invalid timeout or any post-start exception can leave a live child with no kill path. Host shutdown has a five-second budget against a thirty-second default probe, with no application-stopping token or active-process registry, so in-flight probes outlive shutdown.
+- **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`, by reading both files. Actual Kestrel request-abort behavior during shutdown and whether any deployed MediaInfo build creates descendants remain unknown.
+- **Confidence:** verified for the code paths; unknown for the host runtime behavior
+- **Approval needed:** yes; process coordination and cancellation
+- **Recommended next pass:** 11
+- **Smallest safe next step:** Validate every bound before spawn, install a general post-spawn kill and reap path, link application shutdown to probe cancellation, then add an in-flight shutdown test including descendants.
+- **Verification capability ids:** V03, V10, V15
+- **Reproducer:** Configure an invalid probe timeout and observe the constructor throw after start pre-fix.
+- **Verification plan:** To be designed with the fix.
+- **Failure packet:** none
+- **Invalidation trigger:** Launcher or host-lifetime changes.
+- **Rollback note:** not applicable; no change applied
+- **Observability note:** none yet
+- **Owner:** StaxRip Community
+- **Status:** open
+
+### R-S2-053: Capability availability does not establish that the configuration is usable
+
+- **Bucket:** approval-gated
+- **Area or slice:** `CrossPlatform/src/StaxRip.Server/ServerApp.cs`, capability computation
+- **Risk level:** medium
+- **Why it matters:** Availability requires only nonempty roots and an executable that looks like a regular file, not that roots are readable, the executable runs, or its loader dependencies resolve. The recorded Linux loader failure is a live trigger: capability advertises available while every request returns 502.
+- **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`; the configured Linux run record supplies the trigger.
+- **Confidence:** verified
+- **Approval needed:** yes; whether capability is startup-fixed or dynamically invalidated is a product decision
+- **Recommended next pass:** 11
+- **Smallest safe next step:** Decide the capability lifetime semantics, then add a bounded readiness and identity probe behind that decision.
+- **Verification capability ids:** V03, V08
+- **Reproducer:** Configure a real executable with a missing loader dependency; capability reads available and requests fail.
+- **Verification plan:** To be designed with the decision.
+- **Failure packet:** none
+- **Invalidation trigger:** Capability computation or configuration-surface changes.
+- **Rollback note:** not applicable; no change applied
+- **Observability note:** none yet
+- **Owner:** StaxRip Community
+- **Status:** open
+
+### R-S2-054: The path-like-value privacy detector under- and over-matches, and adapter exception text reaches the wire
+
+- **Bucket:** approval-gated
+- **Area or slice:** `CrossPlatform/src/StaxRip.Core/MediaFactsPrivacy.cs`, `CrossPlatform/tests/StaxRip.CrossPlatform.Tests/MediaFactsCases.cs`, the handler's authority-failure reason
+- **Risk level:** medium
+- **Why it matters:** The detector misses forms such as a path after a key prefix, single-segment absolute paths, file-scheme values, and encoded separators, while rejecting harmless doubled-separator text; and the handler can surface a future adapter's arbitrary exception message as a response reason. Both are privacy-boundary gaps.
+- **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`, with concrete evading and false-positive examples; current tests cover whole drive, UNC, and multisegment POSIX paths only.
+- **Confidence:** verified
+- **Approval needed:** yes; D-045 makes identifier stripping an exit criterion, so the exact privacy law is a ratification, not a patch
+- **Recommended next pass:** 11
+- **Smallest safe next step:** Ratify the privacy law against an adversarial example table before widening the matcher, and constrain the authority-exception surface to a typed reason vocabulary.
+- **Verification capability ids:** V03, V08, V13, V17
+- **Reproducer:** Pass a golden containing a key-prefixed home-directory path through the guard; it survives pre-fix.
+- **Verification plan:** The ratified table becomes the contract corpus; mutation-prove the widened matcher the way CT-020 was proven.
+- **Failure packet:** none
+- **Invalidation trigger:** Guard, schema, or exception-surface changes.
+- **Rollback note:** not applicable; no change applied
+- **Observability note:** none yet
+- **Owner:** StaxRip Community
+- **Status:** open
+
+### R-S2-055: Certification accounting drifted behind the work it certifies
+
+- **Bucket:** safe to fix now
+- **Area or slice:** `Docs/Architecture/Media-Inspection-Adapter-Contract.md`, the audit record's independent-host field
+- **Risk level:** low
+- **Why it matters:** The adapter contract still opened with "No code exists yet" and closed the transport note with "the configured pipeline follows" while the implementation, the gate, a configured WSL run, and the T540p bare-metal capture all exist; and its swappability note claimed no layer above the port names a concrete adapter while the composition root does, which the certification reviewer refuted. Stale certification prose misleads exactly the audience certification exists for.
+- **Evidence found:** Independent certification reviewer, Pass 07 at `a2240b52`; each stale statement confirmed against the tree.
+- **Confidence:** verified
+- **Approval needed:** no
+- **Recommended next pass:** none
+- **Smallest safe next step:** Applied for the contract: version 0.3 records the implementation, the configured-run records, and the qualified swappability claim naming the composition root as the deliberate exception. Deliberately not applied for the audit record's independent-host label: that field describes the SLICE-002 independent-host attestation, which R-S2-039 and R-S2-040 closed as an accepted structural limitation, and the T540p golden capture is S-PORT-02 fixture evidence on a different claim. Renaming or re-scoping that field is a certification-semantics change for the maintainer, not an accounting fix.
+- **Verification capability ids:** V10, V16
+- **Reproducer:** not applicable; documentation state
+- **Verification plan:** The attested sweep's privacy and citation checks over the changed documents.
+- **Failure packet:** none
+- **Invalidation trigger:** Further implementation milestones landing without a contract-version bump.
+- **Rollback note:** Revert the contract edit.
+- **Observability note:** none
+- **Owner:** StaxRip Community
+- **Status:** fixed
+
+
 ## Holes and external boundaries
 
 - **Independent Ubuntu host:** P-007 is resolved; the peer is reachable and ran the artifact, though only while a host mitigation was temporarily relaxed and then restored. The independent-host claim is blocked instead by R-S2-039, because that host cannot give an unprivileged user unit a private network namespace. WSL evidence still cannot be promoted to independent-host evidence.

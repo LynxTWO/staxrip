@@ -1,9 +1,14 @@
 # Media Inspection Adapter Contract
 
-Version: 0.2. Date: 2026-08-19. Base: `0ce3594d`. Implements D-045; consumes the
-agreed-facts list; D-046 was ratified on 2026-08-19. No code exists yet; this contract
-is what the code must satisfy, and the golden fixtures it tests against are captured
-and committed under `eng/fixtures/media-inspection/`.
+Version: 0.3. Date: 2026-08-26. Base: `0ce3594d`. Implements D-045; consumes the
+agreed-facts list; D-046 was ratified on 2026-08-19 and amended on 2026-08-21. The
+implementation now exists: the adapter and normalization layers in `StaxRip.Core` and
+`StaxRip.Platform`, the server wiring in `StaxRip.Server`, the contract corpus in
+`StaxRip.ContractTests`, and the `port-inspection` gate. This contract remains what
+the code must satisfy, and the golden fixtures it tests against are captured and
+committed under `eng/fixtures/media-inspection/`. Configured runs beyond Windows are
+recorded in `Docs/Verification/S-PORT-02/linux-configured-run.md` and
+`Docs/Verification/S-PORT-02/t540p-golden-capture.md`.
 
 ## Layering
 
@@ -85,12 +90,19 @@ on the one POST route the request law admits, never in a query string or URL seg
 so user paths stay out of URLs, logs, and browser history. The bootstrap's
 queryless-and-bodyless request law was amended for exactly that route: declared length
 within the transport bound, exact JSON content type, never chunked. The route exists
-and answers `capability-unavailable` behind the session gate while unconfigured; the
-configured pipeline follows.
+and answers `capability-unavailable` behind the session gate while unconfigured. The
+configured pipeline exists and is exercised at the wire by the `port-inspection` gate;
+the shipped production entrypoint still supplies no inspection configuration, so a
+production host answers unavailable by design until a configuration surface is
+decided.
 
-Swappability note, 2026-08-21, from the certification review: the swappable boundary
-is the port plus the version vocabulary, which now travels through the port's
-`IsSupportedDocumentVersion` so no layer above it names a concrete adapter. The
+Swappability note, 2026-08-21, from the certification review; qualified 2026-08-26:
+the swappable boundary is the port plus the version vocabulary, which travels through
+the port's `IsSupportedDocumentVersion` so request handling names no concrete adapter.
+The composition root is the deliberate exception: `ServerApp` constructs
+`MediaInfoCliAuthority` from `MediaInfoCliOptions`, which is ordinary composition-root
+coupling and means an ffprobe activation changes the composition root and its
+configuration surface in addition to adding the second adapter. The
 normalization layer itself parses the primary authority's JSON shape by design;
 activating the ffprobe backup therefore adds a per-authority normalization strategy
 alongside the second adapter, and that work is part of the recorded activation cost,

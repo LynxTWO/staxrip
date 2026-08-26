@@ -4164,17 +4164,24 @@ try {
     $inspectionFields = Assert-JsonObjectShape -Element $inspection.Root -ExpectedNames @(
         'schema', 'head', 'configuration', 'test_binary_sha256', 'checks', 'corpus',
         'reliances') -Id 'inspection-shape'
+    $inspectionHead = Get-JsonStringField -Fields $inspectionFields -Name 'head' -Id 'inspection-head'
+    Confirm-Check ($inspectionHead -cmatch '^[0-9a-f]{40}$') 'inspection-head-grammar'
+    # Freshness binding: grammar alone accepts any well-formed hash, so a stale or
+    # fabricated record could be stamped into the certified set. The head must be the
+    # audited commit, and the binary hash must match an independent rehash of the
+    # configuration-specific test binary this auditor computes itself.
+    Confirm-Check ($inspectionHead -ceq $currentHead) 'inspection-head-current'
+    $inspectionConfiguration = Get-JsonStringField -Fields $inspectionFields -Name 'configuration' -Id 'inspection-configuration'
+    Confirm-Check ($inspectionConfiguration -cin @('Debug', 'Release')) 'inspection-configuration-value'
+    $inspectionBinaryHash = Get-JsonStringField -Fields $inspectionFields -Name 'test_binary_sha256' -Id 'inspection-binary-hash'
+    Confirm-Check (Test-Sha256Text $inspectionBinaryHash) 'inspection-binary-hash-grammar'
+    $inspectionBinaryPath = [System.IO.Path]::GetFullPath((Join-Path $artifactsRoot (
+                'bin\StaxRip.ContractTests\' + $inspectionConfiguration.ToLowerInvariant() + '\StaxRip.ContractTests.exe')))
     Confirm-Check (
-        (Get-JsonStringField -Fields $inspectionFields -Name 'head' -Id 'inspection-head') -cmatch '^[0-9a-f]{40}$') `
-        'inspection-head-grammar'
+        (Get-SafeSha256 -Path $inspectionBinaryPath -AllowedRoot $artifactsRoot) -ceq $inspectionBinaryHash) `
+        'inspection-binary-hash-current'
     Confirm-Check (
-        (Get-JsonStringField -Fields $inspectionFields -Name 'configuration' -Id 'inspection-configuration') -cin @('Debug', 'Release')) `
-        'inspection-configuration-value'
-    Confirm-Check (
-        Test-Sha256Text (Get-JsonStringField -Fields $inspectionFields -Name 'test_binary_sha256' -Id 'inspection-binary-hash')) `
-        'inspection-binary-hash-grammar'
-    Confirm-Check (
-        (Get-JsonIntegerField -Fields $inspectionFields -Name 'checks' -Id 'inspection-checks') -eq 66) `
+        (Get-JsonIntegerField -Fields $inspectionFields -Name 'checks' -Id 'inspection-checks') -eq 68) `
         'inspection-checks-value'
     $inspectionCorpus = Assert-JsonObjectShape -Element $inspectionFields['corpus'] -ExpectedNames @(
         'hostile_paths', 'malformed_documents', 'cancellation_probes') -Id 'inspection-corpus-shape'
@@ -4187,6 +4194,22 @@ try {
     Confirm-Check (
         (Get-JsonIntegerField -Fields $inspectionCorpus -Name 'cancellation_probes' -Id 'inspection-cancellation') -eq 1) `
         'inspection-cancellation-value'
+    # The reliances are claims the gate makes about proofs it does not re-derive.
+    # They are validated as exact pinned text so a tampered or drifted claim fails
+    # the audit rather than certifying silently; a deliberate change to either claim
+    # changes this pin in the same commit.
+    $inspectionReliances = @($inspectionFields['reliances'].EnumerateArray())
+    Confirm-Check ($inspectionReliances.Count -eq 2) 'inspection-reliances-count'
+    $expectedInspectionReliances = @(
+        'CT-038 proves rejected paths never reach the authority, in process with an injected authority',
+        'CT-020 is the load-bearing privacy proof at the guard; the wire greps here restate it, and the typed payload schema excludes banned fields structurally, shown by a strip-neutralizing mutation that CT-020 caught while the wire greps could not'
+    )
+    for ($relianceIndex = 0; $relianceIndex -lt 2; $relianceIndex++) {
+        Confirm-Check (
+            $inspectionReliances[$relianceIndex].ValueKind -eq [System.Text.Json.JsonValueKind]::String -and
+            $inspectionReliances[$relianceIndex].GetString() -ceq $expectedInspectionReliances[$relianceIndex]) `
+            "inspection-reliance-$relianceIndex"
+    }
 
     $linux = Read-JsonRecord -Name 'linux-runtime.json' -ExpectedSchema 'staxrip-linux-runtime-v1'
     $linuxFields = Assert-JsonObjectShape -Element $linux.Root -ExpectedNames @(
@@ -4619,6 +4642,7 @@ try {
             [pscustomobject]@{ Path = $http.Path; Root = $evidenceRoot; Sha256 = $http.Sha256 },
             [pscustomobject]@{ Path = $browser.Path; Root = $evidenceRoot; Sha256 = $browser.Sha256 },
             [pscustomobject]@{ Path = $linux.Path; Root = $evidenceRoot; Sha256 = $linux.Sha256 },
+            [pscustomobject]@{ Path = $inspection.Path; Root = $evidenceRoot; Sha256 = $inspection.Sha256 },
             [pscustomobject]@{ Path = $filesystemPaths['applicationBefore']; Root = $evidenceRoot; Sha256 = $appBefore.Sha256 },
             [pscustomobject]@{ Path = $filesystemPaths['applicationAfter']; Root = $evidenceRoot; Sha256 = $appAfter.Sha256 },
             [pscustomobject]@{ Path = $filesystemPaths['stateBefore']; Root = $evidenceRoot; Sha256 = $stateBefore.Sha256 },
@@ -4647,6 +4671,11 @@ try {
             Path = $windowsApphostPath
             Root = $artifactsRoot
             Sha256 = $windowsApphostHash
+        })
+    $auditInputs.Add([pscustomobject]@{
+            Path = $inspectionBinaryPath
+            Root = $artifactsRoot
+            Sha256 = $inspectionBinaryHash
         })
     foreach ($managedSetInput in $managedSetInputs) {
         $auditInputs.Add([pscustomobject]@{
@@ -4739,6 +4768,7 @@ try {
             build = 'CrossPlatform/artifacts/evidence/verify-summary.json'
             http = 'CrossPlatform/artifacts/evidence/http-windows.json'
             browser = 'CrossPlatform/artifacts/evidence/browser.json'
+            inspection = 'CrossPlatform/artifacts/evidence/inspection.json'
             linux = 'CrossPlatform/artifacts/evidence/linux-runtime.json'
             artifact = 'CrossPlatform/artifacts/evidence/artifact-linux-x64.tsv'
         }
