@@ -675,7 +675,7 @@ Namespace VideoEncoderCommandLine
         ''' <summary>The value string GetArgs emits for a dropdown index, without the switch.</summary>
         Function GetEmittedValue(index As Integer) As String
             If Values IsNot Nothing Then Return Values(index)
-            If IntegerValue Then Return index.ToString
+            If IntegerValue Then Return index.ToInvariantString
             Return Options(index).ToLowerInvariant.Replace(" ", "")
         End Function
 
@@ -892,32 +892,6 @@ Namespace VideoEncoderCommandLine
 
         Public Overrides Function GetControl() As Control
             Return TextEdit
-        End Function
-    End Class
-
-    Public Class OptionHelpJson
-        Shared Function Quote(value As String) As String
-            If value Is Nothing Then Return "null"
-            Dim sb As New StringBuilder("""")
-
-            For Each c In value
-                Select Case c
-                    Case """"c : sb.Append("\""")
-                    Case "\"c : sb.Append("\\")
-                    Case Microsoft.VisualBasic.ControlChars.Lf : sb.Append("\n")
-                    Case Microsoft.VisualBasic.ControlChars.Cr : sb.Append("\r")
-                    Case Microsoft.VisualBasic.ControlChars.Tab : sb.Append("\t")
-                    Case Else
-                        If Microsoft.VisualBasic.Strings.AscW(c) < 32 Then sb.Append("\u" + Microsoft.VisualBasic.Strings.AscW(c).ToString("x4")) Else sb.Append(c)
-                End Select
-            Next
-
-            Return sb.Append("""").ToString
-        End Function
-
-        Shared Function Array(values As IEnumerable(Of String)) As String
-            If values Is Nothing Then Return "[]"
-            Return "[" + String.Join(",", values.Select(Function(v) Quote(v))) + "]"
         End Function
     End Class
 End Namespace

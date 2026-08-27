@@ -358,6 +358,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="General\Help.vb" />
+    <Compile Include="General\OptionHelp.vb" />
     <Compile Include="General\MediaInfo.vb">
     </Compile>
     <Compile Include="General\General.vb" />
