@@ -265,8 +265,8 @@ All changes are in `Source/Forms/CommandLineForm.vb` and its designer file.
 | Right-click details | same branches | When a stanza exists: `HelpAction = Sub() ShowOptionHelp(item)`. Without a stanza: unchanged |
 | F1 | `CommandLineForm_HelpRequested`, line 337 | If `ActiveControl` belongs to an `Item` with a stanza, open that item's details; otherwise the existing dialog help. The dialog help stays in the menu as today |
 | Accessibility | `InitUI` | Editors and menu buttons get `AccessibleName` = caption and `AccessibleDescription` = `Summary` |
-| Dropdown value notes | option branch, line 275 | `Dim menuItem = menuBlock.Button.Add(text, x2)`; when the stanza has a note for `oParam.GetEmittedValue(x2)`, `menuItem.ToolTipText = note`, set directly so the 80-character rule in `Menu.vb` does not apply |
-| Description strip | designer plus `InitUI` | `lblDescription As LabelEx` in `tlpMain` at a new row 1 spanning all four columns; `tlpRTB` moves to row 2 and the button row to row 3; `AutoSize = False`, height `FontHeight * 3` plus padding, `AutoEllipsis = True`, `UseMnemonic = False`, anchored left and right. `MouseEnter` and `Enter` on every target call `SetDescription(item)`, which shows `<caption>: <Summary>` and, on the next line, `When to change: <text>`; text that does not fit is cut with an ellipsis and remains available in the details window. The strip keeps the last text on `MouseLeave`. Initial text: `Point at an option, or move focus to it, to see what it does. Press F1 for details.` |
+| Dropdown value notes | option branch, line 275 | `Dim menuItem = menuBlock.Button.Add(text, x2)`; when the stanza has a note for `oParam.GetEmittedValue(x2)`, `menuItem.ToolTipText = note`, set directly so the 80-character rule in `Menu.vb` does not apply, and only when `MenuItemEx.UseTooltips` is on, honoring the user's menu-tooltip setting |
+| Description strip | designer plus `InitUI` | `lblDescription As LabelEx` in `tlpMain` at a new row 1 spanning all four columns; `tlpRTB` moves to row 2 and the button row to row 3; `AutoSize = False`, height `FontHeight * 3` plus padding, `AutoEllipsis = True`, `UseMnemonic = False`, anchored left and right. `MouseEnter` and `Enter` on every target call `SetDescription(item)`, which shows `<caption>: <Summary>` and, on the next line, `When to change: <text>`; text that does not fit is cut with an ellipsis and remains available in the details window. The strip keeps the last text on `MouseLeave`. Initial text: `Point at an option, or move focus to it, to see what it does. Press F1 for details.` The strip is hidden when no option in the dialog has a reviewed stanza, so dialogs of encoders without help are unchanged |
 | Details window | new `ShowOptionHelp(item)` | Generated first, from the parameter: `Current value` (option text for dropdowns, number for numeric fields, On or Off for checkboxes; omitted for text fields so paths never reach the temp file), `StaxRip default`, `Encoder default` from the stanza when present, `Valid range` from `NumParam.Config`, and `Switches` sorted ordinally. Then the authored sections: what it does, `Used when`, when to change it, example, a table of every dropdown value with the note where one exists, related options as `staxrip://option/<id>` links (non-reviewed targets omitted), references, and the final link `Show the encoder's own help for <switch>` as `staxrip://console-help`. Rendered through the trust boundary in 5.4 |
 | Search | `cbGoTo_TextChanged`, line 413 | Also matches the stable ID, every alias, label, summary, `Used when`, `When to change`, example, value notes, and the labels of related entries, case-insensitive |
 
@@ -274,7 +274,7 @@ All changes are in `Source/Forms/CommandLineForm.vb` and its designer file.
 
 - Authored text never reaches `WriteRaw`. The details window renders the parsed nodes from 5.1: text nodes are HTML-encoded, code spans become `<code>`, links become `<a>` only for `http` and `https` with an encoded `href`. `HelpDocument` gains `WriteNodes(...)` for this; the existing methods keep their behavior for existing callers.
 - `HelpForm.Browser_Navigating` gains typed routes. `staxrip://console-help` and `staxrip://option/<id>` with `<id>` matching `^[a-z0-9-]+(\.[a-z0-9-]+)+$` invoke `Property RouteAction As Action(Of OptionHelpRoute)`; any other `staxrip:` URL does nothing and logs a bounded diagnostic; `http` and `https` keep today's shell handling; every other scheme is cancelled.
-- `HelpForm` deletes its temp document when the window closes, not only when the main form is disposed. This applies to every help window.
+- `HelpForm` deletes its temp document when the window is disposed, whether by closing it or by application shutdown. This applies to every help window.
 - `HelpDocument.WriteStart` drops the unused Google Fonts `@import` and adds `<meta charset="utf-8">`. This applies to every help window; the visible result is identical because the imported face was never used. These two `HelpDocument` and `HelpForm` hygiene changes land in their own commit so they can be reverted independently.
 - Consequence for the privacy statement: after this change, opening a help window makes no network request.
 
@@ -293,7 +293,7 @@ File-level errors invalidate the whole file, and an invalid file anywhere in an 
 | --- | --- |
 | Unknown or missing `Schema`; missing or invalid `Encoder` or `Locale`; header disagreeing with the file name; duplicate header key; invalid encoding; `Inherits` unknown or cyclic; duplicate stanza ID; two resources resolving to the same encoder and locale | Missing or overlong `Summary`; missing `When to change` on a reviewed stanza; bad field order; duplicate field; unknown field; unresolved `Related` or `Use`; value note for a value the option does not have; invalid URL; malformed inline markup |
 
-A stanza-level error drops that stanza only. Production fails closed on identity and inheritance; the validator is where authors see the errors first.
+Stanza-level errors fail the validator, so they never reach a validated build; production fails closed only on file-level errors (identity and inheritance), and a reviewed stanza that somehow carries a stanza-level error still displays, its markup rendered inert by the node writers.
 
 ## 6. Validator and ratchet: `Source/Tools/OptionHelp/Check-OptionHelp.ps1`
 
@@ -332,12 +332,13 @@ Known blind spots, recorded in the script's README: parameters declared but neve
 | E8 | error | Duplicate stanza ID within one file |
 | E9 | error | The `Source:` file does not override `OptionHelpId` with this file's `Encoder` id |
 | E10 | error | A parameter with no identity: no explicit key and no primary switch |
-| E11 | error | A parameter-like construction the extractor does not recognize: `New <anything>Param` outside the four patterns, a pattern without `With {`, or a `Param` type name it does not know |
+| E11 | error | A parameter-like construction the extractor does not recognize: `New <anything>Param` outside the four patterns, a pattern without `With {`, or a `Param` type name it does not know; also an `OptionParam` whose literal `Options` and `Values` arrays differ in length, which makes `GetEmittedValue` index past the end of `Values` |
 | E12 | error | Resource pairing: a help file without exactly one matching `EmbeddedResource` entry, a resource without a file, a `Source` path outside the repository or whose case differs from Git's |
-| E13 | error | A URL that is not `http` or `https`, a malformed inline link, or an unmatched backtick |
+| E13 | error | A URL that is not `http` or `https`, a malformed inline link, an unmatched backtick, or a C0 control character other than tab in a text field or value note |
 | W1 | warning | An encoder VB file under `Source/Encoding/` with no help file; reported as fully missing, never fails |
 | W2 | warning | `Label` differs from the VB `.Text` |
 | W3 | warning | Parameters excluded with `none`, listed by name |
+| W4 | warning | An own-namespace identity that resolves in `staxrip.md` because its local part collides with a StaxRip-owned key; it still counts as reviewed, but the text shown is about StaxRip's setting, not the encoder's switch |
 
 ### 6.4 Counters and the ratchet
 
