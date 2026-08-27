@@ -12,6 +12,12 @@
     <EmbeddedResource Include="..\Docs\OptionHelp\concepts.md">
       <Link>OptionHelp\concepts.md</Link>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\fakevar.md">
+      <Link>OptionHelp\fakevar.md</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\cyc.md">
+      <Link>OptionHelp\cyc.md</Link>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\ghost.md">
       <Link>OptionHelp\ghost.md</Link>
     </EmbeddedResource>

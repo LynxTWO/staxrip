@@ -25,6 +25,7 @@ Summary: Beta text.
 When to change: Rarely.
 Values:
 - 1: Turns it on.
+- 2: Only the second control emits this.
 - 3: Not a value beta has.
 Status: reviewed
 

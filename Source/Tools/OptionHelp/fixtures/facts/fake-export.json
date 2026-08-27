@@ -6,7 +6,9 @@
       "parameters": [
         { "name": "Alpha", "identity": "fake.alpha", "excluded": false, "caption": "Alpha", "switches": ["--alpha"], "values": [] },
         { "name": "Beta", "identity": "fake.beta", "excluded": false, "caption": "Beta", "switches": ["--beta"], "values": ["0", "2"] },
+        { "name": "Beta2", "identity": "fake.beta", "excluded": false, "caption": "Beta 2", "switches": ["--beta"], "values": ["0", "2"] },
         { "name": "Hidden", "identity": "-", "excluded": false, "caption": "Hidden", "switches": ["--hidden"], "values": [] },
+        { "name": "CustomSecond", "identity": "staxrip.custom", "excluded": false, "caption": "Custom\nSecond Pass", "switches": [], "values": [] },
         { "name": "-", "identity": "fake.inline", "excluded": false, "caption": "Inline", "switches": ["--inline"], "values": [] }
       ]
     }

@@ -1,0 +1,9 @@
+Schema: 1
+Encoder: cyc
+Locale: en
+Title: Cycle
+Source: Source/Encoding/CycEnc.vb
+Inherits: cyc
+Allowed-Missing: 1
+Minimum-Reviewed: 0
+Reviewed-Complete: false

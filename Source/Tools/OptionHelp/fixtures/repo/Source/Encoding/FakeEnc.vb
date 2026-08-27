@@ -22,6 +22,13 @@ Public Class FakeEncParams
         .Values = {"0", "1"},
         .Init = 0}
 
+    Property Beta2 As New OptionParam With {
+        .Switch = "--beta",
+        .Text = "Beta 2",
+        .Options = {"0: Off", "2: Two"},
+        .Values = {"0", "2"},
+        .Init = 0}
+
     Property Gamma As New OptionParam With {
         .Switch = "--gamma",
         .Text = "Gamma",
@@ -66,6 +73,10 @@ Public Class FakeEncParams
     Property NoKey As New StringParam With {
         .Text = "Custom"}
 
+    Property CustomSecond As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
+        .Text = "Custom" + BR + "Second Pass"}
+
     'Property Commented As New NumParam With {
     '    .Switch = "--commented",
     '    .Text = "Commented"}
@@ -74,10 +85,10 @@ Public Class FakeEncParams
         Get
             If ItemsValue Is Nothing Then
                 ItemsValue = New List(Of CommandLineParam)
-                Add("Basic", Alpha, Beta, Gamma, Delta, Epsilon, Zeta, Eta,
+                Add("Basic", Alpha, Beta, Beta2, Gamma, Delta, Epsilon, Zeta, Eta,
                     New NumParam With {.Switch = "--inline", .Text = "Inline", .Config = {0, 5}},
                     New LineParam(),
-                    Chunks, Hidden, NoKey)
+                    Chunks, Hidden, NoKey, CustomSecond)
                 Add("Weird", New WeirdParam With {.Switch = "--weird", .Text = "Weird"})
                 Dim built As New NumParam
                 Add("Other", built)
