@@ -165,7 +165,7 @@ Status: reviewed
 
 ## concept.hdr-metadata
 Label: HDR metadata
-Summary: HDR10 metadata: the primaries, white point and luminance range of the mastering display, and the video's brightest pixel and frame (MaxCLL, MaxFALL). A player uses it to fit HDR to its screen.
+Summary: HDR10 metadata: the primaries, white point and luminance range of the mastering display, and the video's brightest pixel and frame average (MaxCLL, MaxFALL). Players use it to fit HDR to the screen.
 When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata

@@ -1020,7 +1020,7 @@ Values:
 - 2: Unspecified. The encoder default and StaxRip's; no claim is written into the file.
 - 1: BT.709, the HD standard. What StaxRip sets for a source tagged BT.709.
 - 6: BT.601, the standard-definition tag. Not auto-filled; pick it by hand for SD material.
-- 9: BT.2020, the wider color range of UHD and HDR. What StaxRip sets for a source tagged BT.2020.
+- 9: BT.2020, the wider set of colors (gamut) of UHD and HDR. What StaxRip sets for a source tagged BT.2020.
 Related: svt-av1.transfer-characteristics, svt-av1.matrix-coefficients, svt-av1.color-range, svt-av1.mastering-display, concept.color-description
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
@@ -1067,7 +1067,7 @@ Status: reviewed
 ## svt-av1.color-range
 Label: Color Range
 Summary: Tells the player if your video's levels use the studio range (16 to 235 in 8-bit, the norm for video) or the full 0 to 255, so it scales them right. A label only; the pixels are the same (tested).
-Used when: StaxRip fills it from the source you open (Import VUI metadata) when it reports Limited or Full, and sets Studio whenever it fills Master Display; change it when that is wrong.
+Used when: StaxRip fills it from the source you open (Import VUI metadata) when that source reports Limited or Full, and sets Studio along with Master Display; change it when that is wrong or there is no tag.
 When to change: Leave it at Studio unless the source really is full range, say a screen recording or an RGB capture, and your script keeps it that way. A wrong tag shows on playback: studio-range video tagged Full looks flat and washed out, full-range video tagged Studio loses the darkest and brightest detail. Check a bright and a dark frame in the player after a test encode.
 Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: the encode tagged Full decoded to the same frames as the plain encode (ffmpeg framemd5); only the flag in the file differs.
 Values:
@@ -1081,9 +1081,9 @@ Status: reviewed
 
 ## svt-av1.chroma-sample-position
 Label: Chroma Sample Position
-Summary: Tells the player where the color samples of 4:2:0 video sit against the brightness samples, so the color lands in the right place when it upscales it. A label only; the pixels are the same (tested).
+Summary: Tells the player where the color samples of 4:2:0 video sit against the brightness samples, so it puts the color back in the right place. A label only; the pixels are the same (tested).
 Used when: StaxRip copies the position MediaInfo reports for the source you open (Import VUI metadata) when it is not 0; set it yourself when the source reports none or the copy is wrong, see below.
-When to change: Leave it at Unknown unless you know the position. MediaInfo counts as H.264 and HEVC do (0 left, 2 top-left) and this list as AV1 does (1 left, 2 top-left), so a top-left source comes across right while a left source stays Unknown; pick 1 for it yourself if you want the file to say so. Unknown writes no claim.
+When to change: Leave it at Unknown unless you know the position. MediaInfo counts as H.264 and HEVC do (0 left, 1 center, 2 top-left) and this list as AV1 does (1 left, 2 top-left): a top-left source comes across right, a left source stays Unknown (pick 1 for it yourself if you want the file to say so), and a center source is wrongly tagged left, so put it back to Unknown. Unknown writes no claim.
 Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: encodes tagged left (1) and top-left (2) decoded to the same frames as the plain encode (ffmpeg framemd5).
 Values:
 - 0: Unknown. The encoder default and StaxRip's; no claim is written.
@@ -1100,7 +1100,7 @@ Label: Master Display
 Summary: Writes HDR10's mastering display metadata into the file: primaries, white point and luminance range of the display it was graded on. Players use it to fit HDR to their screen; no pixel changes.
 Used when: StaxRip fills it from the source you open (Import VUI metadata) when MediaInfo reports BT.2020, Display P3 or DCI P3 mastering primaries with a luminance range, and sets Color Range to Studio too.
 When to change: Rarely by hand: StaxRip writes the standard coordinates of the reported display and copies the source's luminance range, so leave a plain HDR encode alone. Clear it when your script tone-maps HDR to SDR. To type one, keep exactly to `G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)` with no spaces: a stray word or a space inside hung the bundled build in a test; one without its L part was dropped silently.
-Example: For a source graded on a BT.2020 display with 1000 nits peak and 0.005 nits black, StaxRip fills `G(0.17,0.797)B(0.131,0.046)R(0.708,0.292)WP(0.3127,0.329)L(1000,0.005)`; in a test ffprobe read those values back from the encoded file, to the rounding of AV1's fields (bundled build, 160x120 clip).
+Example: For a BT.2020 display, 1000 nits peak, 0.005 black, StaxRip fills `G(0.17,0.797)B(0.131,0.046)R(0.708,0.292)WP(0.3127,0.329)L(1000,0.005)`. Tests (bundled build, 160x120 clip): ffprobe read them back, give or take AV1's rounding; `hello` or a space inside spun the encoder until killed at 20 s.
 Related: svt-av1.content-light.max-cll, svt-av1.content-light.max-fall, svt-av1.transfer-characteristics, svt-av1.color-primaries, svt-av1.color-range, concept.hdr-metadata
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
@@ -1112,8 +1112,8 @@ Status: reviewed
 Label: Maximum CLL
 Summary: The brightest single pixel anywhere in the video, in nits, written into the file as HDR10 metadata together with Maximum FALL. Players use the pair to fit HDR to their screen; no pixel changes.
 Used when: Sent with Maximum FALL as one `--content-light` switch, `max-cll,max-fall`, whenever either is above 0; at 0,0 nothing is sent. StaxRip fills both from the source you open (Import VUI metadata).
-When to change: HDR video only; leave both at 0 for SDR and clear them when your script tone-maps HDR to SDR. In a test MediaInfo gave an HDR10 HEVC sample's values as plain numbers (1000 and 400), the form StaxRip reads, so check the pair against the source's MediaInfo report (Maximum Content Light Level, Maximum Frame-Average Light Level) and type them only if missing. The encoder clips 70000 to 65535 (tested).
-Example: `--content-light 1000,400` read back from the encoded file as MaxCLL 1000 and MaxFALL 400 in ffprobe (bundled build, 160x120 test clip); 70000,400 came back as 65535,400, while 0,0 and 0,400 wrote nothing.
+When to change: HDR video only; leave both at 0 for SDR and clear them when your script tone-maps HDR to SDR. Check the pair against the source's MediaInfo report (Maximum Content Light Level, Maximum Frame-Average Light Level) and type them only if missing. The box stops at 65535, the format's ceiling.
+Example: `--content-light 1000,400` read back from the encoded file as MaxCLL 1000 and MaxFALL 400 in ffprobe (bundled build, 160x120 test clip), while 0,0 and 0,400 wrote nothing.
 Related: svt-av1.content-light.max-fall, svt-av1.mastering-display, svt-av1.transfer-characteristics, concept.hdr-metadata
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
@@ -1124,7 +1124,7 @@ Status: reviewed
 Label: Maximum FALL
 Summary: The brightest frame by its average light level, in nits, written into the file as HDR10 metadata together with Maximum CLL. Players use the pair to fit HDR to their screen; no pixel changes.
 Used when: Rides in Maximum CLL's `--content-light` switch as its second number; with Maximum CLL at 0 the bundled build wrote no metadata (tested). StaxRip fills both from the source (Import VUI metadata).
-When to change: HDR video only, and never above Maximum CLL: a frame's average cannot exceed its brightest pixel, and the encoder does not check (400,1000 went in as is in a test). Leave both at 0 for SDR and clear them after tone-mapping to SDR. MediaInfo gave a test sample's value as a plain number StaxRip reads; check it against MediaInfo's Maximum Frame-Average Light Level and type it only if missing.
+When to change: HDR video only, and never above Maximum CLL: a frame's average cannot exceed its brightest pixel, and the encoder does not check (400,1000 went in as is in a test). Leave both at 0 for SDR and clear them after tone-mapping to SDR. Check it against MediaInfo's Maximum Frame-Average Light Level for the source and type it only if missing.
 Example: In a test, `--content-light 400,0` wrote MaxCLL 400 and MaxFALL 0 into the file and `1,400` wrote both, while `0,400` wrote nothing at all (bundled build, 160x120 clip).
 Related: svt-av1.content-light.max-cll, svt-av1.mastering-display, concept.hdr-metadata
 References:
