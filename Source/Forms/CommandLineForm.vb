@@ -13,6 +13,8 @@ Public Class CommandLineForm
     Private CommandLineHighlightingMenuItem As MenuItemEx
     Private CommandLineMouseUpSearchMenuItem As MenuItemEx
     Private GoToComboBoxCts As CancellationTokenSource
+    Private OptionHelpTips As ToolTip
+    Private Catalog As OptionHelpCatalog
 
     Property HTMLHelpFunc As Func(Of String)
 
@@ -38,6 +40,10 @@ Public Class CommandLineForm
 
         Me.Params = params
         Text = $"{params.Title} ({params.Items.Count} options) - {g.DefaultCommands.GetApplicationDetails()}"
+
+        OptionHelpTips = New ToolTip(components) With {.AutoPopDelay = 20000, .InitialDelay = 700, .ReshowDelay = 300}
+        OptionHelpCatalog.Log = AddressOf g.WriteDebugLog
+        Catalog = OptionHelpCatalog.Get(params.OptionHelpId)
 
         InitUI()
         SelectLastPage()
@@ -131,13 +137,14 @@ Public Class CommandLineForm
 
     Sub InitUI()
         Dim flowPanels As New List(Of Control)
-        Dim helpControl As Control = Nothing
         Dim currentFlow As SimpleUI.FlowPage = Nothing
 
         For x = 0 To Params.Items.Count - 1
             Dim param = Params.Items(x)
             Dim parent As FlowLayoutPanelEx = SimpleUI.GetFlowPage(param.Path)
             currentFlow = DirectCast(parent, SimpleUI.FlowPage)
+            Dim helpControl As Control = Nothing
+            Dim targets As New List(Of Control)
 
             If Not flowPanels.Contains(parent) Then
                 flowPanels.Add(parent)
@@ -198,6 +205,19 @@ Public Class CommandLineForm
                 End If
             End If
 
+            Dim identity = param.OptionHelpIdentity(Params.OptionHelpId)
+            Dim stanza As OptionHelpStanza = Nothing
+
+            If Catalog IsNot Nothing Then
+                Dim resolution = Catalog.Resolve(identity)
+
+                If resolution.Outcome = "reviewed" OrElse resolution.Outcome = "alias" Then
+                    stanza = resolution.Stanza
+                End If
+            End If
+
+            Dim item As New Item With {.Page = currentFlow, .Param = param, .Stanza = stanza, .Identity = identity}
+
             If param.Label <> "" Then
                 SimpleUI.AddLabel(parent, param.Label).MarginTop = FontHeight \ 2
             End If
@@ -209,7 +229,9 @@ Public Class CommandLineForm
                 Dim checkBox = SimpleUI.AddBool(parent)
                 checkBox.Text = param.Text
 
-                If param.HelpSwitch <> "" Then
+                If stanza IsNot Nothing Then
+                    checkBox.HelpAction = Sub() ShowOptionHelp(item)
+                ElseIf param.HelpSwitch <> "" Then
                     Dim helpOptions = param.GetSwitches
                     checkBox.HelpAction = Sub() Params.ShowHelp(helpOptions)
                 Else
@@ -219,6 +241,7 @@ Public Class CommandLineForm
                 checkBox.MarginLeft = param.LeftMargin
                 DirectCast(param, BoolParam).InitParam(checkBox)
                 helpControl = checkBox
+                targets.Add(checkBox)
             ElseIf TypeOf param Is NumParam Then
                 Dim tempNumParam = DirectCast(param, NumParam)
                 Dim nParam = DirectCast(param, NumParam)
@@ -228,7 +251,9 @@ Public Class CommandLineForm
                     numBlock.Label.Text = If(param.Text.EndsWithEx(":"), param.Text, param.Text + ":")
                 End If
 
-                If param.HelpSwitch <> "" Then
+                If stanza IsNot Nothing Then
+                    numBlock.Label.HelpAction = Sub() ShowOptionHelp(item)
+                ElseIf param.HelpSwitch <> "" Then
                     Dim helpOptions = param.GetSwitches
                     numBlock.Label.HelpAction = Sub() Params.ShowHelp(helpOptions)
                 Else
@@ -244,13 +269,18 @@ Public Class CommandLineForm
                 AddHandler numBlock.Label.MouseDoubleClick, Sub() tempNumParam.Value = tempNumParam.DefaultValue
                 DirectCast(param, NumParam).InitParam(numBlock.NumEdit)
                 helpControl = numBlock.Label
+                targets.Add(numBlock.Label)
+                targets.Add(numBlock.NumEdit)
             ElseIf TypeOf param Is OptionParam Then
                 Dim tempOptionParam = DirectCast(param, OptionParam)
                 Dim oParam = DirectCast(param, OptionParam)
                 Dim menuBlock = SimpleUI.AddMenu(Of Integer)(parent)
                 menuBlock.Label.Text = If(param.Text.EndsWith(":"), param.Text, param.Text + ":")
 
-                If param.HelpSwitch <> "" Then
+                If stanza IsNot Nothing Then
+                    menuBlock.Label.HelpAction = Sub() ShowOptionHelp(item)
+                    menuBlock.Button.HelpAction = Sub() ShowOptionHelp(item)
+                ElseIf param.HelpSwitch <> "" Then
                     Dim helpOptions = param.GetSwitches
                     menuBlock.Label.HelpAction = Sub() Params.ShowHelp(helpOptions)
                     menuBlock.Button.HelpAction = Sub() Params.ShowHelp(helpOptions)
@@ -263,6 +293,8 @@ Public Class CommandLineForm
                 End If
 
                 helpControl = menuBlock.Label
+                targets.Add(menuBlock.Label)
+                targets.Add(menuBlock.Button)
                 AddHandler menuBlock.Label.MouseDoubleClick, Sub() tempOptionParam.ValueChangedUser(tempOptionParam.DefaultValue)
 
                 Dim max = oParam.Options.Select(Function(txt) txt.Length).Max
@@ -272,7 +304,15 @@ Public Class CommandLineForm
                 End If
 
                 For x2 = 0 To oParam.Options.Length - 1
-                    menuBlock.Button.Add(oParam.Options(x2), x2)
+                    Dim menuItem = menuBlock.Button.Add(oParam.Options(x2), x2)
+
+                    If stanza IsNot Nothing Then
+                        Dim note = Catalog.ValueNote(stanza, oParam.GetEmittedValue(x2))
+
+                        If note <> "" Then
+                            menuItem.ToolTipText = OptionHelpParser.PlainText(note)
+                        End If
+                    End If
                 Next
 
                 oParam.InitParam(menuBlock.Button)
@@ -294,7 +334,9 @@ Public Class CommandLineForm
 
                 textBlock.Label.Text = If(param.Text.EndsWith(":"), param.Text, param.Text + ":")
 
-                If param.HelpSwitch <> "" Then
+                If stanza IsNot Nothing Then
+                    textBlock.Label.HelpAction = Sub() ShowOptionHelp(item)
+                ElseIf param.HelpSwitch <> "" Then
                     Dim helpOptions = param.GetSwitches
                     textBlock.Label.HelpAction = Sub() Params.ShowHelp(helpOptions)
                 Else
@@ -302,18 +344,21 @@ Public Class CommandLineForm
                 End If
 
                 helpControl = textBlock.Label
+                targets.Add(textBlock.Label)
+                targets.Add(textBlock.Edit)
                 AddHandler textBlock.Label.MouseDoubleClick, Sub() tempItem.Value = tempItem.DefaultValue
                 textBlock.Edit.Expand = tempItem.Expand
                 tempItem.InitParam(textBlock)
             End If
 
             If helpControl IsNot Nothing Then
-                Dim item As New Item With {
-                    .Control = helpControl,
-                    .Page = currentFlow,
-                    .Param = param
-                }
+                item.Control = helpControl
+                item.Targets.AddRange(targets)
                 Items.Add(item)
+
+                If stanza IsNot Nothing Then
+                    AttachOptionHelp(item)
+                End If
             End If
         Next
 
@@ -322,10 +367,47 @@ Public Class CommandLineForm
         Next
     End Sub
 
+    Private Sub AttachOptionHelp(item As Item)
+        Dim caption = item.Param.Text.TrimEnd(":"c).Trim()
+        Dim summary = OptionHelpParser.PlainText(item.Stanza.Summary)
+        Dim tip = summary + BR + "Press F1 or right-click for details"
+
+        For Each target In item.Targets
+            OptionHelpTips.SetToolTip(target, tip)
+            AddHandler target.MouseEnter, Sub() SetDescription(item)
+            AddHandler target.Enter, Sub() SetDescription(item)
+
+            If Not TypeOf target Is Label Then
+                target.AccessibleName = caption
+                target.AccessibleDescription = summary
+            End If
+        Next
+    End Sub
+
+    Private Function FindFocusedItem() As Item
+        Return Items.FirstOrDefault(Function(i) i.Targets.Any(Function(t) t.ContainsFocus))
+    End Function
+
+    Private Function FindItemByIdentity(id As String) As Item
+        Return Items.FirstOrDefault(Function(i) i.Identity = id)
+    End Function
+
+    Private Sub SetDescription(item As Item)
+        ' Task 6 replaces this stub with the description strip update.
+    End Sub
+
+    Private Sub ShowOptionHelp(item As Item)
+        ' Task 7 replaces this stub with the details window.
+        Params.ShowHelp(item.Param.GetSwitches)
+    End Sub
+
     Public Class Item
         Property Page As SimpleUI.FlowPage
         Property Control As Control
         Property Param As CommandLineParam
+        Property Targets As New List(Of Control)
+        Property Stanza As OptionHelpStanza
+        Property Identity As String
     End Class
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
@@ -336,7 +418,14 @@ Public Class CommandLineForm
 
     Sub CommandLineForm_HelpRequested(sender As Object, hlpevent As HelpEventArgs) Handles Me.HelpRequested
         If ModifierKeys = Keys.None Then
-            ShowHelp()
+            Dim item = FindFocusedItem()
+
+            If item IsNot Nothing AndAlso item.Stanza IsNot Nothing Then
+                hlpevent.Handled = True
+                ShowOptionHelp(item)
+            Else
+                ShowHelp()
+            End If
         End If
     End Sub
 
@@ -413,6 +502,10 @@ Public Class CommandLineForm
                     item.Param.Help.ToLowerEx.Contains(find) OrElse
                     item.Param.Text.ToLowerEx.Contains(find) Then
 
+                    matchedItems.Add(item)
+                End If
+
+                If item.Stanza IsNot Nothing AndAlso OptionHelpCatalog.SearchText(item.Stanza, item.Identity).Contains(find) Then
                     matchedItems.Add(item)
                 End If
 
