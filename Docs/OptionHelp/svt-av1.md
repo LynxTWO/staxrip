@@ -5,8 +5,8 @@ Encoder: svt-av1
 Locale: en
 Title: SVT-AV1
 Source: Source/Encoding/SvtAv1Enc.vb
-Allowed-Missing: 100
-Minimum-Reviewed: 0
+Allowed-Missing: 86
+Minimum-Reviewed: 14
 Reviewed-Complete: false
 Verified-Encoder-Version: SVT-AV1 v4.2.0+71+88-17cd99550 [Mod by Patman] (release)
 Verified-Encoder-Build: 17cd99550
