@@ -11,6 +11,16 @@ Public Class HelpForm
             components.Dispose()
         End If
         MyBase.Dispose(disposing)
+
+        'Deleting here and not in OnFormClosed covers the shutdown path too: MainForm disposes the
+        'windows it has left over without ever closing them. The browser has released the file by
+        'the time the base Dispose returns; a delete that still fails leaves one file in %TEMP%.
+        If disposing AndAlso DocumentPath <> "" AndAlso File.Exists(DocumentPath) Then
+            Try
+                FileHelp.Delete(DocumentPath)
+            Catch
+            End Try
+        End If
     End Sub
 
     Private ReadOnly components As System.ComponentModel.IContainer
@@ -83,16 +93,9 @@ Public Class HelpForm
     End Sub
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
-        'Dispose first: closing during a load leaves the browser holding the temp file.
+        'Dispose first: closing during a load leaves the browser holding the temp file. Dispose is
+        'where the temp document is deleted, so this path and the shutdown path share one routine.
         Dispose()
-
-        If DocumentPath <> "" AndAlso File.Exists(DocumentPath) Then
-            Try
-                FileHelp.Delete(DocumentPath)
-            Catch
-            End Try
-        End If
-
         MyBase.OnFormClosed(e)
     End Sub
 
