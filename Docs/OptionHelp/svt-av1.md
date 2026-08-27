@@ -287,7 +287,7 @@ Status: reviewed
 Label: Maximum Bitrate
 Summary: Caps the bitrate of a CRF encode in kbps: the encoder keeps the CRF quality where it fits under the cap and cuts back where it would not. 0 means no cap; the encoder calls the result capped CRF.
 Used when: Only with Constant Rate Factor visible, that is Quality mode with Adaptive Quantization 2. With a bitrate target the bundled build refuses it, and with CQP it ignores it with a warning (tested).
-When to change: Leave it at 0 unless a player or a bandwidth limit needs a ceiling; then set the ceiling and check the hardest scene. In a test on a small clip, CRF 20 with a cap below its natural rate came out at the cap, and a cap above it left the file byte for byte unchanged. The dialog goes up to 100000 kbps in steps of 100.
+When to change: Leave it at 0 unless a player or a bandwidth limit needs a ceiling; then set the ceiling and check the hardest scene. In a test on a small clip, CRF 20 with a cap well below its natural rate came out at the cap, and a cap above it left the file byte for byte unchanged. The dialog goes up to 100000 kbps in steps of 100.
 Example: Test: 160x120 synthetic gradient-and-noise clip, 24 frames at 25 fps, preset 8, CRF 20; uncapped 60550 bytes, about 500 kbps. Cap 100: 12098 bytes; 200: 25878; 400: 60523; 1000: the uncapped file byte for byte.
 Related: svt-av1.crf, svt-av1.tbr, svt-av1.rc, svt-av1.aq-mode, concept.bitrate
 References:
