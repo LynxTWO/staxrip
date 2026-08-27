@@ -2,6 +2,7 @@
   <ItemGroup>
     <EmbeddedResource Include="..\Docs\OptionHelp\clean.md">
       <Link>OptionHelp\clean.md</Link>
+      <LogicalName>StaxRip.OptionHelp.clean.md</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

@@ -20,6 +20,7 @@ E12 Docs/OptionHelp/badid.md:1 No EmbeddedResource entry in Source/StaxRip.vbpro
 E12 Docs/OptionHelp/concepts.md:1 Duplicate EmbeddedResource entries (2) in Source/StaxRip.vbproj
 E12 Docs/OptionHelp/fake.de.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
 E12 Source/StaxRip.vbproj:1 EmbeddedResource 'ghost.md' has no file
+E12 Source/StaxRip.vbproj:1 EmbeddedResource 'staxrip.md' lacks LogicalName 'StaxRip.OptionHelp.staxrip.md'
 E13 Docs/OptionHelp/fake.de.md:11 Summary: Malformed link; only [text](http://...) or [text](https://...) is allowed
 E4 Docs/OptionHelp/fake.md:14 Values on non-option parameter fake.alpha
 E4 Docs/OptionHelp/fake.md:29 Value '3' is not an emitted value of fake.beta

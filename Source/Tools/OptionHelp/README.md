@@ -31,7 +31,7 @@ pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1 -Dump Docs/Op
 | E9 | source | OptionHelpId override missing or wrong |
 | E10 | source | Parameter without identity |
 | E11 | source | Parameter construction the extractor does not recognize, or a difference from the application export |
-| E12 | project | Help file and EmbeddedResource entries do not pair up; Source path outside the repository or with different case |
+| E12 | project | Help file and EmbeddedResource entries do not pair up; an entry naming a file lacks `<LogicalName>StaxRip.OptionHelp.<file></LogicalName>`; Source path outside the repository or with different case |
 | E13 | stanza | Bad URL scheme, malformed link, unmatched backtick |
 | W1 | source | Encoder file with no help file |
 | W2 | stanza | Label differs from the VB caption (planned; implemented with the SVT-AV1 content plan) |

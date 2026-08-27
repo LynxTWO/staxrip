@@ -705,11 +705,25 @@ function Complete-OhValidation {
 }
 
 function Get-OhResourceEntries {
+    # One object per <EmbeddedResource> item under Docs\OptionHelp: the file name, and the
+    # <LogicalName> the item declares or $null when it declares none. VB names an embedded resource
+    # <RootNamespace>.<file name> and ignores the folder and the <Link>, so the LogicalName is the
+    # only thing that puts the '.OptionHelp.' marker the loader enumerates into the manifest name.
     param([string]$ProjectPath)
-    $entries = [System.Collections.Generic.List[string]]::new()
+    $entries = [System.Collections.Generic.List[object]]::new()
     if (-not (Test-Path $ProjectPath)) { return $entries }
     $text = [System.IO.File]::ReadAllText($ProjectPath)
-    foreach ($m in [regex]::Matches($text, '<EmbeddedResource\s+Include="\.\.\\Docs\\OptionHelp\\([^"]+)"')) { $entries.Add($m.Groups[1].Value) }
+    # Singleline so that the element body, which spans lines, is captured by group 2; the lazy
+    # quantifier stops at this item's own closing tag rather than the last one in the file.
+    $pattern = '<EmbeddedResource\s+Include="\.\.\\Docs\\OptionHelp\\([^"]+)"\s*(?:/>|>(.*?)</EmbeddedResource>)'
+    foreach ($m in [regex]::Matches($text, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)) {
+        $logical = $null
+        if ($m.Groups[2].Success) {
+            $inner = [regex]::Match($m.Groups[2].Value, '<LogicalName>([^<]*)</LogicalName>')
+            if ($inner.Success) { $logical = $inner.Groups[1].Value }
+        }
+        $entries.Add([pscustomobject]@{ Name = $m.Groups[1].Value; LogicalName = $logical })
+    }
     return $entries
 }
 
@@ -796,7 +810,7 @@ function Test-OptionHelpRepository {
     foreach ($f in $allFiles) {
         if ($Encoder -and $f.Encoder -cne $Encoder) { continue }
         foreach ($e in $f.Errors) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $e.Line; Code = $e.Code; Message = $e.Message }) }
-        $hits = @($resources | Where-Object { $_ -ceq $f.Name }).Count
+        $hits = @($resources | Where-Object { $_.Name -ceq $f.Name }).Count
         if ($hits -eq 0) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = 'No EmbeddedResource entry in Source/StaxRip.vbproj' }) }
         elseif ($hits -gt 1) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = "Duplicate EmbeddedResource entries ($hits) in Source/StaxRip.vbproj" }) }
     }
@@ -808,7 +822,17 @@ function Test-OptionHelpRepository {
     # Repository-wide checks: only when not scoped to a single -Encoder.
     if (-not $Encoder) {
         foreach ($r in $resources) {
-            if (-not (Test-OhPathCase -RepoRoot $docs -RelativePath $r)) { $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$r' has no file" }) }
+            if (-not (Test-OhPathCase -RepoRoot $docs -RelativePath $r.Name)) {
+                $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$($r.Name)' has no file" })
+                continue
+            }
+            # An entry that names no file cannot be loaded at all, so the missing file is the only
+            # thing worth saying about it; every entry that does name one must carry the LogicalName
+            # the loader's resource enumeration depends on.
+            $expected = "StaxRip.OptionHelp.$($r.Name)"
+            if ($r.LogicalName -cne $expected) {
+                $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$($r.Name)' lacks LogicalName '$expected'" })
+            }
         }
 
         # W1: encoder sources without a help file.

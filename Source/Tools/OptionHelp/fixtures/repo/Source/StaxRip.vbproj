@@ -2,24 +2,30 @@
   <ItemGroup>
     <EmbeddedResource Include="..\Docs\OptionHelp\fake.md">
       <Link>OptionHelp\fake.md</Link>
+      <LogicalName>StaxRip.OptionHelp.fake.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\staxrip.md">
       <Link>OptionHelp\staxrip.md</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\concepts.md">
       <Link>OptionHelp\concepts.md</Link>
+      <LogicalName>StaxRip.OptionHelp.concepts.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\concepts.md">
       <Link>OptionHelp\concepts.md</Link>
+      <LogicalName>StaxRip.OptionHelp.concepts.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\fakevar.md">
       <Link>OptionHelp\fakevar.md</Link>
+      <LogicalName>StaxRip.OptionHelp.fakevar.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\fakevar2.md">
       <Link>OptionHelp\fakevar2.md</Link>
+      <LogicalName>StaxRip.OptionHelp.fakevar2.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\cyc.md">
       <Link>OptionHelp\cyc.md</Link>
+      <LogicalName>StaxRip.OptionHelp.cyc.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\ghost.md">
       <Link>OptionHelp\ghost.md</Link>
