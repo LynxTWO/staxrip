@@ -51,6 +51,9 @@ Public Class CommandLineForm
         lblDescription.Text = "Point at an option, or move focus to it, to see what it does. Press F1 for details."
 
         InitUI()
+        'Row 1 auto-sizes to zero when the strip is hidden, so an encoder without reviewed help
+        'gets exactly the dialog it had before option help existed.
+        lblDescription.Visible = Items.Any(Function(i) i.Stanza IsNot Nothing)
         SelectLastPage()
         AddHandler params.ValueChanged, AddressOf ValueChanged
         params.RaiseValueChanged(Nothing)
@@ -314,7 +317,9 @@ Public Class CommandLineForm
                     If stanza IsNot Nothing Then
                         Dim note = Catalog.ValueNote(stanza, oParam.GetEmittedValue(x2))
 
-                        If note <> "" Then
+                        'A value note is a menu tooltip like any other, so it honors the user's
+                        '"Enable tooltips in menus" setting, which MainForm mirrors into MenuItemEx.
+                        If MenuItemEx.UseTooltips AndAlso note <> "" Then
                             menuItem.ToolTipText = OptionHelpParser.PlainText(note)
                         End If
                     End If
@@ -373,12 +378,12 @@ Public Class CommandLineForm
     End Sub
 
     Private Sub AttachOptionHelp(item As Item)
-        Dim caption = item.Param.Text.TrimEnd(":"c).Trim()
+        Dim caption = If(item.Param.Text, "").TrimEnd(":"c).Trim()
         Dim summary = OptionHelpParser.PlainText(item.Stanza.Summary)
         Dim tip = summary + BR + "Press F1 or right-click for details"
         Dim attached As New HashSet(Of Control)
 
-        item.SearchText = OptionHelpCatalog.SearchText(item.Stanza, item.Identity)
+        item.SearchText = Catalog.SearchText(item.Stanza, item.Identity)
 
         For Each target In item.Targets
             'NumEdit and TextEdit are user controls, their inner text box receives the mouse
@@ -410,7 +415,7 @@ Public Class CommandLineForm
 
     Private Sub SetDescription(item As Item)
         If item.Stanza Is Nothing Then Exit Sub
-        Dim caption = item.Param.Text.TrimEnd(":"c).Trim()
+        Dim caption = If(item.Param.Text, "").TrimEnd(":"c).Trim()
         Dim text = caption + ": " + OptionHelpParser.PlainText(item.Stanza.Summary)
         Dim whenToChange = item.Stanza.WhenToChange
 
@@ -429,7 +434,7 @@ Public Class CommandLineForm
         Dim caption As String
 
         If item IsNot Nothing Then
-            caption = item.Param.Text.TrimEnd(":"c).Trim()
+            caption = If(item.Param.Text, "").TrimEnd(":"c).Trim()
         ElseIf stanza.Label <> "" Then
             caption = stanza.Label
         Else

@@ -801,10 +801,29 @@ Public Class OptionHelpCatalog
         Return Nothing
     End Function
 
-    Public Shared Function SearchText(stanza As OptionHelpStanza, identity As String) As String
-        Dim parts As New List(Of String) From {identity, stanza.Id, stanza.Label, stanza.Summary, stanza.UsedWhen, stanza.WhenToChange, stanza.Example}
+    ''' <summary>The part of an id after its first dot, or the whole id when it has none.</summary>
+    Private Shared Function LocalPart(id As String) As String
+        If String.IsNullOrEmpty(id) Then Return id
+        Dim dot = id.IndexOf("."c)
+        If dot < 1 Then Return id
+        Return id.Substring(dot + 1)
+    End Function
+
+    ''' <summary>The lower-case plain text the dialog's search box matches an option against. Only
+    ''' the local parts of the identity and the stanza id are indexed: every option in one dialog
+    ''' shares the namespace, so indexing it would make the encoder's own name match all of them.
+    ''' A Related id contributes its target's label when the target is reviewed, because that is the
+    ''' text a user has seen; when it is not, only its local part exists to search for.</summary>
+    Public Function SearchText(stanza As OptionHelpStanza, identity As String) As String
+        Dim parts As New List(Of String) From {LocalPart(identity), LocalPart(stanza.Id), stanza.Label,
+            stanza.Summary, stanza.UsedWhen, stanza.WhenToChange, stanza.Example}
         parts.AddRange(stanza.Values.Select(Function(v) v.Note))
-        parts.AddRange(stanza.Related)
+
+        For Each rel In stanza.Related
+            Dim target = Lookup(rel)
+            parts.Add(If(target Is Nothing, LocalPart(rel), target.Label))
+        Next
+
         Return String.Join(" ", parts.Where(Function(t) Not String.IsNullOrEmpty(t)).Select(Function(t) OptionHelpParser.PlainText(t))).ToLowerInvariant()
     End Function
 End Class
