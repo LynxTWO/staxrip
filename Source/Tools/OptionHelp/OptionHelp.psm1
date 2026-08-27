@@ -576,9 +576,9 @@ function Invoke-OptionHelpSelfTest {
     try {
         $rep = Test-OptionHelpRepository -RepoRoot $tmp
         Update-OptionHelpRatchet -RepoRoot $tmp -Report $rep
-        $after = [System.IO.File]::ReadAllText((Join-Path $tmp 'Docs\OptionHelp\clean.md')).Replace("`r`n", "`n")
+        $after = [System.IO.File]::ReadAllText((Join-Path $tmp 'Docs/OptionHelp/clean.md')).Replace("`r`n", "`n")
         $lines = @(($after -split "`n") | Where-Object { $_ -match '^(Allowed-Missing|Minimum-Reviewed): ' })
-        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\ratchet-repo-clean.txt')).Replace("`r`n", "`n").TrimEnd("`n")
+        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected/ratchet-repo-clean.txt')).Replace("`r`n", "`n").TrimEnd("`n")
         if (($lines -join "`n") -cne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
     }
     finally { Remove-Item $tmp -Recurse -Force }
@@ -589,7 +589,7 @@ function Invoke-OptionHelpSelfTest {
     $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("optionhelp-ratchet-crlf-" + [guid]::NewGuid().ToString('N'))
     Copy-Item (Join-Path $FixturesRoot 'repo-clean') $tmp -Recurse
     try {
-        $cleanPath = Join-Path $tmp 'Docs\OptionHelp\clean.md'
+        $cleanPath = Join-Path $tmp 'Docs/OptionHelp/clean.md'
         $lf = [System.IO.File]::ReadAllText($cleanPath).Replace("`r`n", "`n")
         $crlf = $lf.Replace("`n", "`r`n")
         [System.IO.File]::WriteAllText($cleanPath, $crlf, [System.Text.UTF8Encoding]::new($false))
@@ -600,15 +600,15 @@ function Invoke-OptionHelpSelfTest {
         $crAfter = @($afterBytes | Where-Object { $_ -eq 0x0D }).Count
         $after = [System.Text.UTF8Encoding]::new($false).GetString($afterBytes).Replace("`r`n", "`n")
         $lines = @(($after -split "`n") | Where-Object { $_ -match '^(Allowed-Missing|Minimum-Reviewed): ' })
-        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\ratchet-repo-clean.txt')).Replace("`r`n", "`n").TrimEnd("`n")
+        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected/ratchet-repo-clean.txt')).Replace("`r`n", "`n").TrimEnd("`n")
         if (($lines -join "`n") -cne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet-crlf counters`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
         if ($crAfter -ne $crBefore) { $failures++; [Console]::Error.WriteLine("FAIL ratchet-crlf CR count changed: before=$crBefore after=$crAfter") }
     }
     finally { Remove-Item $tmp -Recurse -Force }
     # Facts comparison against the fake repository.
     $count++
-    $diff = Compare-OptionHelpFacts -RepoRoot (Join-Path $FixturesRoot 'repo') -FactsPath (Join-Path $FixturesRoot 'facts\fake-export.json')
-    $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\compare-facts.txt')).Replace("`r`n", "`n").TrimEnd("`n")
+    $diff = Compare-OptionHelpFacts -RepoRoot (Join-Path $FixturesRoot 'repo') -FactsPath (Join-Path $FixturesRoot 'facts/fake-export.json')
+    $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected/compare-facts.txt')).Replace("`r`n", "`n").TrimEnd("`n")
     if (($diff -join "`n") -cne $expected) { $failures++; [Console]::Error.WriteLine("FAIL compare-facts`n--- expected`n$expected`n--- actual`n$($diff -join "`n")") }
     [Console]::Error.WriteLine("self-test: $count dump cases, $failures failures")
     if ($failures -gt 0) { return 1 }
