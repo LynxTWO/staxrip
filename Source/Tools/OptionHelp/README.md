@@ -16,6 +16,8 @@ pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1 -Dump Docs/Op
 
 `-Encoder <id>` keeps the source-level checks, the counters, and E5 to that encoder, and applies the stanza rules (parse errors, E6, the E12 file pairing) to its files, to those of every encoder in its inheritance chain, and to the shared files its text can display through; repository-wide checks (W1, resource entries without a file or `LogicalName`) run only in the unscoped mode. `-Json` writes only JSON to stdout; diagnostics go to stderr. `-AdvanceRatchet` runs only after a clean validation, lowers `Allowed-Missing` and raises `Minimum-Reviewed` to the current counts, never the other way, and never touches `Reviewed-Complete`. `-CompareFacts` takes the file written by the StaxRip command `-ExportOptionHelpFacts:<path>` and reports every difference between the application's view of the parameters and this script's extraction as E11.
 
+The VB parser harness (spec 6.8) runs the same fixtures through the application's own parser: build `Source\Tests\OptionHelp\OptionHelpTests.vbproj` (Debug, x64), then run `Source\obj\OptionHelpTests\bin\OptionHelpTests.exe Source\Tools\OptionHelp\fixtures`; it prints `harness: <n> cases, <m> failures` and exits non-zero on a failure.
+
 ## Rules
 
 | Code | Level | Meaning |
