@@ -108,7 +108,7 @@ Status: reviewed
 
 ## concept.scene-change
 Label: Scene change
-Summary: A cut between shots, where the next frame shares little with the last. Upstream says SVT-AV1 adds no keyframe there; it leans less on earlier frames instead, so keyframe spacing stays as set.
+Summary: A cut between shots, where the next frame shares little with the last. Upstream says SVT-AV1 adds no keyframe there; it leans less on neighboring frames instead, so keyframe spacing stays as set.
 When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#scene-change-detection

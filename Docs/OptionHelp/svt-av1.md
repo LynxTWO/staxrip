@@ -16,15 +16,14 @@ Documentation: https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parame
 ## svt-av1.preset
 Label: Preset
 Summary: Controls the tradeoff between encoding speed and compression. Lower numbers usually make a smaller file at similar quality, but the encode can take much longer.
-When to change: StaxRip starts you at 9. Try 6 for a final encode when a smaller file is worth the extra time; use 10 or higher for quick tests.
-Encoder default: 8
-Example: Encode the same 60-second sample at presets 9, 6, and 4. Compare the time and file size before committing the whole video.
+When to change: StaxRip starts you at 8, which is also the encoder's own default. Try 6 for a final encode when a smaller file is worth the extra time; use 10 or higher for quick tests.
+Example: Encode the same 60-second sample at presets 8, 6, and 4. Compare the time and file size before committing the whole video.
 Values:
 - 0: Extremely slow. Mainly useful for experiments.
 - 4: High compression efficiency with a large encoding-time cost.
 - 6: Slower than StaxRip's default, with better compression efficiency.
-- 8: The encoder's own default.
-- 9: StaxRip's default and a practical starting point.
+- 8: The encoder's default and StaxRip's.
+- 9: One step faster than the default.
 - 13: Fastest, with the largest compression tradeoff.
 Related: svt-av1.crf, concept.compression-efficiency
 References:
@@ -469,14 +468,14 @@ Status: reviewed
 
 ## svt-av1.keyint
 Label: Keyint / GOP Size
-Summary: Sets how often a new group of pictures starts with a keyframe, a frame stored whole. Closer keyframes make seeking quicker and the file larger; the default is five to seven seconds.
-Used when: Two lists share this switch: with Constant Rate Factor on screen you get -1 for a single keyframe, in other modes 0 instead. Nothing is sent at the default entry; the encoder's own -2 applies.
-When to change: Leave it at -2 for video you keep; upstream says home users often choose 5 to 10 seconds, and every keyframe costs bits. Pick 1s or 2s when quick seeking matters more than size; upstream says video-on-demand services commonly use about one second. In Variable Bitrate the default and the seconds entries work; the bundled build stops on 0 and writes no file (tested).
-Example: Encode a short scene at -2 and again at 1s, compare the two sizes, then seek around both files in your player. In tests the bundled build reported a GOP of 161 frames for -2 at 24, 25 and 30 fps and 321 frames at 60 fps, so five to seven seconds depending on the frame rate.
+Summary: Sets how often a new group of pictures starts with a keyframe, a frame stored whole. Closer keyframes make seeking quicker and the file larger; the default is about five seconds.
+Used when: Two lists share this switch: with Constant Rate Factor on screen you get -1 for a single keyframe, otherwise 0 instead. Nothing is sent at the default entry; the encoder's own -2 applies.
+When to change: Leave it at -2 for video you keep; upstream says home users often choose 5 to 10 seconds, and every keyframe costs bits. Pick 1s or 2s when quick seeking matters more than size; upstream says video-on-demand services commonly use about one second. In Variable Bitrate the default and the seconds entries work; on 0 the bundled build writes no file yet reports success (tested).
+Example: Encode a short scene at -2 and again at 1s, compare the two sizes, then seek around both files in your player. In tests the bundled build reported a GOP of 161 frames for -2 at 24, 25 and 30 fps and 321 frames at 60 fps: about five seconds at 30 and 60, nearer seven at 24.
 Values:
-- -2: About five seconds per the help; 161 frames at 24 to 30 fps in tests, over six. The encoder default and StaxRip's.
+- -2: The encoder default and StaxRip's; 161 frames in tests, about five seconds, nearer seven at 24 fps.
 - -1: One keyframe at the start and never again. Offered with Constant Rate Factor; the help calls it CRF-only.
-- 0: Same as -1, for the other modes. Variable Bitrate stops on it and writes no file; Constant Bitrate ran (tested).
+- 0: Same as -1, for the other modes. Variable Bitrate writes no file yet reports success; Constant Bitrate ran (tested).
 - 1s: A keyframe about every second at your frame rate; in tests it came one frame later than the rate, 26 at 25 fps.
 - 10s: The longest entry. Upstream calls 5 to 10 seconds common for home use.
 Related: svt-av1.irefresh-type, svt-av1.scd, svt-av1.rc, staxrip.chunks, concept.keyframe, concept.gop
@@ -500,8 +499,8 @@ Status: reviewed
 
 ## svt-av1.scd
 Label: Scene Change Detection Control
-Summary: Turns on the encoder's scene change detector. It adds no keyframes at cuts: upstream says the encoder handles scene changes in its mode decisions instead, and the bundled build warns as much.
-When to change: Leave it off. In tests with a hard cut in the clip, turning it on left CRF and Constant Bitrate output byte for byte unchanged, changed a Variable Bitrate encode slightly, and printed "will not insert a key frame at scene changes" every time. To get a keyframe at a cut, put `--force-key-frames` with the frame or time in the Custom box; upstream documents it for CRF only.
+Summary: Turns on the encoder's scene change detector, which adds no keyframe at a cut: upstream says the encoder handles scene changes in its mode decisions instead, and the bundled build warns as much.
+When to change: Leave it off. In tests with a hard cut in the clip, turning it on left CRF and Constant Bitrate output byte for byte unchanged and printed "will not insert a key frame at scene changes" every time. To get a keyframe at a cut, put `--force-key-frames` with the frame or time in the Custom box; upstream documents it for CRF only.
 Values:
 - 0: Off. The encoder default and StaxRip's.
 - 1: On. No keyframe at cuts; the bundled build says so in a warning. CRF output was unchanged in a test.
@@ -514,8 +513,8 @@ Status: reviewed
 ## svt-av1.lookahead
 Label: Lookahead
 Summary: Controls how many frames ahead of the ones it is coding the encoder looks, so it can plan bits and frame types with what comes next in view; -1 lets it choose. A longer lookahead costs memory.
-When to change: Leave it at -1. The bundled build sets its own bounds anyway: a 2-pass Variable Bitrate run forces it to 42 with a warning, and 0 in Variable Bitrate was raised to 25 (tested). Do not type -1 into the Custom box: the bundled build refuses `--lookahead -1` as invalid; StaxRip sends nothing at -1. Values above 120 are refused.
-Example: In a CRF test on a 6-second synthetic clip (160x120, 25 fps, preset 8), every value from 0 to 26 gave the same file, about a quarter larger than at -1, while 32 and above matched the default byte for byte. Check a real scene before trusting a number.
+When to change: Leave it at -1. The bundled build sets its own bounds anyway: a 2-pass Variable Bitrate run caps it at 42 with a warning, and 0 in Variable Bitrate was raised to 25 (tested). Do not type -1 into the Custom box: the bundled build refuses `--lookahead -1` as invalid; StaxRip sends nothing at -1. Values above 120 are refused.
+Example: In a CRF test on a 6-second synthetic clip (160x120, 25 fps, preset 8), 0, 10, 24, 25 and 26 all gave the same file, about a quarter larger than at -1, while 32, 42, 60 and 120 matched the default byte for byte. Check a real scene before trusting a number.
 Related: svt-av1.pass, svt-av1.rc, svt-av1.hierarchical-levels, svt-av1.tf-strength, staxrip.custom, concept.lookahead
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
@@ -525,7 +524,7 @@ Status: reviewed
 Label: Hierarchical Levels
 Summary: Sets the frame layers per mini-GOP, 0 (flat) to 5 (six layers, 32 frames). Per upstream, slower presets use more layers for efficiency and fewer make a simpler stream that decodes faster.
 Used when: Bounded by other choices: Constant Bitrate caps it at 2 and open GOP (Intra Refresh Type 1) forces 4, each with a warning from the bundled build (tested).
-When to change: Leave it alone. StaxRip sends nothing at its default entry and the encoder picks by preset: in CRF tests 5 up to preset 8 and 4 from preset 9, and 4 in Variable Bitrate at presets 4 to 10, so the help's "5 up to preset 12" did not hold. The entry marked default says 4, and changing Preset here moves the default to 3 (2 at preset 13); neither is sent. Any other entry you pick is sent.
+When to change: Leave it alone. StaxRip sends nothing at its default entry, so the encoder picks by preset. In CRF tests that was 5 up to preset 8 and 4 from preset 9, and 4 in Variable Bitrate at presets 4 to 10; the help's "5 up to preset 12" did not hold. The entry marked default says 4, and changing Preset here moves the default to 3 (2 at preset 13); neither is sent. Any other entry you pick is sent.
 Encoder default: 5 or 4 by preset, see below
 Values:
 - 0: Flat, no layers, one-frame mini-GOPs. Accepted by the bundled build although its help starts at 2.
@@ -558,9 +557,9 @@ Status: reviewed
 ## svt-av1.enable-dg
 Label: Dynamic GOP
 Summary: Lets the encoder reshape the layer structure of a mini-GOP to suit the content instead of keeping one fixed pattern, per upstream. On by default; the keyframe spacing stays as set.
-When to change: Leave it on. Upstream's one-line description is all the documentation there is. In tests on short synthetic clips, turning it off left CRF encodes at presets 4 and 8 byte for byte unchanged and altered Variable Bitrate encodes a little, so switch it off only to compare against a fixed structure in a bitrate test.
+When to change: Leave it on. Upstream's one-line description is all the documentation there is. In tests on short synthetic clips, turning it off left CRF encodes at presets 4 and 8 byte for byte unchanged. Turn it off only to hold the layer structure fixed for an experiment of your own.
 Values:
-- 0: Off, one fixed structure. Changed nothing in CRF tests; altered Variable Bitrate output.
+- 0: Off, one fixed structure. Changed nothing in CRF tests.
 - 1: On. The encoder default and StaxRip's.
 Related: svt-av1.hierarchical-levels, svt-av1.startup-mg-size, svt-av1.rc, concept.gop
 References:
@@ -571,7 +570,7 @@ Status: reviewed
 Label: Startup Mini-GOP Size
 Summary: Gives the first mini-GOP after each keyframe a layer structure of its own, 3 to 5 layers; 0 keeps the usual one. Quality mode only.
 Used when: Quality mode only. In Variable or Constant Bitrate the bundled build stops with "Startup MG size feature only supports CRF/CQP rate control mode" (tested); the control stays visible anyway.
-When to change: Leave it at 0. The help says only that it swaps in another mini-GOP configuration after each keyframe, nothing about when that helps, so treat it as an experiment: in a test on a synthetic clip, 2, 3 and 4 each moved the file size a little with no keyframe change. Set it back to 0 before a bitrate encode or the encode stops.
+When to change: Leave it at 0. The help says only that it swaps in another mini-GOP configuration after each keyframe, nothing about when that helps, so treat it as an experiment: in a test on a synthetic clip, 2, 3 and 4 each moved the file size by up to about a tenth, up or down, with no keyframe change. Set it back to 0 before a bitrate encode or the encode stops.
 Values:
 - 0: Off. The encoder default and StaxRip's.
 - 2: Three layers for the first mini-GOP after each keyframe.
@@ -584,10 +583,10 @@ Status: reviewed
 
 ## svt-av1.enable-variance-boost
 Label: Enable Variance Boost
-Summary: Gives flat and dark areas more bits by lowering their quantizer, so smooth gradients and shadows keep their detail instead of turning into bands or blocks. Off by default; the file grows.
+Summary: Gives flat, low-detail areas more bits by lowering their quantizer, so smooth gradients keep their detail instead of turning into bands or blocks. Off by default; the file grows.
 Used when: Not applied with Constant Bitrate or with Adaptive Quantization 1: the bundled build switches it off with a warning in both cases (tested). Tune MS-SSIM overrides its strength.
-When to change: Turn it on when dark scenes or skies band or block in a test encode, then compare that scene and the file size against the same encode without it. Strength and Octile appear once it is on; start with their defaults. In a test on a small synthetic clip the file grew markedly at the default strength; a synthetic clip exaggerates this, so measure on your own footage.
-Example: Test context: a 160x120 synthetic gradient-and-noise clip, 3 s, CRF 35, preset 8, went from 16278 bytes off to 48234 on. On your footage, encode a short dark scene both ways, step through the darkest frames, and decide whether the cleaner shadows are worth the bits.
+When to change: Turn it on when flat areas such as skies, walls or gradients band or block in a test encode, then compare that scene and the file size against the same encode without it. Strength and Octile appear once it is on; start with their defaults. It costs bits: in a test on a small synthetic clip the file grew markedly at the default strength. For dark scenes as such, see Luminance QP Bias.
+Example: A 160x120 synthetic gradient-and-noise clip (3 s, CRF 35, preset 8) went from 16278 bytes off to 48234 on; such clips exaggerate. On your footage, encode a short scene with large smooth areas both ways, compare those frames, and decide whether the cleaner gradients are worth the bits.
 Values:
 - 0: Off. The encoder default and StaxRip's.
 - 1: On; shows Strength and Octile. The bundled build turns it off with Constant Bitrate or Adaptive Quantization 1.
@@ -598,7 +597,7 @@ Status: reviewed
 
 ## svt-av1.variance-boost-strength
 Label: Variance Boost Strength
-Summary: Sets how much extra quality the flat and dark areas get, 1 (mild) to 4 (aggressive). Each step spends more bits there, so expect a larger file.
+Summary: Sets how much extra quality the flat areas get, 1 (mild) to 4 (aggressive). Each step spends more bits there, so expect a larger file.
 Used when: Only with Enable Variance Boost on; the control is hidden otherwise. Tune MS-SSIM overrides it, per the bundled build's warning.
 When to change: Leave it at 2: Gentle, the encoder default. Go to 3 only if banding survives at 2, and compare the size: in a test on a small synthetic clip the file grew with every step, and 4 gave the largest file by far. The bundled build warns that 4 is a curve for specific situations, to be used with caution.
 Values:
