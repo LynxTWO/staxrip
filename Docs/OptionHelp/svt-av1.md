@@ -5,8 +5,8 @@ Encoder: svt-av1
 Locale: en
 Title: SVT-AV1
 Source: Source/Encoding/SvtAv1Enc.vb
-Allowed-Missing: 8
-Minimum-Reviewed: 92
+Allowed-Missing: 0
+Minimum-Reviewed: 100
 Reviewed-Complete: false
 Verified-Encoder-Version: SVT-AV1 v4.2.0+71+88-17cd99550 [Mod by Patman] (release)
 Verified-Encoder-Build: 17cd99550
@@ -1008,4 +1008,126 @@ Example: Test: 640x480 testsrc2 clip, preset 8, CRF 35. One frame: 6770 bytes wi
 Related: svt-av1.frames, svt-av1.tune, svt-av1.rc, svt-av1.lossless, concept.keyframe
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+Status: reviewed
+
+## svt-av1.color-primaries
+Label: Color Primaries
+Summary: Tells the player which red, green and blue your video was made with, so it shows the colors as intended. A label only: the encoded pixels are the same with or without it (tested).
+Used when: StaxRip fills it from the source you open (Import VUI metadata, Project > Options > Video) for BT.709 and BT.2020 sources only; set it yourself when that is wrong or the source has no tag.
+When to change: Leave what StaxRip set; the import is on by default. Check it when the source is standard definition (BT.601 is not auto-filled: pick it if you want the file to say so), when the source has no tag and you know its primaries, and when your script changes the colors, say tone-mapping HDR to SDR: the tag must then describe the new picture. Unspecified writes no claim at all.
+Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: the plain encode and one tagged BT.709 throughout, studio range, left chroma decoded to identical frames (ffmpeg framemd5), and so did an HDR-tagged encode with mastering display and light level metadata.
+Values:
+- 2: Unspecified. The encoder default and StaxRip's; no claim is written into the file.
+- 1: BT.709, the HD standard. What StaxRip sets for a source tagged BT.709.
+- 6: BT.601, the standard-definition tag. Not auto-filled; pick it by hand for SD material.
+- 9: BT.2020, the wider color range of UHD and HDR. What StaxRip sets for a source tagged BT.2020.
+Related: svt-av1.transfer-characteristics, svt-av1.matrix-coefficients, svt-av1.color-range, svt-av1.mastering-display, concept.color-description
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+Status: reviewed
+
+## svt-av1.transfer-characteristics
+Label: Transfer Characteristics
+Summary: Tells the player which curve turns your video's code values into brightness: BT.709 for ordinary SDR, PQ or HLG for HDR. A label only; the encoded pixels are the same either way (tested).
+Used when: StaxRip fills it from the source you open (Import VUI metadata, Project > Options > Video) for BT.709, PQ and HLG sources only; set it yourself when that is wrong or the source has no tag.
+When to change: Leave what StaxRip set; the import is on by default. The case that needs your hand is a script that changes the curve, above all tone-mapping HDR to SDR: pick BT.709 here, or the player applies the HDR curve to an SDR picture. Upstream notes HDR is usually 10-bit and pairs PQ or HLG with BT.2020 primaries; the bit depth comes from your script, not from this tag.
+Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: encodes tagged BT.709 and tagged PQ with the full HDR set both decoded to the same frames as the plain encode (ffmpeg framemd5).
+Values:
+- 2: Unspecified. The encoder default and StaxRip's; no claim is written.
+- 1: BT.709, the SDR curve. What StaxRip sets for a source tagged BT.709.
+- 6: BT.601, standard definition. Not auto-filled.
+- 16: SMPTE ST 2084, the PQ curve of HDR10. What StaxRip sets for a PQ source.
+- 18: HLG, the hybrid log-gamma curve of broadcast HDR. What StaxRip sets for an HLG source.
+Related: svt-av1.color-primaries, svt-av1.matrix-coefficients, svt-av1.mastering-display, svt-av1.content-light.max-cll, concept.color-description, concept.hdr-metadata
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#hdr-and-sdr-video
+Status: reviewed
+
+## svt-av1.matrix-coefficients
+Label: Matrix Coefficients
+Summary: Tells the player which matrix turns your video's Y, Cb and Cr values into red, green and blue: BT.709 for HD, BT.2020 non-constant for UHD and HDR. A label only; the pixels are the same (tested).
+Used when: StaxRip fills it from the source you open (Import VUI metadata, Project > Options > Video) for BT.709 and BT.2020 non-constant sources only; set it yourself when that is wrong or there is no tag.
+When to change: Leave what StaxRip set; the import is on by default. Standard-definition sources tagged BT.601 are not auto-filled; pick BT.601 for them if you want the file to say so. Keep it in step with Color Primaries, as the two normally travel together: BT.709 with BT.709, BT.2020 with BT.2020. A wrong matrix skews every color a little on playback; Unspecified writes no claim.
+Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: encodes tagged BT.709 and BT.2020 non-constant decoded to the same frames as the plain encode (ffmpeg framemd5).
+Values:
+- 2: Unspecified. The encoder default and StaxRip's; no claim is written.
+- 0: Identity, for RGB video. The bundled build accepts 4:2:0 YUV only, so it has no use here.
+- 1: BT.709, HD video. What StaxRip sets for a source tagged BT.709.
+- 6: BT.601, standard definition. Not auto-filled.
+- 9: BT.2020 non-constant luminance, UHD and HDR. What StaxRip sets for a source tagged that way.
+Related: svt-av1.color-primaries, svt-av1.transfer-characteristics, svt-av1.color-format, concept.color-description
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+Status: reviewed
+
+## svt-av1.color-range
+Label: Color Range
+Summary: Tells the player if your video's levels use the studio range (16 to 235 in 8-bit, the norm for video) or the full 0 to 255, so it scales them right. A label only; the pixels are the same (tested).
+Used when: StaxRip fills it from the source you open (Import VUI metadata) when it reports Limited or Full, and sets Studio whenever it fills Master Display; change it when that is wrong.
+When to change: Leave it at Studio unless the source really is full range, say a screen recording or an RGB capture, and your script keeps it that way. A wrong tag shows on playback: studio-range video tagged Full looks flat and washed out, full-range video tagged Studio loses the darkest and brightest detail. Check a bright and a dark frame in the player after a test encode.
+Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: the encode tagged Full decoded to the same frames as the plain encode (ffmpeg framemd5); only the flag in the file differs.
+Values:
+- 0: Studio, also called limited or TV range. The encoder default and StaxRip's; what nearly all video uses.
+- 1: Full, also called PC range. Only for sources that really use it.
+Related: svt-av1.color-primaries, svt-av1.matrix-coefficients, svt-av1.mastering-display, concept.color-description
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+Status: reviewed
+
+## svt-av1.chroma-sample-position
+Label: Chroma Sample Position
+Summary: Tells the player where the color samples of 4:2:0 video sit against the brightness samples, so the color lands in the right place when it upscales it. A label only; the pixels are the same (tested).
+Used when: StaxRip copies the position MediaInfo reports for the source you open (Import VUI metadata) when it is not 0; set it yourself when the source reports none or the copy is wrong, see below.
+When to change: Leave it at Unknown unless you know the position. MediaInfo counts as H.264 and HEVC do (0 left, 2 top-left) and this list as AV1 does (1 left, 2 top-left), so a top-left source comes across right while a left source stays Unknown; pick 1 for it yourself if you want the file to say so. Unknown writes no claim.
+Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: encodes tagged left (1) and top-left (2) decoded to the same frames as the plain encode (ffmpeg framemd5).
+Values:
+- 0: Unknown. The encoder default and StaxRip's; no claim is written.
+- 1: Vertical or left: level with the brightness samples across, halfway between two rows down. What H.264 and HEVC assume.
+- 2: Colocated or top-left: on the same spot as the top-left brightness sample; what StaxRip fills for a top-left source.
+Related: svt-av1.color-format, svt-av1.matrix-coefficients, concept.color-description
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+Status: reviewed
+
+## svt-av1.mastering-display
+Label: Master Display
+Summary: Writes HDR10's mastering display metadata into the file: primaries, white point and luminance range of the display it was graded on. Players use it to fit HDR to their screen; no pixel changes.
+Used when: StaxRip fills it from the source you open (Import VUI metadata) when MediaInfo reports BT.2020, Display P3 or DCI P3 mastering primaries with a luminance range, and sets Color Range to Studio too.
+When to change: Rarely by hand: StaxRip writes the standard coordinates of the reported display and copies the source's luminance range, so leave a plain HDR encode alone. Clear it when your script tone-maps HDR to SDR. To type one, keep exactly to `G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)` with no spaces: a stray word or a space inside hung the bundled build in a test; one without its L part was dropped silently.
+Example: For a source graded on a BT.2020 display with 1000 nits peak and 0.005 nits black, StaxRip fills `G(0.17,0.797)B(0.131,0.046)R(0.708,0.292)WP(0.3127,0.329)L(1000,0.005)`; in a test ffprobe read those values back from the encoded file, to the rounding of AV1's fields (bundled build, 160x120 clip).
+Related: svt-av1.content-light.max-cll, svt-av1.content-light.max-fall, svt-av1.transfer-characteristics, svt-av1.color-primaries, svt-av1.color-range, concept.hdr-metadata
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#hdr-and-sdr-video
+Status: reviewed
+
+## svt-av1.content-light.max-cll
+Label: Maximum CLL
+Summary: The brightest single pixel anywhere in the video, in nits, written into the file as HDR10 metadata together with Maximum FALL. Players use the pair to fit HDR to their screen; no pixel changes.
+Used when: Sent with Maximum FALL as one `--content-light` switch, `max-cll,max-fall`, whenever either is above 0; at 0,0 nothing is sent. StaxRip fills both from the source you open (Import VUI metadata).
+When to change: HDR video only; leave both at 0 for SDR and clear them when your script tone-maps HDR to SDR. In a test MediaInfo gave an HDR10 HEVC sample's values as plain numbers (1000 and 400), the form StaxRip reads, so check the pair against the source's MediaInfo report (Maximum Content Light Level, Maximum Frame-Average Light Level) and type them only if missing. The encoder clips 70000 to 65535 (tested).
+Example: `--content-light 1000,400` read back from the encoded file as MaxCLL 1000 and MaxFALL 400 in ffprobe (bundled build, 160x120 test clip); 70000,400 came back as 65535,400, while 0,0 and 0,400 wrote nothing.
+Related: svt-av1.content-light.max-fall, svt-av1.mastering-display, svt-av1.transfer-characteristics, concept.hdr-metadata
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
+Status: reviewed
+
+## svt-av1.content-light.max-fall
+Label: Maximum FALL
+Summary: The brightest frame by its average light level, in nits, written into the file as HDR10 metadata together with Maximum CLL. Players use the pair to fit HDR to their screen; no pixel changes.
+Used when: Rides in Maximum CLL's `--content-light` switch as its second number; with Maximum CLL at 0 the bundled build wrote no metadata (tested). StaxRip fills both from the source (Import VUI metadata).
+When to change: HDR video only, and never above Maximum CLL: a frame's average cannot exceed its brightest pixel, and the encoder does not check (400,1000 went in as is in a test). Leave both at 0 for SDR and clear them after tone-mapping to SDR. MediaInfo gave a test sample's value as a plain number StaxRip reads; check it against MediaInfo's Maximum Frame-Average Light Level and type it only if missing.
+Example: In a test, `--content-light 400,0` wrote MaxCLL 400 and MaxFALL 0 into the file and `1,400` wrote both, while `0,400` wrote nothing at all (bundled build, 160x120 clip).
+Related: svt-av1.content-light.max-cll, svt-av1.mastering-display, concept.hdr-metadata
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options
 Status: reviewed

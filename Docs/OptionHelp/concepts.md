@@ -154,3 +154,20 @@ Label: Lossless coding
 Summary: Compression that gives back every pixel exactly, as a zip file gives back every byte, so the file is many times larger than a normal encode. In AV1 it is a mode of its own, not a low quality number.
 When to change: Not a setting. See the options that link here.
 Status: reviewed
+
+## concept.color-description
+Label: Color description
+Summary: The tags in a video file that tell a player which color primaries, transfer curve, matrix and range the pixels use, so it can show them as intended. They describe the picture and change no pixel.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+Status: reviewed
+
+## concept.hdr-metadata
+Label: HDR metadata
+Summary: HDR10 metadata: the primaries, white point and luminance range of the mastering display, and the video's brightest pixel and frame (MaxCLL, MaxFALL). A player uses it to fit HDR to its screen.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#hdr-and-sdr-video
+Status: reviewed
