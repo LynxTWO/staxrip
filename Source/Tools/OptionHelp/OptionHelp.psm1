@@ -917,7 +917,7 @@ function Test-OptionHelpRepository {
         if ($reviewed -lt $minimum) { $pass = $false; $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E7'; Message = "reviewed $reviewed is below Minimum-Reviewed $minimum" }) }
         if ($complete -and ($missingList.Count -gt 0 -or $draft -gt 0)) { $pass = $false; $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E7'; Message = 'Reviewed-Complete is true but not every parameter is reviewed' }) }
         $encoders.Add([pscustomobject]@{
-            Encoder = $f.Encoder; Total = $total; Excluded = $excluded; Reviewed = $reviewed; Draft = $draft; Missing = $missingList.Count
+            Encoder = $f.Encoder; File = $f.Name; Total = $total; Excluded = $excluded; Reviewed = $reviewed; Draft = $draft; Missing = $missingList.Count
             AllowedMissing = $allowed; MinimumReviewed = $minimum; AllowedMissingText = $allowedText; MinimumReviewedText = $minimumText
             ReviewedComplete = $complete; Pass = $pass; MissingIds = $missingList
         })
@@ -985,7 +985,9 @@ function Update-OptionHelpRatchet {
     $moves = [System.Collections.Generic.List[object]]::new()
     try {
         foreach ($e in $Report.Encoders) {
-            $path = Join-Path $RepoRoot "Docs/OptionHelp/$($e.Encoder).md"
+            # The file the report counted, not <encoder>.md: an encoder's English file can be
+            # named <encoder>.en.md, and the ratchet must rewrite the file that was read.
+            $path = Join-Path $RepoRoot "Docs/OptionHelp/$($e.File)"
             $text = [System.IO.File]::ReadAllText($path)
             $newAllowed = [Math]::Min($e.AllowedMissing, $e.Missing)
             $newMinimum = [Math]::Max($e.MinimumReviewed, $e.Reviewed)
