@@ -178,19 +178,18 @@ Reviewed-Complete: false
 ## svt-av1.preset
 Label: Preset
 Summary: Controls the tradeoff between encoding speed and compression. Lower numbers usually make a smaller file at similar quality, but the encode can take much longer.
-When to change: StaxRip starts you at 9. Try 6 for a final encode when a smaller file is worth the extra time; use 10 or higher for quick tests.
-Encoder default: 8
-Example: Encode the same 60-second sample at presets 9, 6, and 4. Compare the time and file size before committing the whole video.
+When to change: StaxRip starts you at 8, which is also the encoder's own default. Try 6 for a final encode when a smaller file is worth the extra time; use 10 or higher for quick tests.
+Example: Encode the same 60-second sample at presets 8, 6, and 4. Compare the time and file size before committing the whole video.
 Values:
 - 0: Extremely slow. Mainly useful for experiments.
 - 4: High compression efficiency with a large encoding-time cost.
 - 6: Slower than StaxRip's default, with better compression efficiency.
-- 8: The encoder's own default.
-- 9: StaxRip's default and a practical starting point.
+- 8: The encoder's default and StaxRip's.
+- 9: One step faster than the default.
 - 13: Fastest, with the largest compression tradeoff.
 Related: svt-av1.crf, concept.compression-efficiency
 References:
-- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v3.0.2/Docs/Parameters.md
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md
 Status: reviewed
 
 ## svt-av1.tune
@@ -268,7 +267,7 @@ All changes are in `Source/Forms/CommandLineForm.vb` and its designer file.
 | Dropdown value notes | option branch, line 275 | `Dim menuItem = menuBlock.Button.Add(text, x2)`; when the stanza has a note for `oParam.GetEmittedValue(x2)`, `menuItem.ToolTipText = note`, set directly so the 80-character rule in `Menu.vb` does not apply, and only when `MenuItemEx.UseTooltips` is on, honoring the user's menu-tooltip setting |
 | Description strip | designer plus `InitUI` | `lblDescription As LabelEx` in `tlpMain` at a new row 1 spanning all four columns; `tlpRTB` moves to row 2 and the button row to row 3; `AutoSize = False`, height `FontHeight * 3` plus padding, `AutoEllipsis = True`, `UseMnemonic = False`, anchored left and right. `MouseEnter` and `Enter` on every target call `SetDescription(item)`, which shows `<caption>: <Summary>` and, on the next line, `When to change: <text>`; text that does not fit is cut with an ellipsis and remains available in the details window. The strip keeps the last text on `MouseLeave`. Initial text: `Point at an option, or move focus to it, to see what it does. Press F1 for details.` The strip is hidden when no option in the dialog has a reviewed stanza, so dialogs of encoders without help are unchanged |
 | Details window | new `ShowOptionHelp(item)` | Generated first, from the parameter: `Current value` (option text for dropdowns, number for numeric fields, On or Off for checkboxes; omitted for text fields so paths never reach the temp file), `StaxRip default`, `Encoder default` from the stanza when present, `Valid range` from `NumParam.Config`, and `Switches` sorted ordinally. Then the authored sections: what it does, `Used when`, when to change it, example, a table of every dropdown value with the note where one exists, related options as `staxrip://option/<id>` links (non-reviewed targets omitted), references, and the final link `Show the encoder's own help for <switch>` as `staxrip://console-help`. Rendered through the trust boundary in 5.4 |
-| Search | `cbGoTo_TextChanged`, line 413 | Also matches the stable ID, every alias, label, summary, `Used when`, `When to change`, example, value notes, and the labels of related entries, case-insensitive |
+| Search | `cbGoTo_TextChanged`, line 413 | Also matches the local part of the stable ID (the text after the namespace dot; every option in a dialog shares the namespace, so it is not indexed), every alias, label, summary, `Used when`, `When to change`, example, value notes, and the labels of related entries (the local part of the id for a target without a reviewed label), case-insensitive |
 
 ### 5.4 `HelpForm` and rendering: trust boundary
 
@@ -291,7 +290,7 @@ File-level errors invalidate the whole file, and an invalid file anywhere in an 
 
 | File-level | Stanza-level |
 | --- | --- |
-| Unknown or missing `Schema`; missing or invalid `Encoder` or `Locale`; header disagreeing with the file name; duplicate header key; invalid encoding; `Inherits` unknown or cyclic; duplicate stanza ID; two resources resolving to the same encoder and locale | Missing or overlong `Summary`; missing `When to change` on a reviewed stanza; bad field order; duplicate field; unknown field; unresolved `Related` or `Use`; value note for a value the option does not have; invalid URL; malformed inline markup |
+| Unknown or missing `Schema`; missing or invalid `Encoder` or `Locale`; header disagreeing with the file name; duplicate header key; invalid encoding; `Inherits` unknown or cyclic; duplicate stanza ID; two resources resolving to the same encoder and locale | Missing or overlong `Summary`; missing `When to change` on a reviewed stanza; bad field order; duplicate field; unknown field; unresolved `Related` or `Use`; value note for a value the option does not have; invalid URL; malformed inline markup; a C0 control character other than tab in a text field or value note |
 
 Stanza-level errors fail the validator, so they never reach a validated build; production fails closed only on file-level errors (identity and inheritance), and a reviewed stanza that somehow carries a stanza-level error still displays, its markup rendered inert by the node writers.
 
@@ -338,7 +337,7 @@ Known blind spots, recorded in the script's README: parameters declared but neve
 | W1 | warning | An encoder VB file under `Source/Encoding/` with no help file; reported as fully missing, never fails |
 | W2 | warning | `Label` differs from the VB `.Text` |
 | W3 | warning | Parameters excluded with `none`, listed by name |
-| W4 | warning | An own-namespace identity that resolves in `staxrip.md` because its local part collides with a StaxRip-owned key; it still counts as reviewed, but the text shown is about StaxRip's setting, not the encoder's switch |
+| W4 | warning | An own-namespace identity that resolves in the `staxrip` file because its local part collides with a StaxRip-owned key; it fires whatever the outcome (reviewed, draft, or alias) and the parameter is counted by that outcome, but the text found is about StaxRip's setting, not the encoder's switch |
 
 ### 6.4 Counters and the ratchet
 
@@ -354,7 +353,7 @@ The skeleton `svt-av1.md` created in step 1 starts at `Allowed-Missing: 100`, `M
 
 ### 6.5 Self-test fixtures
 
-`Source/Tools/OptionHelp/fixtures/` holds a small fake VB file exercising every extraction pattern (property declarations, inline `New ... With {` inside `Add(...)`, nested braces in `.Config`, quoted braces, commented-out declarations, shared switches, switch-less controls with explicit keys, an excluded control, and an unrecognized construction for E11), one Markdown file per rule E1 to E13, a clean pair, and security fixtures: HTML characters in every field, fake and nested links, unmatched backticks, `javascript:` and `file:` schemes, protocol-relative links, duplicate headers, locale collisions, and a variant draft shadowing a reviewed base stanza. Per-fixture canonical dumps and report expectations under `fixtures/expected/*.txt` record the result for each; `-SelfTest` compares and prints the first difference as a bounded failure packet.
+`Source/Tools/OptionHelp/fixtures/` holds a small fake VB file exercising every extraction pattern (property declarations, inline `New ... With {` inside `Add(...)`, nested braces in `.Config`, quoted braces, commented-out declarations, shared switches, switch-less controls with explicit keys, an excluded control, and an unrecognized construction for E11), one Markdown file per rule E1 to E13, a clean pair, and security fixtures: HTML characters in every field, fake and nested links, unmatched backticks, `javascript:` and `file:` schemes, protocol-relative links, duplicate headers, locale collisions, and own-namespace shadowing: a variant file's stanza in its own namespace (`shadow-variant.alpha`) hides the inherited `shadow-base.alpha` for that variant, even as a draft. The chain fixtures still shadow by repeating the base id verbatim in the variant file, a shape the resolver also honours because a foreign namespace is probed verbatim; they keep it until Tier 2 reshapes them to the own-namespace form. Per-fixture canonical dumps and report expectations under `fixtures/expected/*.txt` record the result for each; `-SelfTest` compares and prints the first difference as a bounded failure packet.
 
 ### 6.6 Not in this slice
 

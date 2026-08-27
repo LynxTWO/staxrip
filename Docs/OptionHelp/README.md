@@ -26,6 +26,12 @@ Field order is fixed. `Summary` and `Status` are required; `When to change` is r
 
 The heading is the option's stable id, `<encoder>.<switch without dashes>` for ordinary options (`svt-av1.preset` for `--preset`). Controls that share a switch or have no switch carry an explicit `OptionHelpKey` in the VB declaration; `Check-OptionHelp.ps1` prints the id of every option it cannot find text for, so you never have to derive one by hand.
 
+## Variants and inheritance
+
+A variant encoder's file names its base with `Inherits: <base>` and holds only what differs. An option is looked up namespace-relative along the chain: the variant's own file first, then the base's, then `staxrip.md`, each probed for `<that file's encoder>.<local part>`. So `<variant>.preset` finds `svt-av1.preset` in the base file without the variant repeating it, and the variant overrides an option by writing `## <variant>.preset` in its own file. That stanza wins even as a `draft`, which is how a variant author hides base text that is wrong for the variant until the replacement is reviewed; a variant file never repeats a base id. Ids in another namespace (`staxrip.*`, `concept.*`, `shared.*`) are looked up verbatim in each chain file.
+
+A stanza in an encoder file must match an option of that encoder or of an encoder that inherits from it, so a base file may carry text for a switch only a variant declares. Run the unscoped check after editing a variant file: the base's orphan rule and counters depend on the variant's declarations, and a scoped run reports the counters of the named encoder alone (it does apply the stanza rules to every file in the chain and to the shared files).
+
 ## Writing rules
 
 1. The first sentence names the observable effect on picture quality, file size, encoding speed, decoding compatibility, resource use, or workflow.
