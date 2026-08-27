@@ -1,6 +1,6 @@
 Schema: 1
 Encoder: unicode
-Locale: en
+Locale: de
 Title: Umlaute
 Source: Source/Encoding/U.vb
 Allowed-Missing: 0

@@ -1,7 +1,7 @@
-FILE unicode.md
+FILE unicode.de.md
 H Schema=1
 H Encoder=unicode
-H Locale=en
+H Locale=de
 H Title=Umlaute
 H Source=Source/Encoding/U.vb
 H Allowed-Missing=0
