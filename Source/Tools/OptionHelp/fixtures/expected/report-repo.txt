@@ -1,6 +1,6 @@
 ENCODER badid total=1 excluded=0 reviewed=0 draft=0 missing=1 allowed-missing=1 minimum-reviewed=zero reviewed-complete=false result=PASS
 MISSING badid.alpha Alpha
-ENCODER fake total=12 excluded=1 reviewed=4 draft=2 missing=5 allowed-missing=2 minimum-reviewed=3 reviewed-complete=false result=FAIL
+ENCODER fake total=12 excluded=2 reviewed=4 draft=2 missing=5 allowed-missing=2 minimum-reviewed=3 reviewed-complete=false result=FAIL
 MISSING fake.pass Passes
 MISSING fake.zeta Zeta
 MISSING fake.eta Eta
@@ -12,9 +12,9 @@ ENCODER fakevar2 total=1 excluded=0 reviewed=0 draft=1 missing=0 allowed-missing
 E1 Docs/OptionHelp/badid.en.md:1 Duplicate help file for encoder 'badid' locale 'en'
 E1 Docs/OptionHelp/badid.md:1 Minimum-Reviewed must be a non-negative integer
 E1 Docs/OptionHelp/cyc.md:1 Inheritance cycle at 'cyc'
-E10 Source/Encoding/FakeEnc.vb:73 Parameter 'NoKey' (Custom) has no identity; set OptionHelpKey
-E11 Source/Encoding/FakeEnc.vb:92 Unrecognized parameter type 'WeirdParam'
-E11 Source/Encoding/FakeEnc.vb:93 Parameter of type 'NumParam' is not declared with 'With {'
+E10 Source/Encoding/FakeEnc.vb:78 Parameter 'NoKey' (Custom) has no identity; set OptionHelpKey
+E11 Source/Encoding/FakeEnc.vb:97 Unrecognized parameter type 'WeirdParam'
+E11 Source/Encoding/FakeEnc.vb:98 Parameter of type 'NumParam' is not declared with 'With {'
 E12 Docs/OptionHelp/badid.en.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
 E12 Docs/OptionHelp/badid.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
 E12 Docs/OptionHelp/concepts.md:1 Duplicate EmbeddedResource entries (2) in Source/StaxRip.vbproj
@@ -31,4 +31,5 @@ E7 Docs/OptionHelp/fake.md:1 missing 5 exceeds Allowed-Missing 2
 E9 Source/Encoding/BadIdEnc.vb:1 OptionHelpId is 'wrong', expected 'badid'
 W1 Source/Encoding/OtherEnc.vb no help file
 W3 fake Hidden excluded
+W3 fake Hidden2 excluded
 RESULT FAIL

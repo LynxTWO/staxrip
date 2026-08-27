@@ -1045,7 +1045,8 @@ function Compare-OptionHelpFacts {
         # Key both sides by the declaring property name, so two controls that share one identity
         # are still two entries and neither hides the other; inline parameters have no property
         # name ('-' on both sides) and fall back to their identity. Excluded parameters are keyed
-        # the same way and compared, which is what makes an exclusion mismatch reachable at all.
+        # the same way and compared, which is what makes an exclusion mismatch reachable at all --
+        # but only when the application exported an entry for them at all; see below.
         $app = New-OhMap
         foreach ($p in $enc.parameters) {
             $key = Get-OhFactsKey -Name ([string](Get-OhJsonField -Object $p -Name 'name')) -Identity ([string](Get-OhJsonField -Object $p -Name 'identity'))
@@ -1054,7 +1055,16 @@ function Compare-OptionHelpFacts {
         foreach ($p in $extraction.Parameters) {
             $key = Get-OhFactsKey -Name $p.Name -Identity $p.Identity
             if (-not $key) { continue }
-            if (-not $app.ContainsKey($key)) { $out.Add("E11 $key missing from the application export"); continue }
+            if (-not $app.ContainsKey($key)) {
+                # An excluded declaration the application never exported is not a difference. The
+                # extractor reads declarations out of the text; the application exports Items, the
+                # parameters it actually registered. OptionHelpKey = "none" says "this parameter is
+                # not shown", and never reaching Items says exactly the same thing, so the two sides
+                # already agree and there is nothing to report. A parameter that is not excluded is
+                # still reported, and so is one the application exported but the extractor did not.
+                if ($p.Excluded) { continue }
+                $out.Add("E11 $key missing from the application export"); continue
+            }
             $a = $app[$key]
             $app.Remove($key)
             $appExcluded = [bool](Get-OhJsonField -Object $a -Name 'excluded')

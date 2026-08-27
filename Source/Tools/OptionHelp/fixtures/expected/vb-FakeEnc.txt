@@ -9,9 +9,10 @@ P 51 Zeta NumParam id=fake.zeta excluded=false caption=Zeta switches=--zeta valu
 P 56 Eta BoolParam id=fake.eta excluded=false caption=Eta switches=--eta,--no-eta values=
 P 62 Chunks NumParam id=staxrip.chunks excluded=false caption=Chunks switches= values=
 P 68 Hidden StringParam id=- excluded=true caption=Hidden switches=--hidden values=
-P 73 NoKey StringParam id=- excluded=false caption=Custom switches= values=
-P 76 CustomSecond StringParam id=staxrip.custom excluded=false caption=Custom Second Pass switches= values=
-P 89 - NumParam id=fake.inline excluded=false caption=Inline switches=--inline values=
-ERR 73 E10
-ERR 92 E11
-ERR 93 E11
+P 73 Hidden2 StringParam id=- excluded=true caption=Hidden 2 switches=--hidden2 values=
+P 78 NoKey StringParam id=- excluded=false caption=Custom switches= values=
+P 81 CustomSecond StringParam id=staxrip.custom excluded=false caption=Custom Second Pass switches= values=
+P 94 - NumParam id=fake.inline excluded=false caption=Inline switches=--inline values=
+ERR 78 E10
+ERR 97 E11
+ERR 98 E11

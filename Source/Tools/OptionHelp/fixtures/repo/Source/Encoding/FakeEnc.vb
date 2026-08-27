@@ -70,6 +70,11 @@ Public Class FakeEncParams
         .Switch = "--hidden",
         .Text = "Hidden"}
 
+    Property Hidden2 As New StringParam With {
+        .OptionHelpKey = "none",
+        .Switch = "--hidden2",
+        .Text = "Hidden 2"}
+
     Property NoKey As New StringParam With {
         .Text = "Custom"}
 
