@@ -1,0 +1,2 @@
+E1 Docs/OptionHelp/bogus.md:1 No help file for encoder 'bogus'
+RESULT FAIL

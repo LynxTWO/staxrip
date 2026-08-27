@@ -91,6 +91,10 @@ Tests changed in the same patch need added scrutiny. Explain removed assertions,
 
 Use short sentences, plain words, active voice, ASCII punctuation, and direct names for the subject, risk, and safeguard. Avoid hype, boilerplate, vague openings, apology filler, and explanations that assert intent without evidence.
 
+## Option help
+
+Encoder option help lives in `Docs/OptionHelp/*.md` under the grammar in `Docs/Planning/OPTION-HELP.md`; `Docs/OptionHelp/README.md` is the authoring guide. Run `pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1` before a pull request that touches `Source/Encoding/*.vb` or `Docs/OptionHelp/`; a new parameter needs at least a draft stanza. Draft the prose with whichever model or writer produces the warmest, clearest friend-to-friend English; a stanza becomes `reviewed` only after technical verification against the bundled encoder version and a human readability review in the real dialog.
+
 ## Pull request close-out
 
 End each pull request with a short record of:

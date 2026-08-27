@@ -446,6 +446,11 @@ function Invoke-OptionHelpSelfTest {
         $actual = Format-OptionHelpReport -Report (Test-OptionHelpRepository -RepoRoot (Join-Path $FixturesRoot $repo))
         if ($expected -ne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-$repo`n--- expected`n$expected`n--- actual`n$actual") }
     }
+    # A -Encoder typo that names no English file must fail loudly, not print an empty RESULT PASS.
+    $count++
+    $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\report-repo-bogus.txt')).Replace("`r`n", "`n")
+    $actual = Format-OptionHelpReport -Report (Test-OptionHelpRepository -RepoRoot (Join-Path $FixturesRoot 'repo') -Encoder 'bogus')
+    if ($expected -ne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-repo-bogus`n--- expected`n$expected`n--- actual`n$actual") }
     # Ratchet: copy repo-clean to a temp dir, advance, compare the two counter lines.
     $count++
     $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("optionhelp-ratchet-" + [guid]::NewGuid().ToString('N'))
@@ -613,6 +618,12 @@ function Test-OptionHelpRepository {
     $encoders = [System.Collections.Generic.List[object]]::new()
     $resources = Get-OhResourceEntries -ProjectPath (Join-Path $RepoRoot 'Source\StaxRip.vbproj')
 
+    # A -Encoder that names no English file must fail loudly instead of scoping every later loop
+    # down to nothing and passing with an empty report.
+    if ($Encoder -and -not $files.ContainsKey($Encoder)) {
+        $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$Encoder.md"; Line = 1; Code = 'E1'; Message = "No help file for encoder '$Encoder'" })
+    }
+
     # File-level parse errors and the file-to-resource E12 check: scoped to -Encoder when given.
     foreach ($f in $files.Values) {
         if ($Encoder -and $f.Encoder -ne $Encoder) { continue }
@@ -767,7 +778,7 @@ function Update-OptionHelpRatchet {
         foreach ($mv in $moves) { [System.IO.File]::Move($mv.Tmp, $mv.Path, $true) }
     }
     finally {
-        foreach ($mv in $moves) { if (Test-Path $mv.Tmp) { Remove-Item $mv.Tmp -Force } }
+        foreach ($mv in $moves) { if (Test-Path -LiteralPath $mv.Tmp) { Remove-Item -LiteralPath $mv.Tmp -Force } }
     }
 }
 

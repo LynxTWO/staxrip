@@ -486,6 +486,15 @@
     <EmbeddedResource Include="..\CHANGELOG-SUPPORTER.md">
       <Link>CHANGELOG-SUPPORTER.md</Link>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\svt-av1.md">
+      <Link>OptionHelp\svt-av1.md</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\staxrip.md">
+      <Link>OptionHelp\staxrip.md</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\concepts.md">
+      <Link>OptionHelp\concepts.md</Link>
+    </EmbeddedResource>
     <None Include="..\README.md">
       <Link>README.md</Link>
     </None>

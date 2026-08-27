@@ -10,7 +10,8 @@ Reviewed-Complete: false
 ## wrapped.alpha
 Summary: This summary wraps
   onto a second line
-  and then a third line with a bad tick `.
+  and then a third line, all clean.
+When to change: The situation and action, but the note has a bad tick `.
 Status: draft
 
 ## wrapped.beta
