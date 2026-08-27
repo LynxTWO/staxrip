@@ -25,7 +25,7 @@ Values:
 - 8: The encoder's default and StaxRip's.
 - 9: One step faster than the default.
 - 13: Fastest, with the largest compression tradeoff.
-Related: svt-av1.crf, concept.compression-efficiency
+Related: svt-av1.crf, svt-av1.tune, svt-av1.hierarchical-levels, concept.compression-efficiency
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md
 Status: reviewed
@@ -48,7 +48,7 @@ Label: Frames To Be Encoded
 Summary: Encodes only this many frames of your script instead of all of them; 0 means all frames. It is for test encodes, not for cutting a video.
 When to change: Set a few hundred frames, or a few thousand for a whole scene, to try settings before committing hours to the full encode. Counting starts after Frames To Be Skipped, and a negative number encodes everything except that many frames at the end. To cut a video for real, select the parts to keep in the preview window's Cut menu; this control only shortens the video stream.
 Example: Set 1500 here and 20000 in Frames To Be Skipped to encode one minute of a 25 fps movie starting about 13 minutes in. A number larger than what is left after the skip is cut down to fit, so the encoder never loops back to the start.
-Related: svt-av1.skip, staxrip.chunks
+Related: svt-av1.skip, svt-av1.avif, staxrip.chunks
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#encoder-global-options
 Status: reviewed
@@ -72,7 +72,7 @@ Values:
 - 1: 4:2:0. The encoder default and the only format the bundled build accepts.
 - 2: 4:2:2. Refused by the bundled build, which also asks for profile 1 or 2; those failed too with 8-bit 4:2:0 input.
 - 3: 4:4:4. Refused by the bundled build with the same messages as 2.
-Related: svt-av1.profile
+Related: svt-av1.profile, svt-av1.chroma-sample-position
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#encoder-global-options
 Status: reviewed
@@ -110,7 +110,7 @@ Label: Level Of Parallelism
 Summary: Controls how much parallel work SVT-AV1 creates, including threads and picture buffers. 0 lets the encoder choose for your CPU.
 When to change: Leave it at 0 for a single encode. Set a low explicit level when you need to reduce CPU or memory use, or when several encodes are running at once. The level is not a thread count. Upstream says levels 4 and up also work on extra groups of frames at once in CRF mode, at a much higher memory cost, and that in the default CRF setup the picture is the same at level 1 as at higher levels.
 Example: On a 16-core Ryzen 9 5950X the bundled build chose level 6 for a test clip when left at 0, and printed it in its banner; `--lp 1` produced a file of the same size.
-Related: svt-av1.pin, svt-av1.ss, concept.parallelism
+Related: svt-av1.pin, svt-av1.ss, svt-av1.hbd-mds, svt-av1.enable-tf, concept.parallelism
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-a-encoder-parameters
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#threading-and-efficiency
@@ -288,6 +288,7 @@ Label: Maximum Bitrate
 Summary: Caps the bitrate of a CRF encode in kbps: the encoder keeps the CRF quality where it fits under the cap and cuts back where it would not. 0 means no cap; the encoder calls the result capped CRF.
 Used when: Only with Constant Rate Factor visible, that is Quality mode with Adaptive Quantization 2. With a bitrate target the bundled build refuses it, and with CQP it ignores it with a warning (tested).
 When to change: Leave it at 0 unless a player or a bandwidth limit needs a ceiling; then set the ceiling and check the hardest scene. In a test on a small clip, CRF 20 with a cap below its natural rate came out at the cap, and a cap above it left the file byte for byte unchanged. The dialog goes up to 100000 kbps in steps of 100.
+Example: Test: 160x120 synthetic gradient-and-noise clip, 24 frames at 25 fps, preset 8, CRF 20; uncapped 60550 bytes, about 500 kbps. Cap 100: 12098 bytes; 200: 25878; 400: 60523; 1000: the uncapped file byte for byte.
 Related: svt-av1.crf, svt-av1.tbr, svt-av1.rc, svt-av1.aq-mode, concept.bitrate
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
@@ -342,6 +343,7 @@ Label: Sharpness Bias
 Summary: Biases the deblocking filter and the rate control toward a softer (negative) or sharper (positive) picture, -7 to 7. Upstream says it may help perceived quality in video too.
 Used when: Ignored with Tune 4: MS-SSIM, which overrides it; the bundled build says so in a warning. Tune 3 overrides it too but stops anyway with the usual prediction structure.
 When to change: Leave it at 0. Try 1 or 2 when a test encode looks soft, and compare the file size as well as the picture: in a test on a small clip, 7 gave a clearly larger file than 0 and -7 a smaller one, so the bias spends and saves bits, not only filtering. Upstream made it for the still-image tunes.
+Example: Test: 160x120 synthetic gradient-and-noise clip, 24 frames, preset 8, CRF 35: 4526 bytes at 0, 6558 at 7 (45% larger) and 4239 at -7 (6% smaller).
 Values:
 - -7: Softest bias. In a test the file got smaller than at 0.
 - 0: No bias. The encoder default and StaxRip's.
@@ -382,7 +384,7 @@ Status: reviewed
 
 ## svt-av1.hbd-mds
 Label: High Bit Depth Mode Decisions
-Summary: Chooses the bit depth the encoder uses for its mode decisions with 10-bit video: 8-bit, 10-bit, or a mix. -1 lets the preset decide, and in this dialog it is the only entry that works.
+Summary: Chooses the bit depth for the encoder's mode decisions (its block size and prediction choices) with 10-bit video: 8-bit, 10-bit, or a mix. -1 lets the preset decide; only that entry works here.
 Used when: 10-bit video only. Upstream says 10-bit decisions need 10-bit input, and the bundled build refuses 1 and 2 with 8-bit video (tested).
 When to change: Leave it at -1: Off. StaxRip sends each entry's position rather than the number in its label, so the list is off by one and every other entry either stops the encode or, with 10-bit video, crashed the bundled build in a test unless Level Of Parallelism was 1 to 3. The notes on each entry say what is sent.
 Encoder default: -1
@@ -410,8 +412,9 @@ Status: reviewed
 
 ## svt-av1.ac-bias
 Label: AC Bias in Rate Distortion
-Summary: Tilts the encoder's rate-distortion choices toward keeping high-frequency detail such as texture and grain, from 0.0 (off) to 8.0. Upstream calls it an energy-preserving psychovisual metric.
+Summary: Tilts the encoder's trade of bits against picture error, its rate-distortion choices, toward keeping high-frequency detail such as texture and grain, from 0.0 (off) to 8.0.
 When to change: Leave it at 0.0 for a first encode. Upstream suggests 1.0 to 1.5 to keep textures and busy motion crisp, and 4.0 to 6.0 together with temporal filtering and CDEF (the Constrained Directional Enhancement Filter) turned off to retain film grain and noise. It costs bits: in a test on a small clip, 1.25 and 8 both grew the file. Compare a grainy scene at 0 and at 1.25 before using it everywhere.
+Example: Test: 160x120 synthetic gradient-and-noise clip, 24 frames, preset 8, CRF 35: 4526 bytes at 0, 5024 at 1.25 (11% larger) and 5838 at 8 (29% larger).
 Related: svt-av1.sharpness, svt-av1.tf-strength, svt-av1.enable-cdef, svt-av1.tune
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
@@ -702,6 +705,7 @@ Status: reviewed
 Label: Motion Field Motion Vector
 Summary: Lets the encoder reuse motion it already found in earlier frames as a starting guess for the current one, which saves bits on motion data. -1 leaves the choice to the preset.
 When to change: Leave it at -1. In CRF tests with the bundled build it was on at presets 8 to 10 and off from 11 up, in line with upstream's table for presets 0 to 10. Forcing 0 made the files 0.2% to 1.5% larger at presets 8 to 10; forcing 1 at presets 11 to 13 made them 0.3% smaller, at whatever time cost the preset was avoiding. Test a short scene before deciding either way.
+Example: Test: 640x480 testsrc2 clip, 24 frames, CRF 35. Forcing 0: 105865 bytes against 105036 at preset 8, 111113 against 110871 at 9, 122177 against 121389 at 10. Forcing 1 at presets 11 to 13: 130098 against 130533. A noisy 160x120 clip grew 1.5% at preset 8.
 Related: svt-av1.preset, svt-av1.enable-tf
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options

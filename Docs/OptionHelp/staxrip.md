@@ -68,7 +68,7 @@ Summary: Splits the video into this many pieces, encodes them as separate encode
 Used when: Needs the AviSynth/VapourSynth decoder with avs2pipemod or vspipe and the mkvmerge or MP4Box muxer. Other setups are not blocked but silently wrong: repeated opening frames, or pieces never joined.
 When to change: Leave it at 1 unless the encoder leaves cores idle; SVT-AV1 already uses many threads for one encode. Pieces run in parallel, sharing the parallel-processes limit in the settings (3 by default) with audio encoding. The cost: every piece starts with its own keyframe, and with a bitrate target each piece is held to that bitrate by itself, so bits cannot move from easy pieces to hard ones.
 Example: Set 2 with the parallel-processes limit at 2 or more and compare the total time with a plain encode of the same clip before using it for a real job.
-Related: staxrip.decoder, staxrip.pipe, concept.rate-control
+Related: staxrip.decoder, staxrip.pipe, concept.rate-control, concept.keyframe
 Status: reviewed
 
 ## staxrip.comp-check
