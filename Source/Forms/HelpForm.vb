@@ -54,7 +54,7 @@ Public Class HelpForm
     Private DocumentPath As String
     Property RouteAction As Action(Of OptionHelpRoute)
 
-    Property Doc() As HelpDocument
+    ReadOnly Property Doc() As HelpDocument
         Get
             If DocumentValue Is Nothing Then
                 Dim path = IO.Path.Combine(Folder.Temp, Guid.NewGuid.ToString + ".htm")
@@ -64,9 +64,6 @@ Public Class HelpForm
 
             Return DocumentValue
         End Get
-        Set(Value As HelpDocument)
-            DocumentValue = Value
-        End Set
     End Property
 
     Overloads Shared Sub ShowDialog(heading As String, tips As StringPairList)
@@ -86,14 +83,15 @@ Public Class HelpForm
     End Sub
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
+        'Dispose first: closing during a load leaves the browser holding the temp file.
+        Dispose()
+
         If DocumentPath <> "" AndAlso File.Exists(DocumentPath) Then
             Try
                 FileHelp.Delete(DocumentPath)
             Catch
             End Try
         End If
-
-        Dispose()
     End Sub
 
     Sub Browser_DocumentCompleted(sender As Object, e As WebBrowserDocumentCompletedEventArgs) Handles Browser.DocumentCompleted

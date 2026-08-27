@@ -747,6 +747,7 @@ table {
         Next
     End Sub
 
+    'elementName must be a compile-time literal and never authored text, XmlTextWriter does not validate element names.
     ''' <summary>Writes authored text as encoded nodes. Never passes authored text to WriteRaw.</summary>
     Sub WriteNodes(elementName As String, nodes As IEnumerable(Of OptionHelpNode))
         Writer.WriteStartElement(elementName)

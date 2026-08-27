@@ -46,6 +46,8 @@ Public Class CommandLineForm
         Catalog = OptionHelpCatalog.Get(params.OptionHelpId)
 
         lblDescription.Height = FontHeight * 3 + 6
+        'LabelEx turns compatible text rendering on, which disables AutoEllipsis.
+        lblDescription.UseCompatibleTextRendering = False
         lblDescription.Text = "Point at an option, or move focus to it, to see what it does. Press F1 for details."
 
         InitUI()
@@ -420,9 +422,134 @@ Public Class CommandLineForm
     End Sub
 
     Private Sub ShowOptionHelp(item As Item)
-        ' Task 7 replaces this stub with the details window.
-        Params.ShowHelp(item.Param.GetSwitches)
+        ShowStanza(item.Stanza, item)
     End Sub
+
+    Private Sub ShowStanza(stanza As OptionHelpStanza, item As Item)
+        Dim caption As String
+
+        If item IsNot Nothing Then
+            caption = item.Param.Text.TrimEnd(":"c).Trim()
+        ElseIf stanza.Label <> "" Then
+            caption = stanza.Label
+        Else
+            caption = stanza.Id
+        End If
+
+        Dim form As New HelpForm()
+        Dim doc = form.Doc
+        doc.WriteStart(caption)
+
+        If item IsNot Nothing Then
+            Dim facts As New List(Of KeyValuePair(Of String, IEnumerable(Of OptionHelpNode)))
+            Dim op = TryCast(item.Param, OptionParam)
+            Dim np = TryCast(item.Param, NumParam)
+            Dim bp = TryCast(item.Param, BoolParam)
+
+            If op IsNot Nothing Then
+                If op.Value >= 0 AndAlso op.Value < op.Options.Length Then facts.Add(Fact("Current value", op.Options(op.Value)))
+                If op.DefaultValue >= 0 AndAlso op.DefaultValue < op.Options.Length Then facts.Add(Fact("StaxRip default", op.Options(op.DefaultValue)))
+            ElseIf np IsNot Nothing Then
+                facts.Add(Fact("Current value", np.Value.ToString))
+                facts.Add(Fact("StaxRip default", np.DefaultValue.ToString))
+
+                If np.Config IsNot Nothing AndAlso np.Config.Length >= 2 AndAlso np.Config(0) > Double.MinValue AndAlso np.Config(1) < Double.MaxValue Then
+                    Dim range = np.Config(0) & " to " & np.Config(1)
+                    If np.Config.Length > 2 AndAlso np.Config(2) <> 0 Then range += " in steps of " & np.Config(2)
+                    facts.Add(Fact("Valid range", range))
+                End If
+            ElseIf bp IsNot Nothing Then
+                facts.Add(Fact("Current value", If(bp.Value, "On", "Off")))
+                facts.Add(Fact("StaxRip default", If(bp.DefaultValue, "On", "Off")))
+            End If
+
+            If stanza.EncoderDefault <> "" Then facts.Add(New KeyValuePair(Of String, IEnumerable(Of OptionHelpNode))("Encoder default", OptionHelpParser.ParseInline(stanza.EncoderDefault)))
+            Dim switches = item.Param.GetSwitches.OrderBy(Function(s) s, StringComparer.Ordinal).ToArray
+            If switches.Length > 0 Then facts.Add(Fact("Switches", String.Join(", ", switches)))
+            If facts.Count > 0 Then doc.WriteNodesTable(facts)
+        End If
+
+        doc.WriteH2("What it does")
+        doc.WriteNodes("p", OptionHelpParser.ParseInline(stanza.Summary))
+
+        If stanza.UsedWhen <> "" Then
+            doc.WriteH2("Used when")
+            doc.WriteNodes("p", OptionHelpParser.ParseInline(stanza.UsedWhen))
+        End If
+
+        If stanza.WhenToChange <> "" Then
+            doc.WriteH2("When to change it")
+            doc.WriteNodes("p", OptionHelpParser.ParseInline(stanza.WhenToChange))
+        End If
+
+        If stanza.Example <> "" Then
+            doc.WriteH2("Example")
+            doc.WriteNodes("p", OptionHelpParser.ParseInline(stanza.Example))
+        End If
+
+        If item IsNot Nothing AndAlso TypeOf item.Param Is OptionParam Then
+            Dim op = DirectCast(item.Param, OptionParam)
+            Dim rows As New List(Of KeyValuePair(Of String, IEnumerable(Of OptionHelpNode)))
+
+            For i = 0 To op.Options.Length - 1
+                Dim note = Catalog.ValueNote(stanza, op.GetEmittedValue(i))
+                rows.Add(New KeyValuePair(Of String, IEnumerable(Of OptionHelpNode))(op.Options(i), OptionHelpParser.ParseInline(If(note, ""))))
+            Next
+
+            doc.WriteH2("Values")
+            doc.WriteNodesTable(rows)
+        End If
+
+        Dim related As New List(Of KeyValuePair(Of String, String))
+
+        For Each id In stanza.Related
+            Dim target = Catalog.Lookup(id)
+            If target Is Nothing Then Continue For
+            Dim label = If(target.Label <> "", target.Label, id)
+            related.Add(New KeyValuePair(Of String, String)(label, "staxrip://option/" + id))
+        Next
+
+        If related.Count > 0 Then
+            doc.WriteH2("Related")
+            doc.WriteLinkList(related)
+        End If
+
+        If stanza.References.Count > 0 Then
+            doc.WriteH2("References")
+            doc.WriteLinkList(stanza.References.Select(Function(r) New KeyValuePair(Of String, String)(r, r)))
+        End If
+
+        If item IsNot Nothing AndAlso item.Param.HelpSwitch <> "" Then
+            doc.WriteH2("More")
+            doc.WriteLinkList({New KeyValuePair(Of String, String)("Show the encoder's own help for " + item.Param.HelpSwitch, "staxrip://console-help")})
+        End If
+
+        form.RouteAction = Sub(route As OptionHelpRoute)
+                               If route.Kind = "ConsoleHelp" Then
+                                   If item IsNot Nothing Then Params.ShowHelp(item.Param.GetSwitches)
+                               ElseIf route.Kind = "Option" Then
+                                   Dim other = FindItemByIdentity(route.Id)
+
+                                   If other IsNot Nothing AndAlso other.Stanza IsNot Nothing Then
+                                       form.Close()
+                                       ShowOptionHelp(other)
+                                   Else
+                                       Dim target = Catalog.Lookup(route.Id)
+
+                                       If target IsNot Nothing Then
+                                           form.Close()
+                                           ShowStanza(target, Nothing)
+                                       End If
+                                   End If
+                               End If
+                           End Sub
+
+        form.Show()
+    End Sub
+
+    Private Shared Function Fact(name As String, value As String) As KeyValuePair(Of String, IEnumerable(Of OptionHelpNode))
+        Return New KeyValuePair(Of String, IEnumerable(Of OptionHelpNode))(name, {OptionHelpNode.TextNode(value)})
+    End Function
 
     Public Class Item
         Property Page As SimpleUI.FlowPage
