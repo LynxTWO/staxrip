@@ -1,6 +1,6 @@
 ENCODER badid total=1 excluded=0 reviewed=0 draft=0 missing=1 allowed-missing=1 minimum-reviewed=zero reviewed-complete=false result=PASS
 MISSING badid.alpha Alpha
-ENCODER fake total=12 excluded=2 reviewed=4 draft=2 missing=5 allowed-missing=2 minimum-reviewed=3 reviewed-complete=false result=FAIL
+ENCODER fake total=13 excluded=3 reviewed=5 draft=2 missing=5 allowed-missing=2 minimum-reviewed=3 reviewed-complete=false result=FAIL
 MISSING fake.pass Passes
 MISSING fake.zeta Zeta
 MISSING fake.eta Eta
@@ -15,10 +15,12 @@ E1 Docs/OptionHelp/cyc.md:1 Inheritance cycle at 'cyc'
 E10 Source/Encoding/FakeEnc.vb:78 Parameter 'NoKey' (Custom) has no identity; set OptionHelpKey
 E11 Source/Encoding/FakeEnc.vb:97 Unrecognized parameter type 'WeirdParam'
 E11 Source/Encoding/FakeEnc.vb:98 Parameter of type 'NumParam' is not declared with 'With {'
+E11 Source/Encoding/FakeEnc.vb:107 Options (3) and Values (2) differ in length for 'Mismatch'
 E12 Docs/OptionHelp/badid.en.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
 E12 Docs/OptionHelp/badid.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
 E12 Docs/OptionHelp/concepts.md:1 Duplicate EmbeddedResource entries (2) in Source/StaxRip.vbproj
 E12 Docs/OptionHelp/fake.de.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
+E12 Source/StaxRip.vbproj:1 EmbeddedResource 'fakevar.md' has LogicalName 'StaxRip.OptionHelp.wrong.md', expected 'StaxRip.OptionHelp.fakevar.md'
 E12 Source/StaxRip.vbproj:1 EmbeddedResource 'ghost.md' has no file
 E12 Source/StaxRip.vbproj:1 EmbeddedResource 'staxrip.md' lacks LogicalName 'StaxRip.OptionHelp.staxrip.md'
 E13 Docs/OptionHelp/fake.de.md:11 Summary: Malformed link; only [text](http://...) or [text](https://...) is allowed
@@ -33,4 +35,6 @@ E9 Source/Encoding/BadIdEnc.vb:1 OptionHelpId is 'wrong', expected 'badid'
 W1 Source/Encoding/OtherEnc.vb no help file
 W3 fake Hidden excluded
 W3 fake Hidden2 excluded
+W3 fake Mismatch excluded
+W4 fake fake.chunks resolves in staxrip.md
 RESULT FAIL

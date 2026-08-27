@@ -13,6 +13,9 @@ P 73 Hidden2 StringParam id=- excluded=true caption=Hidden 2 switches=--hidden2 
 P 78 NoKey StringParam id=- excluded=false caption=Custom switches= values=
 P 81 CustomSecond StringParam id=staxrip.custom excluded=false caption=Custom Second Pass switches= values=
 P 94 - NumParam id=fake.inline excluded=false caption=Inline switches=--inline values=
+P 107 Mismatch OptionParam id=- excluded=true caption=Mismatch switches=--mismatch values=0,1
+P 116 Collide NumParam id=fake.chunks excluded=false caption=Collide switches=--chunks values=
 ERR 78 E10
 ERR 97 E11
 ERR 98 E11
+ERR 107 E11

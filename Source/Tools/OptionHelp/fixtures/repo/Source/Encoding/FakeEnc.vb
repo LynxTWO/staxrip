@@ -101,4 +101,21 @@ Public Class FakeEncParams
             Return ItemsValue
         End Get
     End Property
+
+    'Options and Values disagree in length: OptionParam.GetEmittedValue indexes Values by the
+    'option index, so the third option would read past the end of the Values array.
+    Property Mismatch As New OptionParam With {
+        .OptionHelpKey = "none",
+        .Switch = "--mismatch",
+        .Text = "Mismatch",
+        .Options = {"0: Off", "1: On", "2: Auto"},
+        .Values = {"0", "1"}}
+
+    'The switch's local part collides with a StaxRip-owned key, so the derived identity
+    'fake.chunks finds staxrip.chunks at the end of the chain instead of nothing.
+    Property Collide As New NumParam With {
+        .Switch = "--chunks",
+        .Text = "Collide",
+        .Config = {1, 8},
+        .Init = 1}
 End Class

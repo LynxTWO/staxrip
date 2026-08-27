@@ -30,12 +30,13 @@ pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1 -Dump Docs/Op
 | E8 | file | Duplicate stanza id |
 | E9 | source | OptionHelpId override missing or wrong |
 | E10 | source | Parameter without identity |
-| E11 | source | Parameter construction the extractor does not recognize, or a difference from the application export |
-| E12 | project | Help file and EmbeddedResource entries do not pair up; an entry naming a file lacks `<LogicalName>StaxRip.OptionHelp.<file></LogicalName>`; Source path outside the repository or with different case |
-| E13 | stanza | Bad URL scheme, malformed link, unmatched backtick |
+| E11 | source | Parameter construction the extractor does not recognize, literal `Options` and `Values` arrays of different lengths, or a difference from the application export |
+| E12 | project | Help file and EmbeddedResource entries do not pair up; an entry naming a file lacks `<LogicalName>StaxRip.OptionHelp.<file></LogicalName>` or declares a different one; Source path outside the repository or with different case |
+| E13 | stanza | Bad URL scheme, malformed link, unmatched backtick, C0 control character other than tab |
 | W1 | source | Encoder file with no help file |
 | W2 | stanza | Label differs from the VB caption (planned; implemented with the SVT-AV1 content plan) |
 | W3 | source | Excluded parameters |
+| W4 | source | Own-namespace identity that resolves in `staxrip.md` because its local part collides with a StaxRip-owned key |
 
 ## Known blind spots
 

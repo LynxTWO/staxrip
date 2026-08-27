@@ -7,3 +7,4 @@ E11 Eta missing from the application export
 E11 Chunks missing from the application export
 E11 Hidden excluded differs: application 'false' extractor 'true'
 E11 NoKey missing from the application export
+E11 Collide missing from the application export

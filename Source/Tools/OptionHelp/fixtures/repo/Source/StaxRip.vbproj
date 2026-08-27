@@ -17,7 +17,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\fakevar.md">
       <Link>OptionHelp\fakevar.md</Link>
-      <LogicalName>StaxRip.OptionHelp.fakevar.md</LogicalName>
+      <LogicalName>StaxRip.OptionHelp.wrong.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\fakevar2.md">
       <Link>OptionHelp\fakevar2.md</Link>

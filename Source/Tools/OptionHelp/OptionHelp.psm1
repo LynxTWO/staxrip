@@ -373,6 +373,14 @@ function Get-VbParameters {
         $options = Read-OhVbArray $init 'Options'
         $integerValue = $init -match '\.IntegerValue\s*=\s*True'
 
+        # OptionParam.GetEmittedValue indexes Values by the option's index, so an initializer whose
+        # two literal arrays disagree in length silently drops or invents emitted values at the
+        # tail. Only two present arrays can disagree: an absent Values array is the normal case
+        # where the emitted value is derived from the option text instead.
+        if ($type -ceq 'OptionParam' -and $options.Length -gt 0 -and $values.Length -gt 0 -and $options.Length -ne $values.Length) {
+            $errors.Add((New-OhError $lineNo 'FILE' 'E11' "Options ($($options.Length)) and Values ($($values.Length)) differ in length for '$name'"))
+        }
+
         $all = [System.Collections.Generic.List[string]]::new()
         foreach ($s in @($switch, $noSwitch, $helpSwitch)) { if ($s -and $all -cnotcontains $s) { $all.Add($s) } }
         if ($switches) { foreach ($s in $switches) { if ($s -and $all -cnotcontains $s) { $all.Add($s) } } }
@@ -494,18 +502,20 @@ function Resolve-OhId {
         $probe = if ($ownNamespace) { "$($file.Encoder).$($parts.Local)" } else { $Id }
         $s = Find-OhStanza -File $file -Id $probe
         if ($null -eq $s) { continue }
-        if ($s.Status -cne 'reviewed') { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s } }
+        # ProbeFile is the chain file the probe actually matched. For an alias, File is the target's
+        # file instead, so only ProbeFile can answer "which chain file supplied this stanza".
+        if ($s.Status -cne 'reviewed') { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name } }
         if ($s.Fields.Contains('Use')) {
             $targetId = $s.Fields['Use']
             $targetFileId = (Split-OhId -Id $targetId).Namespace
-            if (-not $Files.ContainsKey($targetFileId)) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s } }
+            if (-not $Files.ContainsKey($targetFileId)) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name } }
             $t = Find-OhStanza -File $Files[$targetFileId] -Id $targetId
-            if ($null -eq $t -or $t.Status -cne 'reviewed' -or $t.Fields.Contains('Use')) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s } }
-            return @{ Outcome = 'alias'; File = $Files[$targetFileId].Name; Stanza = $t; Alias = $s }
+            if ($null -eq $t -or $t.Status -cne 'reviewed' -or $t.Fields.Contains('Use')) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name } }
+            return @{ Outcome = 'alias'; File = $Files[$targetFileId].Name; Stanza = $t; Alias = $s; ProbeFile = $file.Name }
         }
-        return @{ Outcome = 'reviewed'; File = $file.Name; Stanza = $s }
+        return @{ Outcome = 'reviewed'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name }
     }
-    return @{ Outcome = 'none'; File = $null; Stanza = $null }
+    return @{ Outcome = 'none'; File = $null; Stanza = $null; ProbeFile = $null }
 }
 
 function Invoke-OptionHelpSelfTest {
@@ -857,7 +867,11 @@ function Test-OptionHelpRepository {
             # the loader's resource enumeration depends on.
             $expected = "StaxRip.OptionHelp.$($r.Name)"
             if ($r.LogicalName -cne $expected) {
-                $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$($r.Name)' lacks LogicalName '$expected'" })
+                # Declaring no LogicalName and declaring the wrong one are different mistakes, and
+                # the wrong-value case is only fixable when the message says what it found.
+                $message = if ($null -eq $r.LogicalName) { "EmbeddedResource '$($r.Name)' lacks LogicalName '$expected'" }
+                else { "EmbeddedResource '$($r.Name)' has LogicalName '$($r.LogicalName)', expected '$expected'" }
+                $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = $message })
             }
         }
 
@@ -914,6 +928,13 @@ function Test-OptionHelpRepository {
             if ($p.Excluded) { $excluded++; $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W3'; Message = "$($p.Name) excluded" }); continue }
             if (-not $p.Identity) { continue }
             $r = Resolve-OhId -Chain $chain -Files $files -Id $p.Identity -HomeEncoder $f.Encoder
+            # W4: staxrip.md closes every chain, so an own-namespace identity whose local part is
+            # defined nowhere earlier still resolves when a StaxRip-owned key happens to carry the
+            # same name. That text is about StaxRip's own setting, not this encoder's switch. It
+            # still counts as reviewed; the warning is what makes the collision visible.
+            if ($r.ProbeFile -ceq 'staxrip.md' -and (Split-OhId -Id $p.Identity).Namespace -ceq $f.Encoder) {
+                $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W4'; Message = "$($p.Identity) resolves in staxrip.md" })
+            }
             switch ($r.Outcome) {
                 'reviewed' { $reviewed++ }
                 'alias' { $reviewed++ }
