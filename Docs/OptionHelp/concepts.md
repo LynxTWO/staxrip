@@ -139,3 +139,18 @@ When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
 Status: reviewed
+
+## concept.super-resolution
+Label: Super-resolution
+Summary: Coding a frame at a reduced width and having the player stretch it back, an AV1 tool meant for very low bitrates. The file plays at its normal size; the detail lost in the squeeze does not come back.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#super-resolution
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Appendix-Super-Resolution.md
+Status: reviewed
+
+## concept.lossless
+Label: Lossless coding
+Summary: Compression that gives back every pixel exactly, as a zip file gives back every byte, so the file is many times larger than a normal encode. In AV1 it is a mode of its own, not a low quality number.
+When to change: Not a setting. See the options that link here.
+Status: reviewed
