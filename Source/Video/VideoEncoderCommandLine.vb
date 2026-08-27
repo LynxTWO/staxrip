@@ -30,7 +30,9 @@ Namespace VideoEncoderCommandLine
         Function ExportOptionHelpFacts() As String
             Dim names As New Dictionary(Of CommandLineParam, String)
 
-            For Each prop In Me.GetType.GetProperties()
+            ' MetadataToken orders the properties by declaration, so the name a shared control is
+            ' keyed by does not depend on the reflection order of the running machine.
+            For Each prop In Me.GetType.GetProperties().OrderBy(Function(x) x.MetadataToken)
                 If GetType(CommandLineParam).IsAssignableFrom(prop.PropertyType) AndAlso prop.GetIndexParameters().Length = 0 Then
                     Dim value = TryCast(prop.GetValue(Me), CommandLineParam)
                     If value IsNot Nothing AndAlso Not names.ContainsKey(value) Then names(value) = prop.Name
@@ -51,7 +53,12 @@ Namespace VideoEncoderCommandLine
                 Dim op = TryCast(param, OptionParam)
 
                 If op IsNot Nothing AndAlso op.Options IsNot Nothing Then
-                    values = Enumerable.Range(0, op.Options.Length).Select(Function(i) op.GetEmittedValue(i)).ToArray
+                    ' A Values array shorter than Options would make GetEmittedValue throw, so stop
+                    ' at the shorter of the two; the extractor emits the whole Values array, so the
+                    ' two sides still agree. A Values array longer than Options surfaces as a
+                    ' difference, which is what it is.
+                    Dim count = Math.Min(op.Options.Length, If(op.Values Is Nothing, op.Options.Length, op.Values.Length))
+                    values = Enumerable.Range(0, count).Select(Function(i) op.GetEmittedValue(i)).ToArray
                 End If
 
                 sb.Append("{""name"":" + OptionHelpJson.Quote(If(names.ContainsKey(param), names(param), "-")))

@@ -197,6 +197,14 @@ Exits StaxRip.
 
 Exits StaxRip without saving an unsaved project.
 
+### -ExportOptionHelpFacts:filePath
+
+Writes the option help facts of every encoder with a help file to a JSON file for Check-OptionHelp.ps1 -CompareFacts.
+
+| Parameter |
+| --- |
+| File Path \<string\> |
+
 ### -ExtractHdrMetadata:sourcePath
 
 Extract dynamic HDR metadata from a source file.

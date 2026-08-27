@@ -10,6 +10,7 @@ Imports System.Threading.Tasks
 Imports DirectN
 Imports Microsoft.Win32
 Imports StaxRip.UI
+Imports StaxRip.VideoEncoderCommandLine
 
 Public Class GlobalCommands
     <Command("Checks if an update is available.")>
@@ -477,6 +478,31 @@ Public Class GlobalCommands
     Sub ImportVideoEncoderCommandLineFromTextFile(<DispName("File Path")> filePath As String)
         Dim commandLine = filePath.ReadAllText()
         p.VideoEncoder.ImportCommandLine(commandLine)
+    End Sub
+
+    <Command("Writes the option help facts of every encoder with a help file to a JSON file for Check-OptionHelp.ps1 -CompareFacts.")>
+    Sub ExportOptionHelpFacts(<DispName("File Path")> filePath As String)
+        Dim sb As New StringBuilder("{""schemaVersion"":1,""encoders"":[")
+        Dim first = True
+        Dim problems As New List(Of String)
+
+        For Each t In GetType(CommandLineParams).Assembly.GetTypes().OrderBy(Function(x) x.FullName, StringComparer.Ordinal)
+            If t.IsAbstract OrElse Not GetType(CommandLineParams).IsAssignableFrom(t) Then Continue For
+            If t.GetConstructor(Type.EmptyTypes) Is Nothing Then Continue For
+
+            Try
+                Dim instance = DirectCast(Activator.CreateInstance(t), CommandLineParams)
+                If String.IsNullOrEmpty(instance.OptionHelpId) Then Continue For
+                If Not first Then sb.Append(",")
+                first = False
+                sb.Append(instance.ExportOptionHelpFacts())
+            Catch ex As Exception
+                problems.Add(t.Name & ": " & ex.Message)
+            End Try
+        Next
+
+        sb.Append("],""errors"":" & OptionHelpJson.Array(problems) & "}")
+        File.WriteAllText(filePath, sb.ToString(), New UTF8Encoding(False))
     End Sub
 
     <Command("Adds a filter at the end of the script.")>
