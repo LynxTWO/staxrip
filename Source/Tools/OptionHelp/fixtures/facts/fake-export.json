@@ -4,8 +4,10 @@
     {
       "encoder": "fake",
       "parameters": [
-        { "identity": "fake.alpha", "excluded": false, "caption": "Alpha", "switches": ["--alpha"], "values": [] },
-        { "identity": "fake.beta", "excluded": false, "caption": "Beta", "switches": ["--beta"], "values": ["0", "2"] }
+        { "name": "Alpha", "identity": "fake.alpha", "excluded": false, "caption": "Alpha", "switches": ["--alpha"], "values": [] },
+        { "name": "Beta", "identity": "fake.beta", "excluded": false, "caption": "Beta", "switches": ["--beta"], "values": ["0", "2"] },
+        { "name": "Hidden", "identity": "-", "excluded": false, "caption": "Hidden", "switches": ["--hidden"], "values": [] },
+        { "name": "-", "identity": "fake.inline", "excluded": false, "caption": "Inline", "switches": ["--inline"], "values": [] }
       ]
     }
   ]

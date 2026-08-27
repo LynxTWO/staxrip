@@ -20,6 +20,9 @@ F Summary=Not allowed with Use.
 F Status=draft
 S e3-fields.nostatus 28
 F Summary=Fine.
+S e3-fields.continued 31
+F Summary=Fine.
+F Status=draft
 ERR 12 STANZA E3
 ERR 13 STANZA E3
 ERR 14 STANZA E3
@@ -29,4 +32,5 @@ ERR 17 STANZA E3
 ERR 19 STANZA E1
 ERR 23 STANZA E3
 ERR 28 STANZA E3
+ERR 34 STANZA E3
 END

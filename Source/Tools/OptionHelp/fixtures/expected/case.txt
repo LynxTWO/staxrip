@@ -1,0 +1,16 @@
+FILE case.md
+H Schema=1
+H Encoder=Case
+H Locale=en
+H Title=Case
+H Source=Source/Encoding/CaseEnc.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S case.Alpha 10
+F Summary=Identifiers are compared with ordinal, case-sensitive operators.
+F Status=Reviewed
+ERR 1 FILE E1
+ERR 10 STANZA E1
+ERR 10 STANZA E3
+END

@@ -34,7 +34,7 @@ pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1 -Dump Docs/Op
 | E12 | project | Help file and EmbeddedResource entries do not pair up; Source path outside the repository or with different case |
 | E13 | stanza | Bad URL scheme, malformed link, unmatched backtick |
 | W1 | source | Encoder file with no help file |
-| W2 | stanza | Label differs from the VB caption |
+| W2 | stanza | Label differs from the VB caption (planned; implemented with the SVT-AV1 content plan) |
 | W3 | source | Excluded parameters |
 
 ## Known blind spots

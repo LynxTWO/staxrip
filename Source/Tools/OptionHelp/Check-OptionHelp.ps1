@@ -16,11 +16,12 @@ $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'OptionHelp.psm1') -Force
 
 if (-not $RepoRoot) {
-    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
 }
 
 if ($Dump) {
-    $file = Read-OptionHelpFile -Path $Dump
+    # Convert-Path so a relative path, a PSDrive, or a ~ prefix reaches the reader as a real path.
+    $file = Read-OptionHelpFile -Path (Convert-Path -LiteralPath $Dump)
     [Console]::Out.Write((ConvertTo-OptionHelpDump -File $file))
     exit 0
 }

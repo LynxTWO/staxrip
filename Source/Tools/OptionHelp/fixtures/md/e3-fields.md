@@ -27,3 +27,8 @@ Status: draft
 
 ## e3-fields.nostatus
 Summary: Fine.
+
+## e3-fields.continued
+Summary: Fine.
+Status: draft
+extra

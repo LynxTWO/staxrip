@@ -5,13 +5,61 @@ $script:HeaderKeys = @('Schema', 'Encoder', 'Locale', 'Title', 'Source', 'Inheri
     'Verified-Encoder-Version', 'Verified-Encoder-Build', 'Verified-Date', 'Documentation')
 $script:FieldOrder = @('Label', 'Use', 'Summary', 'Used when', 'When to change',
     'Encoder default', 'Example', 'Values', 'Related', 'References', 'Status')
-$script:FieldLimits = @{ 'Label' = 60; 'Summary' = 200; 'Used when' = 200; 'When to change' = 400;
-    'Encoder default' = 40; 'Example' = 300 }
+$script:FieldLimits = [hashtable]::new([System.StringComparer]::Ordinal)
+$script:FieldLimits['Label'] = 60
+$script:FieldLimits['Summary'] = 200
+$script:FieldLimits['Used when'] = 200
+$script:FieldLimits['When to change'] = 400
+$script:FieldLimits['Encoder default'] = 40
+$script:FieldLimits['Example'] = 300
 $script:NoteLimit = 120
 $script:SharedIds = @('staxrip', 'concepts', 'shared')
+# Continuation lines join the text of every other field; on these three the joined text would be a
+# silently different identifier, status, or link list, so a continuation is an error and is dropped.
+$script:NoContinuationFields = @('Status', 'Use', 'Related')
 $script:IdPattern = '^[a-z0-9-]+(\.[a-z0-9-]+)+$'
 $script:EncoderPattern = '^[a-z0-9-]+$'
 $script:LinkPattern = '\[([^\[\]]+)\]\((https?://[^\s()]+)\)'
+# VB line-break tokens that a caption may be concatenated with; the extractor joins the literals
+# around them with one space so a two-line caption compares equal to the application's own string.
+$script:VbBreakToken = '(?:BR|vbLf|vbCrLf|vbNewLine|ControlChars\.Lf|ControlChars\.CrLf|ControlChars\.NewLine)'
+$script:VbLiteral = '"(?:[^"]|"")*"'
+
+function New-OhMap {
+    # An identifier-keyed hashtable. Ordinal so that 'Fake' and 'fake' are two different encoders.
+    [System.Collections.Hashtable]::new([System.StringComparer]::Ordinal)
+}
+
+function New-OhOrderedMap {
+    # An identifier-keyed dictionary that keeps insertion order, ordinal for the same reason.
+    [System.Collections.Specialized.OrderedDictionary]::new([System.StringComparer]::Ordinal)
+}
+
+function Get-OhSorted {
+    # Sorts $Items by the parallel $Keys with the ordinal string comparer, so the report and the
+    # dump order the same way on every machine regardless of the current culture.
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Keys,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Items)
+    # The sorted items are written to the pipeline one by one, so every call site can wrap the
+    # call in @() or feed it straight to foreach and get the elements, never a nested array.
+    if ($Keys.Length -lt 2) { return $Items }
+    # Both arrays are passed as [array] and the comparer as IComparer so that PowerShell binds the
+    # non-generic Array.Sort(Array, Array, IComparer): the generic overload converts a mismatched
+    # items array and sorts the copy, leaving the caller's items in their original order.
+    $k = [object[]]@($Keys)
+    $v = [object[]]@($Items)
+    [System.Array]::Sort([array]$k, [array]$v, [System.Collections.IComparer][System.StringComparer]::Ordinal)
+    return $v
+}
+
+function Get-OhSortKey {
+    # One tab-separated string per sort; numbers are zero-padded so that an ordinal text sort
+    # orders them numerically.
+    param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Parts)
+    $out = foreach ($p in $Parts) { if ($p -is [int]) { '{0:D8}' -f $p } else { [string]$p } }
+    return (@($out) -join "`t")
+}
 
 function New-OhError {
     param([int]$Line, [string]$Level, [string]$Code, [string]$Message)
@@ -21,7 +69,7 @@ function New-OhError {
 function New-OhStanza {
     param([string]$Id, [int]$Line)
     [pscustomobject]@{
-        Id = $Id; Line = $Line; Fields = [ordered]@{}; FieldLines = [ordered]@{}; Values = [System.Collections.Generic.List[object]]::new()
+        Id = $Id; Line = $Line; Fields = (New-OhOrderedMap); FieldLines = (New-OhOrderedMap); Values = [System.Collections.Generic.List[object]]::new()
         References = [System.Collections.Generic.List[string]]::new(); Status = ''
     }
 }
@@ -52,7 +100,7 @@ function ConvertFrom-OptionHelpText {
     param([Parameter(Mandatory)][AllowEmptyString()][string]$Text, [Parameter(Mandatory)][string]$Name)
 
     $errors = [System.Collections.Generic.List[object]]::new()
-    $header = [ordered]@{}
+    $header = New-OhOrderedMap
     $stanzas = [System.Collections.Generic.List[object]]::new()
 
     $base = $Name -replace '\.md$', ''
@@ -82,7 +130,7 @@ function ConvertFrom-OptionHelpText {
             $stanzas.Add($stanza)
             $currentField = $null
             $lastFieldIndex = -1
-            if ($id -notmatch $script:IdPattern) {
+            if ($id -cnotmatch $script:IdPattern) {
                 $errors.Add((New-OhError $lineNo 'STANZA' 'E1' "Invalid stanza id '$id'"))
             }
             continue
@@ -91,7 +139,7 @@ function ConvertFrom-OptionHelpText {
         if ($null -eq $stanza) {
             if ($line -match '^([A-Z][A-Za-z-]*): ?(.*)$') {
                 $key = $Matches[1]; $value = $Matches[2].Trim()
-                if ($script:HeaderKeys -notcontains $key) {
+                if ($script:HeaderKeys -cnotcontains $key) {
                     $errors.Add((New-OhError $lineNo 'FILE' 'E1' "Unknown header key '$key'"))
                 }
                 elseif ($header.Contains($key)) {
@@ -122,20 +170,20 @@ function ConvertFrom-OptionHelpText {
                 $errors.Add((New-OhError $lineNo 'STANZA' 'E3' "Field '$field' is out of order"))
             }
             $lastFieldIndex = $index
-            if (($field -eq 'Values' -or $field -eq 'References') -and $value -ne '') {
+            if (($field -ceq 'Values' -or $field -ceq 'References') -and $value -ne '') {
                 $errors.Add((New-OhError $lineNo 'STANZA' 'E3' "Field '$field' must have no text on its line"))
                 $value = ''
             }
             $stanza.Fields[$field] = $value
             $stanza.FieldLines[$field] = $lineNo
-            if ($field -eq 'Status') { $stanza.Status = $value }
+            if ($field -ceq 'Status') { $stanza.Status = $value }
             $currentField = $field
             continue
         }
 
         if ($line -match '^- (.*)$') {
             $item = $Matches[1].Trim()
-            if ($currentField -eq 'Values') {
+            if ($currentField -ceq 'Values') {
                 $sep = $item.IndexOf(': ')
                 if ($sep -lt 1) {
                     $errors.Add((New-OhError $lineNo 'STANZA' 'E3' 'Value bullet needs "<value>: <note>"'))
@@ -144,7 +192,7 @@ function ConvertFrom-OptionHelpText {
                     $stanza.Values.Add([pscustomobject]@{ Value = $item.Substring(0, $sep); Note = $item.Substring($sep + 2).Trim(); Line = $lineNo })
                 }
             }
-            elseif ($currentField -eq 'References') {
+            elseif ($currentField -ceq 'References') {
                 $stanza.References.Add($item)
                 if ($item -notmatch '^https?://\S+$') {
                     $errors.Add((New-OhError $lineNo 'STANZA' 'E13' "Reference must be an http or https URL: '$item'"))
@@ -156,8 +204,13 @@ function ConvertFrom-OptionHelpText {
             continue
         }
 
-        if ($null -ne $currentField -and $currentField -ne 'Values' -and $currentField -ne 'References') {
-            $stanza.Fields[$currentField] = ($stanza.Fields[$currentField] + ' ' + $trimmed).Trim()
+        if ($null -ne $currentField -and $currentField -cne 'Values' -and $currentField -cne 'References') {
+            if ($script:NoContinuationFields -ccontains $currentField) {
+                $errors.Add((New-OhError $lineNo 'STANZA' 'E3' "Continuation is not allowed for '$currentField'"))
+            }
+            else {
+                $stanza.Fields[$currentField] = ($stanza.Fields[$currentField] + ' ' + $trimmed).Trim()
+            }
         }
         else {
             $errors.Add((New-OhError $lineNo 'STANZA' 'E3' 'Text outside a field'))
@@ -181,12 +234,15 @@ function ConvertTo-OptionHelpDump {
         [void]$sb.Append("S $($s.Id) $($s.Line)`n")
         foreach ($f in $s.Fields.Keys) {
             [void]$sb.Append("F $f=$($s.Fields[$f])`n")
-            if ($f -eq 'Values') { foreach ($v in $s.Values) { [void]$sb.Append("V $($v.Value)=$($v.Note)`n") } }
-            if ($f -eq 'References') { foreach ($r in $s.References) { [void]$sb.Append("R $r`n") } }
+            if ($f -ceq 'Values') { foreach ($v in $s.Values) { [void]$sb.Append("V $($v.Value)=$($v.Note)`n") } }
+            if ($f -ceq 'References') { foreach ($r in $s.References) { [void]$sb.Append("R $r`n") } }
         }
     }
-    $sorted = $File.Errors | Sort-Object -Property @{ Expression = 'Line' }, @{ Expression = 'Code' }
-    foreach ($e in $sorted) { [void]$sb.Append("ERR $($e.Line) $($e.Level) $($e.Code)`n") }
+    # Line first, then the code as text ('E13' sorts between 'E1' and 'E3'), then level and message
+    # so that two errors on one line always land in the same order; both parsers share this order.
+    $items = @($File.Errors)
+    $keys = [string[]]@($items | ForEach-Object { Get-OhSortKey -Parts @($_.Line, $_.Code, $_.Level, $_.Message) })
+    foreach ($e in (Get-OhSorted -Keys $keys -Items $items)) { [void]$sb.Append("ERR $($e.Line) $($e.Level) $($e.Code)`n") }
     [void]$sb.Append("END`n")
     return $sb.ToString()
 }
@@ -220,11 +276,26 @@ function Read-OhVbStrings {
 }
 
 function Read-OhVbString {
-    # Returns the string literal value of `.Name = "..."` inside an initializer, or $null.
+    # Returns the string value of `.Name = "..."` inside an initializer, or $null. A caption may be
+    # split over two lines in the dialog with `"a" + BR + "b"` (or `& BR &`, vbLf, vbCrLf); the
+    # literals around such a token are joined with one space so the value compares equal to the
+    # single-line caption the application reports for the same control.
     param([string]$Init, [string]$Member)
-    $m = [regex]::Match($Init, '\.' + [regex]::Escape($Member) + '\s*=\s*"((?:[^"]|"")*)"')
-    if ($m.Success) { return $m.Groups[1].Value.Replace('""', '"') }
-    return $null
+    $chain = $script:VbLiteral + '(?:\s*[+&]\s*' + $script:VbBreakToken + '\s*[+&]\s*' + $script:VbLiteral + ')*'
+    $m = [regex]::Match($Init, '\.' + [regex]::Escape($Member) + '\s*=\s*(' + $chain + ')')
+    if (-not $m.Success) { return $null }
+    $parts = foreach ($lm in [regex]::Matches($m.Groups[1].Value, $script:VbLiteral)) {
+        $lm.Value.Substring(1, $lm.Value.Length - 2).Replace('""', '"')
+    }
+    return (@($parts) -join ' ')
+}
+
+function ConvertTo-OhCaption {
+    # Captions are compared after collapsing every run of whitespace to one space, so a caption the
+    # application joins with a newline and one this script joins with a space are the same caption.
+    param([AllowNull()][AllowEmptyString()][string]$Text)
+    if ($null -eq $Text) { return '' }
+    return ([regex]::Replace($Text, '\s+', ' ')).Trim()
 }
 
 function Read-OhVbArray {
@@ -259,8 +330,8 @@ function Get-VbParameters {
     foreach ($m in [regex]::Matches($text, 'New\s+([A-Za-z_]\w*Param)\b')) {
         $type = $m.Groups[1].Value
         $lineNo = ($text.Substring(0, $m.Index) -split "`n").Length
-        if ($type -eq 'LineParam' -or $type -eq 'CommandLineParam') { continue }
-        if ($script:ParamTypes -notcontains $type) {
+        if ($type -ceq 'LineParam' -or $type -ceq 'CommandLineParam') { continue }
+        if ($script:ParamTypes -cnotcontains $type) {
             $errors.Add((New-OhError $lineNo 'FILE' 'E11' "Unrecognized parameter type '$type'"))
             continue
         }
@@ -297,21 +368,21 @@ function Get-VbParameters {
         $integerValue = $init -match '\.IntegerValue\s*=\s*True'
 
         $all = [System.Collections.Generic.List[string]]::new()
-        foreach ($s in @($switch, $noSwitch, $helpSwitch)) { if ($s -and $all -notcontains $s) { $all.Add($s) } }
-        if ($switches) { foreach ($s in $switches) { if ($s -and $all -notcontains $s) { $all.Add($s) } } }
+        foreach ($s in @($switch, $noSwitch, $helpSwitch)) { if ($s -and $all -cnotcontains $s) { $all.Add($s) } }
+        if ($switches) { foreach ($s in $switches) { if ($s -and $all -cnotcontains $s) { $all.Add($s) } } }
 
         $primary = if ($helpSwitch) { $helpSwitch } elseif ($switch) { $switch } elseif ($noSwitch) { $noSwitch } elseif ($switches -and $switches.Length -gt 0) { $switches[0] } else { $null }
         $excluded = $false; $identity = $null
-        if ($key -eq 'none') { $excluded = $true }
+        if ($key -ceq 'none') { $excluded = $true }
         elseif ($key) { $identity = $key }
         elseif ($primary -and $EncoderId) { $identity = $EncoderId + '.' + ($primary -replace '^-+', '') }
         if (-not $excluded) {
             if (-not $identity) { $errors.Add((New-OhError $lineNo 'FILE' 'E10' "Parameter '$name' ($caption) has no identity; set OptionHelpKey")) }
-            elseif ($identity -notmatch $script:IdPattern) { $errors.Add((New-OhError $lineNo 'FILE' 'E10' "Identity '$identity' is not a valid id")) }
+            elseif ($identity -cnotmatch $script:IdPattern) { $errors.Add((New-OhError $lineNo 'FILE' 'E10' "Identity '$identity' is not a valid id")) }
         }
 
         $emitted = @()
-        if ($type -eq 'OptionParam') {
+        if ($type -ceq 'OptionParam') {
             if ($values) { $emitted = $values }
             elseif ($integerValue -and $options) { $emitted = @(0..($options.Length - 1) | ForEach-Object { "$_" }) }
             elseif ($options) { $emitted = @($options | ForEach-Object { $_.ToLowerInvariant().Replace(' ', '') }) }
@@ -331,30 +402,50 @@ function ConvertTo-OhVbDump {
     $id = if ($Extraction.OptionHelpId) { $Extraction.OptionHelpId } else { '-' }
     [void]$sb.Append("OPTIONHELPID $id`n")
     foreach ($p in $Extraction.Parameters) {
-        $pid = if ($p.Identity) { $p.Identity } else { '-' }
-        [void]$sb.Append("P $($p.Line) $($p.Name) $($p.Type) id=$pid excluded=$($p.Excluded.ToString().ToLower()) caption=$($p.Caption) switches=$($p.Switches -join ',') values=$($p.EmittedValues -join ',')`n")
+        $paramId = if ($p.Identity) { $p.Identity } else { '-' }
+        [void]$sb.Append("P $($p.Line) $($p.Name) $($p.Type) id=$paramId excluded=$($p.Excluded.ToString().ToLower()) caption=$($p.Caption) switches=$($p.Switches -join ',') values=$($p.EmittedValues -join ',')`n")
     }
-    foreach ($e in ($Extraction.Errors | Sort-Object Line, Code)) { [void]$sb.Append("ERR $($e.Line) $($e.Code)`n") }
+    $items = @($Extraction.Errors)
+    $keys = [string[]]@($items | ForEach-Object { Get-OhSortKey -Parts @($_.Line, $_.Code, $_.Message) })
+    foreach ($e in (Get-OhSorted -Keys $keys -Items $items)) { [void]$sb.Append("ERR $($e.Line) $($e.Code)`n") }
     return $sb.ToString()
 }
 
 function Read-OhDirectory {
-    # Returns a hashtable: encoder id -> parsed file, for English files in a directory.
+    # Parses every help file in a directory, English and translations alike. Files is an ordinal
+    # map from encoder id to the English file; Others holds the translations and any English file
+    # a duplicate displaced, so a caller can surface their parse errors too. The canonical English
+    # name is <encoder>.md and it sorts after <encoder>.en.md, so the later file in ordinal name
+    # order wins the slot and the file it displaces is the one reported as the duplicate.
     param([Parameter(Mandatory)][string]$Directory)
-    $files = @{}
-    foreach ($f in Get-ChildItem $Directory -Filter '*.md' | Sort-Object Name) {
-        if ($f.Name -eq 'README.md') { continue }
+    $files = New-OhMap
+    $others = [System.Collections.Generic.List[object]]::new()
+    $errors = [System.Collections.Generic.List[object]]::new()
+    $slots = New-OhMap
+    $entries = @(Get-ChildItem -LiteralPath $Directory -Filter '*.md' -File)
+    $keys = [string[]]@($entries | ForEach-Object { $_.Name })
+    foreach ($f in (Get-OhSorted -Keys $keys -Items $entries)) {
+        if ($f.Name -ceq 'README.md') { continue }
         $parsed = Read-OptionHelpFile -Path $f.FullName
-        if ($parsed.Locale -ne 'en') { continue }
+        $slot = "$($parsed.Encoder)|$($parsed.Locale)"
+        if ($slots.ContainsKey($slot)) {
+            $prev = $slots[$slot]
+            $errors.Add([pscustomobject]@{ Name = $prev.Name; Encoder = $parsed.Encoder; Line = 1; Code = 'E1'
+                    Message = "Duplicate help file for encoder '$($parsed.Encoder)' locale '$($parsed.Locale)'"
+                })
+            if ($prev.Locale -ceq 'en') { $others.Add($prev) }
+        }
+        $slots[$slot] = $parsed
+        if ($parsed.Locale -cne 'en') { $others.Add($parsed); continue }
         $files[$parsed.Encoder] = $parsed
     }
-    return $files
+    return [pscustomobject]@{ Files = $files; Others = $others; Errors = $errors }
 }
 
 function Get-OhChain {
     param([Parameter(Mandatory)][hashtable]$Files, [Parameter(Mandatory)][string]$EncoderId)
     $chain = [System.Collections.Generic.List[object]]::new()
-    $seen = @{}
+    $seen = New-OhMap
     $current = $EncoderId
     while ($current) {
         if ($seen.ContainsKey($current)) { throw "Inheritance cycle at '$current'" }
@@ -364,28 +455,46 @@ function Get-OhChain {
         $chain.Add($file)
         $current = if ($file.Header.Contains('Inherits')) { $file.Header['Inherits'] } else { $null }
     }
-    if ($EncoderId -ne 'staxrip' -and $Files.ContainsKey('staxrip')) { $chain.Add($Files['staxrip']) }
+    if ($EncoderId -cne 'staxrip' -and $Files.ContainsKey('staxrip')) { $chain.Add($Files['staxrip']) }
     return ,$chain
 }
 
 function Find-OhStanza {
     param([Parameter(Mandatory)]$File, [Parameter(Mandatory)][string]$Id)
-    foreach ($s in $File.Stanzas) { if ($s.Id -eq $Id) { return $s } }
+    foreach ($s in $File.Stanzas) { if ($s.Id -ceq $Id) { return $s } }
     return $null
 }
 
+function Split-OhId {
+    # An id is <namespace>.<local part>; the local part keeps any further dots.
+    param([Parameter(Mandatory)][string]$Id)
+    $dot = $Id.IndexOf('.')
+    if ($dot -lt 1) { return [pscustomobject]@{ Namespace = ''; Local = $Id } }
+    return [pscustomobject]@{ Namespace = $Id.Substring(0, $dot); Local = $Id.Substring($dot + 1) }
+}
+
 function Resolve-OhId {
-    param([Parameter(Mandatory)]$Chain, [Parameter(Mandatory)][hashtable]$Files, [Parameter(Mandatory)][string]$Id)
+    # An identity in the parameter's own encoder namespace is resolved namespace-relative: each
+    # file in the chain is probed for <that file's encoder>.<local part>, so a variant inherits
+    # every base stanza without repeating base ids and overrides one by defining the same local
+    # part in its own namespace. An identity in any other namespace (staxrip, shared, concept, or
+    # a foreign encoder) is probed verbatim in each chain file.
+    param(
+        [Parameter(Mandatory)]$Chain, [Parameter(Mandatory)][hashtable]$Files,
+        [Parameter(Mandatory)][string]$Id, [AllowEmptyString()][string]$HomeEncoder)
+    $parts = Split-OhId -Id $Id
+    $ownNamespace = ($HomeEncoder -and $parts.Namespace -ceq $HomeEncoder)
     foreach ($file in $Chain) {
-        $s = Find-OhStanza -File $file -Id $Id
+        $probe = if ($ownNamespace) { "$($file.Encoder).$($parts.Local)" } else { $Id }
+        $s = Find-OhStanza -File $file -Id $probe
         if ($null -eq $s) { continue }
-        if ($s.Status -ne 'reviewed') { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s } }
+        if ($s.Status -cne 'reviewed') { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s } }
         if ($s.Fields.Contains('Use')) {
             $targetId = $s.Fields['Use']
-            $targetFileId = $targetId.Split('.')[0]
+            $targetFileId = (Split-OhId -Id $targetId).Namespace
             if (-not $Files.ContainsKey($targetFileId)) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s } }
             $t = Find-OhStanza -File $Files[$targetFileId] -Id $targetId
-            if ($null -eq $t -or $t.Status -ne 'reviewed' -or $t.Fields.Contains('Use')) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s } }
+            if ($null -eq $t -or $t.Status -cne 'reviewed' -or $t.Fields.Contains('Use')) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s } }
             return @{ Outcome = 'alias'; File = $Files[$targetFileId].Name; Stanza = $t; Alias = $s }
         }
         return @{ Outcome = 'reviewed'; File = $file.Name; Stanza = $s }
@@ -397,60 +506,63 @@ function Invoke-OptionHelpSelfTest {
     param([Parameter(Mandatory)][string]$FixturesRoot)
     $failures = 0
     $count = 0
-    foreach ($md in Get-ChildItem (Join-Path $FixturesRoot 'md') -Filter '*.md' | Sort-Object Name) {
+    $mdFiles = @(Get-ChildItem -LiteralPath (Join-Path $FixturesRoot 'md') -Filter '*.md' -File)
+    foreach ($md in (Get-OhSorted -Keys ([string[]]@($mdFiles | ForEach-Object { $_.Name })) -Items $mdFiles)) {
         $count++
-        $expectedPath = Join-Path $FixturesRoot ('expected\' + ($md.Name -replace '\.md$', '.txt'))
+        $expectedPath = Join-Path $FixturesRoot ('expected/' + ($md.Name -replace '\.md$', '.txt'))
         $expected = [System.IO.File]::ReadAllText($expectedPath).Replace("`r`n", "`n")
         $actual = ConvertTo-OptionHelpDump -File (Read-OptionHelpFile -Path $md.FullName)
-        if ($expected -ne $actual) {
+        if ($expected -cne $actual) {
             $failures++
             $el = $expected.Split("`n"); $al = $actual.Split("`n")
             for ($i = 0; $i -lt [Math]::Max($el.Length, $al.Length); $i++) {
                 $e = if ($i -lt $el.Length) { $el[$i] } else { '<missing>' }
                 $a = if ($i -lt $al.Length) { $al[$i] } else { '<missing>' }
-                if ($e -ne $a) {
+                if ($e -cne $a) {
                     [Console]::Error.WriteLine("FAIL $($md.Name) line $($i + 1)`n  expected: $e`n  actual:   $a")
                     break
                 }
             }
         }
     }
-    foreach ($vb in Get-ChildItem (Join-Path $FixturesRoot 'vb') -Filter '*.vb' | Sort-Object Name) {
+    $vbFiles = @(Get-ChildItem -LiteralPath (Join-Path $FixturesRoot 'vb') -Filter '*.vb' -File)
+    foreach ($vb in (Get-OhSorted -Keys ([string[]]@($vbFiles | ForEach-Object { $_.Name })) -Items $vbFiles)) {
         $count++
-        $expectedPath = Join-Path $FixturesRoot ('expected\vb-' + ($vb.Name -replace '\.vb$', '.txt'))
+        $expectedPath = Join-Path $FixturesRoot ('expected/vb-' + ($vb.Name -replace '\.vb$', '.txt'))
         $expected = [System.IO.File]::ReadAllText($expectedPath).Replace("`r`n", "`n")
         $extraction = Get-VbParameters -Path $vb.FullName -EncoderId 'fake'
         $actual = ConvertTo-OhVbDump -Extraction $extraction
-        if ($expected -ne $actual) {
+        if ($expected -cne $actual) {
             $failures++
             [Console]::Error.WriteLine("FAIL vb-$($vb.Name)`n--- expected`n$expected`n--- actual`n$actual")
         }
     }
 
     $chainDir = Join-Path $FixturesRoot 'chain'
-    $files = Read-OhDirectory -Directory $chainDir
+    $files = (Read-OhDirectory -Directory $chainDir).Files
     foreach ($case in [System.IO.File]::ReadAllLines((Join-Path $chainDir 'cases.txt'))) {
         if ($case.Trim() -eq '') { continue }
         $count++
         $parts = $case -split ' => '
         $lhs = $parts[0].Split(' ')
+        # The left-hand encoder is both the chain root and the home encoder of the identity.
         $chain = Get-OhChain -Files $files -EncoderId $lhs[0]
-        $r = Resolve-OhId -Chain $chain -Files $files -Id $lhs[1]
-        $actual = if ($r.Outcome -eq 'none') { 'none' } else { "$($r.Outcome):$($r.File)" }
-        if ($actual -ne $parts[1]) { $failures++; [Console]::Error.WriteLine("FAIL chain '$case' actual '$actual'") }
+        $r = Resolve-OhId -Chain $chain -Files $files -Id $lhs[1] -HomeEncoder $lhs[0]
+        $actual = if ($r.Outcome -ceq 'none') { 'none' } else { "$($r.Outcome):$($r.File)" }
+        if ($actual -cne $parts[1]) { $failures++; [Console]::Error.WriteLine("FAIL chain '$case' actual '$actual'") }
     }
 
     foreach ($repo in @('repo', 'repo-clean')) {
         $count++
-        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot "expected\report-$repo.txt")).Replace("`r`n", "`n")
+        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot "expected/report-$repo.txt")).Replace("`r`n", "`n")
         $actual = Format-OptionHelpReport -Report (Test-OptionHelpRepository -RepoRoot (Join-Path $FixturesRoot $repo))
-        if ($expected -ne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-$repo`n--- expected`n$expected`n--- actual`n$actual") }
+        if ($expected -cne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-$repo`n--- expected`n$expected`n--- actual`n$actual") }
     }
     # A -Encoder typo that names no English file must fail loudly, not print an empty RESULT PASS.
     $count++
-    $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\report-repo-bogus.txt')).Replace("`r`n", "`n")
+    $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected/report-repo-bogus.txt')).Replace("`r`n", "`n")
     $actual = Format-OptionHelpReport -Report (Test-OptionHelpRepository -RepoRoot (Join-Path $FixturesRoot 'repo') -Encoder 'bogus')
-    if ($expected -ne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-repo-bogus`n--- expected`n$expected`n--- actual`n$actual") }
+    if ($expected -cne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-repo-bogus`n--- expected`n$expected`n--- actual`n$actual") }
     # Ratchet: copy repo-clean to a temp dir, advance, compare the two counter lines.
     $count++
     $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("optionhelp-ratchet-" + [guid]::NewGuid().ToString('N'))
@@ -516,35 +628,35 @@ function Complete-OhValidation {
     param([Parameter(Mandatory)]$File)
     $h = $File.Header
     $errors = $File.Errors
-    $isShared = $script:SharedIds -contains $File.Encoder
+    $isShared = $script:SharedIds -ccontains $File.Encoder
 
-    if (-not $h.Contains('Schema') -or $h['Schema'] -ne '1') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Schema must be 1')) }
+    if (-not $h.Contains('Schema') -or $h['Schema'] -cne '1') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Schema must be 1')) }
     if (-not $h.Contains('Encoder')) { $errors.Add((New-OhError 1 'FILE' 'E1' 'Encoder header is required')) }
-    elseif ($h['Encoder'] -notmatch $script:EncoderPattern -or $h['Encoder'] -ne $File.Encoder) {
+    elseif ($h['Encoder'] -cnotmatch $script:EncoderPattern -or $h['Encoder'] -cne $File.Encoder) {
         $errors.Add((New-OhError 1 'FILE' 'E1' "Encoder '$($h['Encoder'])' must match the file name '$($File.Encoder)'"))
     }
     if (-not $h.Contains('Locale')) { $errors.Add((New-OhError 1 'FILE' 'E1' 'Locale header is required')) }
-    elseif ($h['Locale'] -ne $File.Locale) { $errors.Add((New-OhError 1 'FILE' 'E1' "Locale '$($h['Locale'])' must match the file name locale '$($File.Locale)'")) }
+    elseif ($h['Locale'] -cne $File.Locale) { $errors.Add((New-OhError 1 'FILE' 'E1' "Locale '$($h['Locale'])' must match the file name locale '$($File.Locale)'")) }
     if (-not $h.Contains('Title')) { $errors.Add((New-OhError 1 'FILE' 'E1' 'Title header is required')) }
 
-    $anyReviewed = @($File.Stanzas | Where-Object { $_.Status -eq 'reviewed' }).Count -gt 0
+    $anyReviewed = @($File.Stanzas | Where-Object { $_.Status -ceq 'reviewed' }).Count -gt 0
     if (-not $isShared) {
         foreach ($key in @('Source', 'Allowed-Missing', 'Minimum-Reviewed', 'Reviewed-Complete')) {
             if (-not $h.Contains($key)) { $errors.Add((New-OhError 1 'FILE' 'E1' "$key header is required for an encoder file")) }
         }
         foreach ($key in @('Allowed-Missing', 'Minimum-Reviewed')) {
-            if ($h.Contains($key) -and $h[$key] -notmatch '^\d+$') { $errors.Add((New-OhError 1 'FILE' 'E1' "$key must be a non-negative integer")) }
+            if ($h.Contains($key) -and $h[$key] -cnotmatch '^\d+$') { $errors.Add((New-OhError 1 'FILE' 'E1' "$key must be a non-negative integer")) }
         }
-        if ($h.Contains('Reviewed-Complete') -and $h['Reviewed-Complete'] -notin @('true', 'false')) {
+        if ($h.Contains('Reviewed-Complete') -and $h['Reviewed-Complete'] -cnotin @('true', 'false')) {
             $errors.Add((New-OhError 1 'FILE' 'E1' 'Reviewed-Complete must be true or false'))
         }
         if ($anyReviewed) {
             $missing = @(@('Verified-Encoder-Version', 'Verified-Encoder-Build', 'Verified-Date', 'Documentation') | Where-Object { -not $h.Contains($_) })
             if ($missing.Count -gt 0) { $errors.Add((New-OhError 1 'FILE' 'E1' "Reviewed stanzas require headers: $($missing -join ', ')")) }
         }
-        if ($h.Contains('Verified-Date') -and $h['Verified-Date'] -notmatch '^\d{4}-\d{2}-\d{2}$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Verified-Date must be an ISO date')) }
-        if ($h.Contains('Documentation') -and $h['Documentation'] -notmatch '^https?://\S+$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Documentation must be an http or https URL')) }
-        if ($h.Contains('Inherits') -and ($h['Inherits'] -notmatch $script:EncoderPattern -or $script:SharedIds -contains $h['Inherits'])) {
+        if ($h.Contains('Verified-Date') -and $h['Verified-Date'] -cnotmatch '^\d{4}-\d{2}-\d{2}$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Verified-Date must be an ISO date')) }
+        if ($h.Contains('Documentation') -and $h['Documentation'] -cnotmatch '^https?://\S+$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Documentation must be an http or https URL')) }
+        if ($h.Contains('Inherits') -and ($h['Inherits'] -cnotmatch $script:EncoderPattern -or $script:SharedIds -ccontains $h['Inherits'])) {
             $errors.Add((New-OhError 1 'FILE' 'E1' 'Inherits must name an encoder file'))
         }
         elseif ($h.Contains('Inherits')) {
@@ -554,26 +666,26 @@ function Complete-OhValidation {
     }
     elseif ($h.Contains('Inherits')) { $errors.Add((New-OhError 1 'FILE' 'E1' 'Shared files cannot inherit')) }
 
-    $seen = @{}
+    $seen = New-OhMap
     foreach ($s in $File.Stanzas) {
         if ($seen.ContainsKey($s.Id)) { $errors.Add((New-OhError $s.Line 'FILE' 'E8' "Duplicate stanza id '$($s.Id)'")) } else { $seen[$s.Id] = $true }
         $f = $s.Fields
         $hasUse = $f.Contains('Use')
         if ($hasUse) {
-            foreach ($k in $f.Keys) { if ($k -notin @('Label', 'Use', 'Status')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' "Field '$k' is not allowed with Use")) } }
+            foreach ($k in $f.Keys) { if ($k -cnotin @('Label', 'Use', 'Status')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' "Field '$k' is not allowed with Use")) } }
         }
         if (-not $f.Contains('Status')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' 'Status is required')) }
-        elseif ($s.Status -notin @('draft', 'reviewed')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' "Status must be draft or reviewed, not '$($s.Status)'")) }
+        elseif ($s.Status -cnotin @('draft', 'reviewed')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' "Status must be draft or reviewed, not '$($s.Status)'")) }
         if (-not $hasUse) {
             if (-not $f.Contains('Summary') -or $f['Summary'] -eq '') { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'Summary is required')) }
             elseif (-not $f['Summary'].EndsWith('.')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'Summary must end with a period')) }
-            if ($s.Status -eq 'reviewed' -and -not $f.Contains('When to change')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'When to change is required on a reviewed stanza')) }
+            if ($s.Status -ceq 'reviewed' -and -not $f.Contains('When to change')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'When to change is required on a reviewed stanza')) }
         }
         foreach ($k in $f.Keys) {
             if ($script:FieldLimits.ContainsKey($k) -and $f[$k].Length -gt $script:FieldLimits[$k]) {
                 $errors.Add((New-OhError $s.Line 'STANZA' 'E2' "$k exceeds $($script:FieldLimits[$k]) characters"))
             }
-            if ($k -in @('Summary', 'Used when', 'When to change', 'Example', 'Encoder default', 'Label')) {
+            if ($k -cin @('Summary', 'Used when', 'When to change', 'Example', 'Encoder default', 'Label')) {
                 $m = Test-OhInline -Text $f[$k]
                 if ($m) { $errors.Add((New-OhError $s.FieldLines[$k] 'STANZA' 'E13' "$k`: $m")) }
             }
@@ -608,15 +720,58 @@ function Test-OhPathCase {
     return $true
 }
 
+function Get-OhDescendants {
+    # Every encoder whose Inherits chain reaches $EncoderId, transitively; $EncoderId is not in it.
+    param([Parameter(Mandatory)][hashtable]$Files, [Parameter(Mandatory)][string]$EncoderId)
+    $found = New-OhMap
+    $frontier = [System.Collections.Generic.List[string]]::new()
+    $frontier.Add($EncoderId)
+    while ($frontier.Count -gt 0) {
+        $current = $frontier[0]
+        $frontier.RemoveAt(0)
+        foreach ($f in $Files.Values) {
+            if (-not $f.Header.Contains('Inherits')) { continue }
+            if ($f.Header['Inherits'] -cne $current) { continue }
+            if ($f.Encoder -ceq $EncoderId -or $found.ContainsKey($f.Encoder)) { continue }
+            $found[$f.Encoder] = $true
+            $frontier.Add($f.Encoder)
+        }
+    }
+    return ,@($found.Keys)
+}
+
+function Add-OhLinkErrors {
+    # E6 for one file's stanzas. This runs for the shared files too; only E5 is exempt for them.
+    param(
+        [Parameter(Mandatory)]$File, [Parameter(Mandatory)][hashtable]$Files,
+        [Parameter(Mandatory)]$Errors)
+    foreach ($s in $File.Stanzas) {
+        if ($s.Fields.Contains('Related')) {
+            foreach ($rel in ($s.Fields['Related'] -split ',\s*')) {
+                $target = $null
+                foreach ($other in $Files.Values) { $t = Find-OhStanza -File $other -Id $rel; if ($t) { $target = $t; break } }
+                if (-not $target) { $Errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($File.Name)"; Line = $s.FieldLines['Related']; Code = 'E6'; Message = "Related target '$rel' does not exist" }) }
+            }
+        }
+        if ($s.Fields.Contains('Use')) {
+            $r2 = Resolve-OhId -Chain @($File) -Files $Files -Id $s.Id -HomeEncoder $File.Encoder
+            if ($r2.Outcome -cne 'alias') { $Errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($File.Name)"; Line = $s.FieldLines['Use']; Code = 'E6'; Message = "Use target '$($s.Fields['Use'])' does not exist or is not reviewed" }) }
+        }
+    }
+}
+
 function Test-OptionHelpRepository {
     param([Parameter(Mandatory)][string]$RepoRoot, [string]$Encoder)
     $RepoRoot = (Resolve-Path $RepoRoot).Path
-    $docs = Join-Path $RepoRoot 'Docs\OptionHelp'
-    $files = Read-OhDirectory -Directory $docs
+    $docs = Join-Path $RepoRoot 'Docs/OptionHelp'
+    $directory = Read-OhDirectory -Directory $docs
+    $files = $directory.Files
     $errors = [System.Collections.Generic.List[object]]::new()
     $warnings = [System.Collections.Generic.List[object]]::new()
     $encoders = [System.Collections.Generic.List[object]]::new()
-    $resources = Get-OhResourceEntries -ProjectPath (Join-Path $RepoRoot 'Source\StaxRip.vbproj')
+    $resources = Get-OhResourceEntries -ProjectPath (Join-Path $RepoRoot 'Source/StaxRip.vbproj')
+    # Every English file, ordinal by encoder id, so every loop below runs in the same order twice.
+    $englishFiles = @(Get-OhSorted -Keys ([string[]]@($files.Values | ForEach-Object { $_.Encoder })) -Items ([object[]]@($files.Values)))
 
     # A -Encoder that names no English file must fail loudly instead of scoping every later loop
     # down to nothing and passing with an empty report.
@@ -624,55 +779,74 @@ function Test-OptionHelpRepository {
         $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$Encoder.md"; Line = 1; Code = 'E1'; Message = "No help file for encoder '$Encoder'" })
     }
 
-    # File-level parse errors and the file-to-resource E12 check: scoped to -Encoder when given.
-    foreach ($f in $files.Values) {
-        if ($Encoder -and $f.Encoder -ne $Encoder) { continue }
+    # Parse errors and the file-to-resource E12 check, for translations and displaced duplicates as
+    # much as for the English files: spec 5.5 gives every content file a resource entry. Both are
+    # scoped to -Encoder when it is given.
+    $allFiles = [System.Collections.Generic.List[object]]::new()
+    foreach ($f in $englishFiles) { $allFiles.Add($f) }
+    foreach ($f in $directory.Others) { $allFiles.Add($f) }
+    foreach ($f in $allFiles) {
+        if ($Encoder -and $f.Encoder -cne $Encoder) { continue }
         foreach ($e in $f.Errors) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $e.Line; Code = $e.Code; Message = $e.Message }) }
         $hits = @($resources | Where-Object { $_ -ceq $f.Name }).Count
         if ($hits -eq 0) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = 'No EmbeddedResource entry in Source/StaxRip.vbproj' }) }
         elseif ($hits -gt 1) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = "Duplicate EmbeddedResource entries ($hits) in Source/StaxRip.vbproj" }) }
     }
+    foreach ($e in $directory.Errors) {
+        if ($Encoder -and $e.Encoder -cne $Encoder) { continue }
+        $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($e.Name)"; Line = $e.Line; Code = $e.Code; Message = $e.Message })
+    }
 
     # Repository-wide checks: only when not scoped to a single -Encoder.
     if (-not $Encoder) {
         foreach ($r in $resources) {
-            if (-not (Test-Path (Join-Path $docs $r))) { $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$r' has no file" }) }
+            if (-not (Test-OhPathCase -RepoRoot $docs -RelativePath $r)) { $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$r' has no file" }) }
         }
 
         # W1: encoder sources without a help file.
-        $sourcesWithFile = @($files.Values | Where-Object { $_.Header.Contains('Source') } | ForEach-Object { $_.Header['Source'].Replace('\', '/') })
-        foreach ($vb in Get-ChildItem (Join-Path $RepoRoot 'Source\Encoding') -Filter '*.vb' | Sort-Object Name) {
+        $sourcesWithFile = @($englishFiles | Where-Object { $_.Header.Contains('Source') } | ForEach-Object { $_.Header['Source'].Replace('\', '/') })
+        $vbFiles = @(Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'Source/Encoding') -Filter '*.vb' -File)
+        foreach ($vb in (Get-OhSorted -Keys ([string[]]@($vbFiles | ForEach-Object { $_.Name })) -Items $vbFiles)) {
             $rel = "Source/Encoding/$($vb.Name)"
-            if ($sourcesWithFile -notcontains $rel) {
+            if ($sourcesWithFile -cnotcontains $rel) {
                 $text = [System.IO.File]::ReadAllText($vb.FullName)
                 if ($text -match 'Inherits\s+CommandLineParams') { $warnings.Add([pscustomobject]@{ File = $rel; Line = 0; Code = 'W1'; Message = 'no help file' }) }
             }
         }
     }
 
-    $allParams = @{}
-    foreach ($f in ($files.Values | Sort-Object Encoder)) {
-        if ($script:SharedIds -contains $f.Encoder) { continue }
-        if ($Encoder -and $f.Encoder -ne $Encoder) { continue }
+    # Extraction runs for every encoder file even in the scoped mode, because E5 needs the
+    # parameters of the encoders that inherit from the selected one; only the errors are scoped.
+    $allParams = New-OhMap
+    foreach ($f in $englishFiles) {
+        if ($script:SharedIds -ccontains $f.Encoder) { continue }
+        $inScope = (-not $Encoder) -or ($f.Encoder -ceq $Encoder)
         $h = $f.Header
         $sourceRel = if ($h.Contains('Source')) { $h['Source'] } else { $null }
         if (-not $sourceRel) { continue }
         if ($sourceRel -match '\.\.' -or -not (Test-OhPathCase -RepoRoot $RepoRoot -RelativePath $sourceRel)) {
-            $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = "Source path '$sourceRel' is outside the repository or its case does not match" })
+            if ($inScope) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = "Source path '$sourceRel' is outside the repository or its case does not match" }) }
             continue
         }
         $extraction = Get-VbParameters -Path (Join-Path $RepoRoot $sourceRel) -EncoderId $f.Encoder
-        foreach ($e in $extraction.Errors) { $errors.Add([pscustomobject]@{ File = $sourceRel; Line = $e.Line; Code = $e.Code; Message = $e.Message }) }
-        if ($extraction.OptionHelpId -ne $f.Encoder) {
-            $shown = if ($extraction.OptionHelpId) { $extraction.OptionHelpId } else { 'missing' }
-            $errors.Add([pscustomobject]@{ File = $sourceRel; Line = 1; Code = 'E9'; Message = "OptionHelpId is '$shown', expected '$($f.Encoder)'" })
+        if ($inScope) {
+            foreach ($e in $extraction.Errors) { $errors.Add([pscustomobject]@{ File = $sourceRel; Line = $e.Line; Code = $e.Code; Message = $e.Message }) }
+            if ($extraction.OptionHelpId -cne $f.Encoder) {
+                $shown = if ($extraction.OptionHelpId) { $extraction.OptionHelpId } else { 'missing' }
+                $errors.Add([pscustomobject]@{ File = $sourceRel; Line = 1; Code = 'E9'; Message = "OptionHelpId is '$shown', expected '$($f.Encoder)'" })
+            }
         }
         $allParams[$f.Encoder] = $extraction.Parameters
     }
 
-    foreach ($f in ($files.Values | Sort-Object Encoder)) {
-        if ($script:SharedIds -contains $f.Encoder) { continue }
-        if ($Encoder -and $f.Encoder -ne $Encoder) { continue }
+    # E4 is judged per stanza, over the union of the emitted values of every parameter that
+    # resolves to it, so a value note on a stanza two controls share is valid when either control
+    # emits it and each bad value is reported once. Groups are keyed by the stanza's file and line.
+    $valueGroups = New-OhOrderedMap
+
+    foreach ($f in $englishFiles) {
+        if ($script:SharedIds -ccontains $f.Encoder) { continue }
+        if ($Encoder -and $f.Encoder -cne $Encoder) { continue }
         if (-not $allParams.ContainsKey($f.Encoder)) { continue }
         try { $chain = Get-OhChain -Files $files -EncoderId $f.Encoder }
         catch { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E1'; Message = $_.Exception.Message }); continue }
@@ -681,53 +855,88 @@ function Test-OptionHelpRepository {
         foreach ($p in $params) {
             if ($p.Excluded) { $excluded++; $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W3'; Message = "$($p.Name) excluded" }); continue }
             if (-not $p.Identity) { continue }
-            $r = Resolve-OhId -Chain $chain -Files $files -Id $p.Identity
+            $r = Resolve-OhId -Chain $chain -Files $files -Id $p.Identity -HomeEncoder $f.Encoder
             switch ($r.Outcome) {
                 'reviewed' { $reviewed++ }
                 'alias' { $reviewed++ }
                 'draft' { $draft++ }
                 default { $missingList.Add([pscustomobject]@{ Id = $p.Identity; Caption = $p.Caption }) }
             }
-            # E4: value notes must name emitted values.
-            if ($r.Stanza -and $p.Type -eq 'OptionParam') {
-                foreach ($v in $r.Stanza.Values) {
-                    if ($p.EmittedValues -notcontains $v.Value) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($r.File)"; Line = $v.Line; Code = 'E4'; Message = "Value '$($v.Value)' is not an emitted value of $($p.Identity)" }) }
+            if ($r.Stanza) {
+                $groupKey = "$($r.File)|$($r.Stanza.Line)"
+                if (-not $valueGroups.Contains($groupKey)) {
+                    $valueGroups[$groupKey] = [pscustomobject]@{
+                        File = $r.File; Stanza = $r.Stanza; AnyOption = $false
+                        Emitted = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+                    }
                 }
-            }
-            elseif ($r.Stanza -and $r.Stanza.Values.Count -gt 0) {
-                $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($r.File)"; Line = $r.Stanza.Line; Code = 'E4'; Message = "Values on non-option parameter $($p.Identity)" })
+                $group = $valueGroups[$groupKey]
+                if ($p.Type -ceq 'OptionParam') {
+                    $group.AnyOption = $true
+                    foreach ($v in $p.EmittedValues) { [void]$group.Emitted.Add($v) }
+                }
             }
         }
         $total = @($params | Where-Object { -not $_.Excluded }).Count
-        $identities = @($params | Where-Object { $_.Identity } | ForEach-Object { $_.Identity })
-        # E5 orphans and E6 links for stanzas in this encoder's own file.
-        $inheritors = @($files.Values | Where-Object { $_.Header.Contains('Inherits') -and $_.Header['Inherits'] -eq $f.Encoder } | ForEach-Object { $_.Encoder })
-        $allIds = [System.Collections.Generic.List[string]]::new([string[]]$identities)
-        foreach ($i in $inheritors) { if ($allParams.ContainsKey($i)) { foreach ($p in $allParams[$i]) { if ($p.Identity) { $allIds.Add($p.Identity) } } } }
-        foreach ($s in $f.Stanzas) {
-            if ($allIds -notcontains $s.Id) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $s.Line; Code = 'E5'; Message = "Orphan stanza '$($s.Id)'" }) }
-            if ($s.Fields.Contains('Related')) {
-                foreach ($rel in ($s.Fields['Related'] -split ',\s*')) {
-                    $target = $null
-                    foreach ($other in $files.Values) { $t = Find-OhStanza -File $other -Id $rel; if ($t) { $target = $t; break } }
-                    if (-not $target) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $s.FieldLines['Related']; Code = 'E6'; Message = "Related target '$rel' does not exist" }) }
-                }
-            }
-            if ($s.Fields.Contains('Use')) {
-                $r2 = Resolve-OhId -Chain @($f) -Files $files -Id $s.Id
-                if ($r2.Outcome -ne 'alias') { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $s.FieldLines['Use']; Code = 'E6'; Message = "Use target '$($s.Fields['Use'])' does not exist or is not reviewed" }) }
+        # E5: a stanza in an encoder file must be in that file's own namespace, and its local part
+        # must match the local part of an own-namespace identity of this encoder or of any encoder
+        # that inherits from it, transitively.
+        $localParts = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
+        foreach ($owner in (@($f.Encoder) + @(Get-OhDescendants -Files $files -EncoderId $f.Encoder))) {
+            if (-not $allParams.ContainsKey($owner)) { continue }
+            foreach ($p in $allParams[$owner]) {
+                if (-not $p.Identity) { continue }
+                $split = Split-OhId -Id $p.Identity
+                if ($split.Namespace -ceq $owner) { [void]$localParts.Add($split.Local) }
             }
         }
-        $allowed = [int]$f.Header['Allowed-Missing']; $minimum = [int]$f.Header['Minimum-Reviewed']; $complete = $f.Header['Reviewed-Complete'] -eq 'true'
+        foreach ($s in $f.Stanzas) {
+            $split = Split-OhId -Id $s.Id
+            if ($split.Namespace -cne $f.Encoder -or -not $localParts.Contains($split.Local)) {
+                $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $s.Line; Code = 'E5'; Message = "Orphan stanza '$($s.Id)'" })
+            }
+        }
+        Add-OhLinkErrors -File $f -Files $files -Errors $errors
+        # The parser already reported a counter header that is not a non-negative integer; count it
+        # as 0 here so the report still prints, and show the header text itself in the row.
+        $allowedText = if ($f.Header.Contains('Allowed-Missing')) { [string]$f.Header['Allowed-Missing'] } else { '0' }
+        $minimumText = if ($f.Header.Contains('Minimum-Reviewed')) { [string]$f.Header['Minimum-Reviewed'] } else { '0' }
+        $allowed = if ($allowedText -cmatch '^\d+$') { [int]$allowedText } else { 0 }
+        $minimum = if ($minimumText -cmatch '^\d+$') { [int]$minimumText } else { 0 }
+        $complete = $f.Header['Reviewed-Complete'] -ceq 'true'
         $pass = $true
         if ($missingList.Count -gt $allowed) { $pass = $false; $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E7'; Message = "missing $($missingList.Count) exceeds Allowed-Missing $allowed" }) }
         if ($reviewed -lt $minimum) { $pass = $false; $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E7'; Message = "reviewed $reviewed is below Minimum-Reviewed $minimum" }) }
         if ($complete -and ($missingList.Count -gt 0 -or $draft -gt 0)) { $pass = $false; $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E7'; Message = 'Reviewed-Complete is true but not every parameter is reviewed' }) }
         $encoders.Add([pscustomobject]@{
             Encoder = $f.Encoder; Total = $total; Excluded = $excluded; Reviewed = $reviewed; Draft = $draft; Missing = $missingList.Count
-            AllowedMissing = $allowed; MinimumReviewed = $minimum; ReviewedComplete = $complete; Pass = $pass; MissingIds = $missingList
+            AllowedMissing = $allowed; MinimumReviewed = $minimum; AllowedMissingText = $allowedText; MinimumReviewedText = $minimumText
+            ReviewedComplete = $complete; Pass = $pass; MissingIds = $missingList
         })
     }
+
+    # E6 for the shared files: they carry no parameters, so E5 stays exempt, but a Related or Use
+    # target that does not exist is the same defect there as in an encoder file.
+    foreach ($f in $englishFiles) {
+        if ($script:SharedIds -cnotcontains $f.Encoder) { continue }
+        if ($Encoder -and $f.Encoder -cne $Encoder) { continue }
+        Add-OhLinkErrors -File $f -Files $files -Errors $errors
+    }
+
+    foreach ($groupKey in @($valueGroups.Keys)) {
+        $group = $valueGroups[$groupKey]
+        if ($group.AnyOption) {
+            foreach ($v in $group.Stanza.Values) {
+                if (-not $group.Emitted.Contains($v.Value)) {
+                    $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($group.File)"; Line = $v.Line; Code = 'E4'; Message = "Value '$($v.Value)' is not an emitted value of $($group.Stanza.Id)" })
+                }
+            }
+        }
+        elseif ($group.Stanza.Values.Count -gt 0) {
+            $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($group.File)"; Line = $group.Stanza.Line; Code = 'E4'; Message = "Values on non-option parameter $($group.Stanza.Id)" })
+        }
+    }
+
     $overall = ($errors.Count -eq 0)
     return [pscustomobject]@{ Encoders = $encoders; Errors = $errors; Warnings = $warnings; Pass = $overall }
 }
@@ -735,18 +944,23 @@ function Test-OptionHelpRepository {
 function Format-OptionHelpReport {
     param([Parameter(Mandatory)]$Report)
     $sb = [System.Text.StringBuilder]::new()
-    foreach ($e in ($Report.Encoders | Sort-Object Encoder)) {
+    $rows = @($Report.Encoders)
+    foreach ($e in (Get-OhSorted -Keys ([string[]]@($rows | ForEach-Object { $_.Encoder })) -Items $rows)) {
         $res = if ($e.Pass) { 'PASS' } else { 'FAIL' }
-        [void]$sb.Append("ENCODER $($e.Encoder) total=$($e.Total) excluded=$($e.Excluded) reviewed=$($e.Reviewed) draft=$($e.Draft) missing=$($e.Missing) allowed-missing=$($e.AllowedMissing) minimum-reviewed=$($e.MinimumReviewed) reviewed-complete=$($e.ReviewedComplete.ToString().ToLower()) result=$res`n")
-        $printed = @{}
+        [void]$sb.Append("ENCODER $($e.Encoder) total=$($e.Total) excluded=$($e.Excluded) reviewed=$($e.Reviewed) draft=$($e.Draft) missing=$($e.Missing) allowed-missing=$($e.AllowedMissingText) minimum-reviewed=$($e.MinimumReviewedText) reviewed-complete=$($e.ReviewedComplete.ToString().ToLower()) result=$res`n")
+        $printed = New-OhMap
         foreach ($m in $e.MissingIds) {
             if ($printed.ContainsKey($m.Id)) { continue }
             $printed[$m.Id] = $true
             [void]$sb.Append("MISSING $($m.Id) $($m.Caption)`n")
         }
     }
-    foreach ($e in ($Report.Errors | Sort-Object Code, File, Line, Message)) { [void]$sb.Append("$($e.Code) $($e.File):$($e.Line) $($e.Message)`n") }
-    foreach ($w in ($Report.Warnings | Sort-Object Code, File, Message)) { [void]$sb.Append("$($w.Code) $($w.File) $($w.Message)`n") }
+    $errs = @($Report.Errors)
+    $errKeys = [string[]]@($errs | ForEach-Object { Get-OhSortKey -Parts @($_.Code, $_.File, $_.Line, $_.Message) })
+    foreach ($e in (Get-OhSorted -Keys $errKeys -Items $errs)) { [void]$sb.Append("$($e.Code) $($e.File):$($e.Line) $($e.Message)`n") }
+    $warns = @($Report.Warnings)
+    $warnKeys = [string[]]@($warns | ForEach-Object { Get-OhSortKey -Parts @($_.Code, $_.File, $_.Message) })
+    foreach ($w in (Get-OhSorted -Keys $warnKeys -Items $warns)) { [void]$sb.Append("$($w.Code) $($w.File) $($w.Message)`n") }
     [void]$sb.Append("RESULT $(if ($Report.Pass) { 'PASS' } else { 'FAIL' })`n")
     return $sb.ToString()
 }
@@ -763,7 +977,7 @@ function Update-OptionHelpRatchet {
     $moves = [System.Collections.Generic.List[object]]::new()
     try {
         foreach ($e in $Report.Encoders) {
-            $path = Join-Path $RepoRoot "Docs\OptionHelp\$($e.Encoder).md"
+            $path = Join-Path $RepoRoot "Docs/OptionHelp/$($e.Encoder).md"
             $text = [System.IO.File]::ReadAllText($path)
             $newAllowed = [Math]::Min($e.AllowedMissing, $e.Missing)
             $newMinimum = [Math]::Max($e.MinimumReviewed, $e.Reviewed)
@@ -782,6 +996,24 @@ function Update-OptionHelpRatchet {
     }
 }
 
+function Get-OhJsonField {
+    # Strict mode makes a missing property an error, and an export written by an older build may
+    # be missing one, so every read of the parsed JSON goes through this.
+    param([Parameter(Mandatory)]$Object, [Parameter(Mandatory)][string]$Name)
+    $prop = $Object.PSObject.Properties[$Name]
+    if ($null -eq $prop) { return $null }
+    return $prop.Value
+}
+
+function Get-OhFactsKey {
+    # Two controls can share one identity, so the declaring property name is the key when there is
+    # one; an inline parameter carries '-' as its name on both sides and falls back to its identity.
+    param([AllowNull()][AllowEmptyString()][string]$Name, [AllowNull()][AllowEmptyString()][string]$Identity)
+    if ($Name -and $Name -cne '-') { return $Name }
+    if ($Identity) { return $Identity }
+    return $null
+}
+
 function Compare-OptionHelpFacts {
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][string]$FactsPath)
     $facts = Get-Content -Raw $FactsPath | ConvertFrom-Json
@@ -790,7 +1022,7 @@ function Compare-OptionHelpFacts {
         $out.Add("E11 $FactsPath has no encoders array")
         return $out
     }
-    $files = Read-OhDirectory -Directory (Join-Path $RepoRoot 'Docs\OptionHelp')
+    $files = (Read-OhDirectory -Directory (Join-Path $RepoRoot 'Docs/OptionHelp')).Files
     foreach ($enc in $facts.encoders) {
         if (-not $files.ContainsKey($enc.encoder)) { $out.Add("E11 $($enc.encoder) has no help file"); continue }
         $f = $files[$enc.encoder]
@@ -800,29 +1032,41 @@ function Compare-OptionHelpFacts {
             continue
         }
         $extraction = Get-VbParameters -Path (Join-Path $RepoRoot $sourceRel) -EncoderId $enc.encoder
-        # Key both sides by identity regardless of exclusion, so an exclusion mismatch is caught
-        # explicitly instead of silently dropping one side's entry.
-        $app = @{}
-        foreach ($p in $enc.parameters) { if ($p.identity) { $app[$p.identity] = $p } }
+        # Key both sides by the declaring property name, so two controls that share one identity
+        # are still two entries and neither hides the other; inline parameters have no property
+        # name ('-' on both sides) and fall back to their identity. Excluded parameters are keyed
+        # the same way and compared, which is what makes an exclusion mismatch reachable at all.
+        $app = New-OhMap
+        foreach ($p in $enc.parameters) {
+            $key = Get-OhFactsKey -Name ([string](Get-OhJsonField -Object $p -Name 'name')) -Identity ([string](Get-OhJsonField -Object $p -Name 'identity'))
+            if ($key) { $app[$key] = $p }
+        }
         foreach ($p in $extraction.Parameters) {
-            if (-not $p.Identity) { continue }
-            if (-not $app.ContainsKey($p.Identity)) { $out.Add("E11 $($p.Identity) missing from the application export"); continue }
-            $a = $app[$p.Identity]
-            if ([bool]$a.excluded -ne [bool]$p.Excluded) {
-                $out.Add("E11 $($p.Identity) excluded differs: application '$($a.excluded.ToString().ToLower())' extractor '$($p.Excluded.ToString().ToLower())'")
-                $app.Remove($p.Identity)
+            $key = Get-OhFactsKey -Name $p.Name -Identity $p.Identity
+            if (-not $key) { continue }
+            if (-not $app.ContainsKey($key)) { $out.Add("E11 $key missing from the application export"); continue }
+            $a = $app[$key]
+            $app.Remove($key)
+            $appExcluded = [bool](Get-OhJsonField -Object $a -Name 'excluded')
+            if ($appExcluded -ne [bool]$p.Excluded) {
+                $out.Add("E11 $key excluded differs: application '$($appExcluded.ToString().ToLower())' extractor '$($p.Excluded.ToString().ToLower())'")
                 continue
             }
-            if (-not $p.Excluded) {
-                if (($a.switches -join ',') -ne ($p.Switches -join ',')) { $out.Add("E11 $($p.Identity) switches differ: application '$($a.switches -join ',')' extractor '$($p.Switches -join ',')'") }
-                if (($a.values -join ',') -ne ($p.EmittedValues -join ',')) { $out.Add("E11 $($p.Identity) values differ: application '$($a.values -join ',')' extractor '$($p.EmittedValues -join ',')'") }
-                if ($a.caption -ne $p.Caption) { $out.Add("E11 $($p.Identity) caption differs: application '$($a.caption)' extractor '$($p.Caption)'") }
-            }
-            $app.Remove($p.Identity)
+            if ($p.Excluded) { continue }
+            $appIdentity = [string](Get-OhJsonField -Object $a -Name 'identity')
+            $extractorIdentity = if ($p.Identity) { [string]$p.Identity } else { '' }
+            if ($appIdentity -cne $extractorIdentity) { $out.Add("E11 $key identity differs: application '$appIdentity' extractor '$extractorIdentity'") }
+            $appSwitches = (Get-OhJsonField -Object $a -Name 'switches') -join ','
+            if ($appSwitches -cne ($p.Switches -join ',')) { $out.Add("E11 $key switches differ: application '$appSwitches' extractor '$($p.Switches -join ',')'") }
+            $appValues = (Get-OhJsonField -Object $a -Name 'values') -join ','
+            if ($appValues -cne ($p.EmittedValues -join ',')) { $out.Add("E11 $key values differ: application '$appValues' extractor '$($p.EmittedValues -join ',')'") }
+            $appCaption = ConvertTo-OhCaption -Text ([string](Get-OhJsonField -Object $a -Name 'caption'))
+            $extractorCaption = ConvertTo-OhCaption -Text $p.Caption
+            if ($appCaption -cne $extractorCaption) { $out.Add("E11 $key caption differs: application '$appCaption' extractor '$extractorCaption'") }
         }
-        foreach ($k in $app.Keys) { $out.Add("E11 $k missing from the extractor") }
+        foreach ($k in @(Get-OhSorted -Keys ([string[]]@($app.Keys)) -Items ([object[]]@($app.Keys)))) { $out.Add("E11 $k missing from the extractor") }
     }
     return $out
 }
 
-Export-ModuleMember -Function Read-OptionHelpFile, ConvertFrom-OptionHelpText, ConvertTo-OptionHelpDump, Invoke-OptionHelpSelfTest, Test-OhInline, ConvertTo-OhPlainText, Get-VbParameters, Get-VbOptionHelpId, ConvertTo-OhVbDump, Get-OhChain, Resolve-OhId, Read-OhDirectory, Test-OptionHelpRepository, Format-OptionHelpReport, Update-OptionHelpRatchet, Compare-OptionHelpFacts
+Export-ModuleMember -Function Read-OptionHelpFile, ConvertFrom-OptionHelpText, ConvertTo-OptionHelpDump, Invoke-OptionHelpSelfTest, Test-OhInline, ConvertTo-OhPlainText, ConvertTo-OhCaption, Get-VbParameters, Get-VbOptionHelpId, ConvertTo-OhVbDump, Get-OhChain, Resolve-OhId, Split-OhId, Read-OhDirectory, Test-OptionHelpRepository, Format-OptionHelpReport, Update-OptionHelpRatchet, Compare-OptionHelpFacts
