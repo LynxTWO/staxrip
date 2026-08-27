@@ -167,6 +167,7 @@ function ConvertFrom-OptionHelpText {
         Name = $Name; Encoder = $nameEncoder; Locale = $nameLocale
         Header = $header; Stanzas = $stanzas; Errors = $errors
     }
+    Complete-OhValidation -File $file
     return $file
 }
 
@@ -217,4 +218,93 @@ function Invoke-OptionHelpSelfTest {
     return 0
 }
 
-Export-ModuleMember -Function Read-OptionHelpFile, ConvertFrom-OptionHelpText, ConvertTo-OptionHelpDump, Invoke-OptionHelpSelfTest
+function Test-OhInline {
+    param([AllowEmptyString()][string]$Text)
+    $ticks = @($Text.ToCharArray() | Where-Object { $_ -eq '`' }).Count
+    if ($ticks % 2 -eq 1) { return 'Unmatched backtick' }
+    $stripped = [regex]::Replace($Text, $script:LinkPattern, '')
+    if ($stripped.Contains('[') -or $stripped.Contains(']')) { return 'Malformed link; only [text](http://...) or [text](https://...) is allowed' }
+    return $null
+}
+
+function ConvertTo-OhPlainText {
+    param([AllowEmptyString()][string]$Text)
+    $t = [regex]::Replace($Text, $script:LinkPattern, '$1')
+    return $t.Replace('`', '')
+}
+
+function Complete-OhValidation {
+    param([Parameter(Mandatory)]$File)
+    $h = $File.Header
+    $errors = $File.Errors
+    $isShared = $script:SharedIds -contains $File.Encoder
+
+    if (-not $h.Contains('Schema') -or $h['Schema'] -ne '1') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Schema must be 1')) }
+    if (-not $h.Contains('Encoder')) { $errors.Add((New-OhError 1 'FILE' 'E1' 'Encoder header is required')) }
+    elseif ($h['Encoder'] -notmatch $script:EncoderPattern -or $h['Encoder'] -ne $File.Encoder) {
+        $errors.Add((New-OhError 1 'FILE' 'E1' "Encoder '$($h['Encoder'])' must match the file name '$($File.Encoder)'"))
+    }
+    if (-not $h.Contains('Locale')) { $errors.Add((New-OhError 1 'FILE' 'E1' 'Locale header is required')) }
+    elseif ($h['Locale'] -ne $File.Locale) { $errors.Add((New-OhError 1 'FILE' 'E1' "Locale '$($h['Locale'])' must match the file name locale '$($File.Locale)'")) }
+    if (-not $h.Contains('Title')) { $errors.Add((New-OhError 1 'FILE' 'E1' 'Title header is required')) }
+
+    $anyReviewed = @($File.Stanzas | Where-Object { $_.Status -eq 'reviewed' }).Count -gt 0
+    if (-not $isShared) {
+        foreach ($key in @('Source', 'Allowed-Missing', 'Minimum-Reviewed', 'Reviewed-Complete')) {
+            if (-not $h.Contains($key)) { $errors.Add((New-OhError 1 'FILE' 'E1' "$key header is required for an encoder file")) }
+        }
+        foreach ($key in @('Allowed-Missing', 'Minimum-Reviewed')) {
+            if ($h.Contains($key) -and $h[$key] -notmatch '^\d+$') { $errors.Add((New-OhError 1 'FILE' 'E1' "$key must be a non-negative integer")) }
+        }
+        if ($h.Contains('Reviewed-Complete') -and $h['Reviewed-Complete'] -notin @('true', 'false')) {
+            $errors.Add((New-OhError 1 'FILE' 'E1' 'Reviewed-Complete must be true or false'))
+        }
+        if ($anyReviewed) {
+            $missing = @(@('Verified-Encoder-Version', 'Verified-Encoder-Build', 'Verified-Date', 'Documentation') | Where-Object { -not $h.Contains($_) })
+            if ($missing.Count -gt 0) { $errors.Add((New-OhError 1 'FILE' 'E1' "Reviewed stanzas require headers: $($missing -join ', ')")) }
+        }
+        if ($h.Contains('Verified-Date') -and $h['Verified-Date'] -notmatch '^\d{4}-\d{2}-\d{2}$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Verified-Date must be an ISO date')) }
+        if ($h.Contains('Documentation') -and $h['Documentation'] -notmatch '^https?://\S+$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Documentation must be an http or https URL')) }
+        if ($h.Contains('Inherits') -and ($h['Inherits'] -notmatch $script:EncoderPattern -or $script:SharedIds -contains $h['Inherits'])) {
+            $errors.Add((New-OhError 1 'FILE' 'E1' 'Inherits must name an encoder file'))
+        }
+        elseif ($h.Contains('Inherits')) {
+            # Chains are resolved by Task 3; the parser only records that a base is named.
+            $File | Add-Member -NotePropertyName 'Inherits' -NotePropertyValue $h['Inherits'] -Force
+        }
+    }
+    elseif ($h.Contains('Inherits')) { $errors.Add((New-OhError 1 'FILE' 'E1' 'Shared files cannot inherit')) }
+
+    $seen = @{}
+    foreach ($s in $File.Stanzas) {
+        if ($seen.ContainsKey($s.Id)) { $errors.Add((New-OhError $s.Line 'FILE' 'E8' "Duplicate stanza id '$($s.Id)'")) } else { $seen[$s.Id] = $true }
+        $f = $s.Fields
+        $hasUse = $f.Contains('Use')
+        if ($hasUse) {
+            foreach ($k in $f.Keys) { if ($k -notin @('Label', 'Use', 'Status')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' "Field '$k' is not allowed with Use")) } }
+        }
+        if (-not $f.Contains('Status')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' 'Status is required')) }
+        elseif ($s.Status -notin @('draft', 'reviewed')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' "Status must be draft or reviewed, not '$($s.Status)'")) }
+        if (-not $hasUse) {
+            if (-not $f.Contains('Summary') -or $f['Summary'] -eq '') { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'Summary is required')) }
+            elseif (-not $f['Summary'].EndsWith('.')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'Summary must end with a period')) }
+            if ($s.Status -eq 'reviewed' -and -not $f.Contains('When to change')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'When to change is required on a reviewed stanza')) }
+        }
+        foreach ($k in $f.Keys) {
+            if ($script:FieldLimits.ContainsKey($k) -and $f[$k].Length -gt $script:FieldLimits[$k]) {
+                $errors.Add((New-OhError $s.Line 'STANZA' 'E2' "$k exceeds $($script:FieldLimits[$k]) characters"))
+            }
+            if ($k -in @('Summary', 'Used when', 'When to change', 'Example', 'Encoder default', 'Label')) {
+                $m = Test-OhInline -Text $f[$k]
+                if ($m) { $errors.Add((New-OhError ($s.Line + [array]::IndexOf(@($f.Keys), $k) + 1) 'STANZA' 'E13' "$k`: $m")) }
+            }
+        }
+        foreach ($v in $s.Values) {
+            if ($v.Note.Length -gt $script:NoteLimit) { $errors.Add((New-OhError $v.Line 'STANZA' 'E2' "Value note exceeds $($script:NoteLimit) characters")) }
+            $m = Test-OhInline -Text $v.Note
+            if ($m) { $errors.Add((New-OhError $v.Line 'STANZA' 'E13' "Value note: $m")) }
+        }
+    }
+}
+
+Export-ModuleMember -Function Read-OptionHelpFile, ConvertFrom-OptionHelpText, ConvertTo-OptionHelpDump, Invoke-OptionHelpSelfTest, Test-OhInline, ConvertTo-OhPlainText

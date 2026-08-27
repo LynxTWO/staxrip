@@ -1,0 +1,17 @@
+FILE e8-duplicate.md
+H Schema=1
+H Encoder=e8-duplicate
+H Locale=en
+H Title=Duplicate
+H Source=Source/Encoding/E8.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S e8-duplicate.alpha 10
+F Summary=First.
+F Status=draft
+S e8-duplicate.alpha 14
+F Summary=Second.
+F Status=draft
+ERR 14 FILE E8
+END

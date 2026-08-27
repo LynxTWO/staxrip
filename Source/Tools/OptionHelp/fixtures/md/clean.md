@@ -1,7 +1,7 @@
 # Fake encoder option help
 
 Schema: 1
-Encoder: fake
+Encoder: clean
 Locale: en
 Title: Fake Encoder
 Source: Source/Encoding/FakeEnc.vb

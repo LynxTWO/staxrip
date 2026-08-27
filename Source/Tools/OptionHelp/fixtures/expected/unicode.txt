@@ -1,0 +1,13 @@
+FILE unicode.md
+H Schema=1
+H Encoder=unicode
+H Locale=en
+H Title=Umlaute
+H Source=Source/Encoding/U.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S unicode.alpha 10
+F Summary=Größere Werte machen die Datei kleiner.
+F Status=draft
+END

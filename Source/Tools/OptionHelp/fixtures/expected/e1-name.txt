@@ -1,0 +1,12 @@
+FILE e1-name.md
+H Schema=1
+H Encoder=other
+H Locale=de
+H Title=Mismatch
+H Source=Source/Encoding/E1.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+ERR 1 FILE E1
+ERR 1 FILE E1
+END

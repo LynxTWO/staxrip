@@ -1,0 +1,32 @@
+FILE e3-fields.md
+H Schema=1
+H Encoder=e3-fields
+H Locale=en
+H Title=Fields
+H Source=Source/Encoding/E3.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S e3-fields.alpha 10
+F Status=draft
+F Summary=Out of order.
+F Values=
+S not-an-id 19
+F Summary=Fine.
+F Status=draft
+S e3-fields.alias 23
+F Use=shared.thing
+F Summary=Not allowed with Use.
+F Status=draft
+S e3-fields.nostatus 28
+F Summary=Fine.
+ERR 12 STANZA E3
+ERR 13 STANZA E3
+ERR 14 STANZA E3
+ERR 15 STANZA E3
+ERR 16 STANZA E3
+ERR 17 STANZA E3
+ERR 19 STANZA E1
+ERR 23 STANZA E3
+ERR 28 STANZA E3
+END

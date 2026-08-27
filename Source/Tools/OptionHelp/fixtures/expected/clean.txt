@@ -1,6 +1,6 @@
 FILE clean.md
 H Schema=1
-H Encoder=fake
+H Encoder=clean
 H Locale=en
 H Title=Fake Encoder
 H Source=Source/Encoding/FakeEnc.vb

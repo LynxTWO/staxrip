@@ -1,0 +1,29 @@
+FILE e13-markup.md
+H Schema=1
+H Encoder=e13-markup
+H Locale=en
+H Title=Markup
+H Source=Source/Encoding/E13.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S e13-markup.backtick 10
+F Summary=An unmatched `backtick here.
+F Status=draft
+S e13-markup.badlink 14
+F Summary=A [broken link](javascript:alert(1)) and a [half link.
+F Status=draft
+S e13-markup.badref 18
+F Summary=Fine.
+F References=
+R file:///C:/secret.txt
+R //example.invalid/protocol-relative
+F Status=draft
+S e13-markup.html 25
+F Summary=Angle brackets <b>are</b> plain text and allowed.
+F Status=draft
+ERR 11 STANZA E13
+ERR 15 STANZA E13
+ERR 21 STANZA E13
+ERR 22 STANZA E13
+END

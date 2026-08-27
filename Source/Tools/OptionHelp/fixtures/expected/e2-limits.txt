@@ -1,0 +1,34 @@
+FILE e2-limits.md
+H Schema=1
+H Encoder=e2-limits
+H Locale=en
+H Title=Limits
+H Source=Source/Encoding/E2.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S e2-limits.nosummary 10
+F Status=reviewed
+S e2-limits.noperiod 13
+F Summary=Ends without a period
+F Status=draft
+S e2-limits.long 17
+F Summary=This summary is deliberately far longer than the two hundred character limit that the grammar allows for a summary, so that the validator has to reject it with the length rule instead of accepting it silently as fine.
+F Status=draft
+S e2-limits.reviewed-without-when 21
+F Summary=Fine.
+F Status=reviewed
+S e2-limits.longnote 25
+F Summary=Fine.
+F When to change=Fine.
+F Values=
+V 1=This note is deliberately longer than one hundred and twenty characters so that the note length rule fires on it, as the grammar says it must.
+F Status=reviewed
+ERR 1 FILE E1
+ERR 10 STANZA E2
+ERR 10 STANZA E2
+ERR 13 STANZA E2
+ERR 17 STANZA E2
+ERR 21 STANZA E2
+ERR 29 STANZA E2
+END

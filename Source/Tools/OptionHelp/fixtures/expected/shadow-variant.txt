@@ -1,0 +1,14 @@
+FILE shadow-variant.md
+H Schema=1
+H Encoder=shadow-variant
+H Locale=en
+H Title=Shadow Variant
+H Source=Source/Encoding/ShadowVariant.vb
+H Inherits=shadow-base
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S shadow-base.alpha 11
+F Summary=The variant author thinks the base text is wrong here.
+F Status=draft
+END

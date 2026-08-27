@@ -1,0 +1,18 @@
+FILE e1-header.md
+H Schema=2
+H Encoder=e1-header
+H Source=Source/Encoding/E1.vb
+H Inherits=base
+S e1-header.alpha 7
+F Summary=Fine.
+F When to change=Fine.
+F Status=reviewed
+ERR 1 FILE E1
+ERR 1 FILE E1
+ERR 1 FILE E1
+ERR 1 FILE E1
+ERR 1 FILE E1
+ERR 1 FILE E1
+ERR 1 FILE E1
+ERR 4 FILE E1
+END
