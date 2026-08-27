@@ -134,10 +134,10 @@ Stanza fields, in this order:
 Every parameter has one stable ID. Switches and captions are aliases for search and display, never identity.
 
 - **Explicit:** `CommandLineParam.OptionHelpKey`, set in the VB declaration, for example `.OptionHelpKey = "svt-av1.content-light.max-cll"` or `.OptionHelpKey = "staxrip.chunks"`. Required for switch-less controls and for controls that share a switch but need different text. The literal `none` excludes a parameter from help and from coverage; the validator lists exclusions in its report so reviewers see them.
-- **Derived:** for every other parameter, `<OptionHelpId>.<primary switch without its leading dashes>`, for example `svt-av1.preset`. Two controls that share a switch and derive the same ID share one stanza; in SVT-AV1 that is `--keyint` and `--pass`, where the controls alternate by mode and the text is the same.
+- **Derived:** for every other parameter, the local part is the primary switch without its leading dashes, in the encoder's own namespace: `svt-av1.preset`. Two controls that share a switch share one stanza.
 - **Primary switch:** one documented routine, `CommandLineParam.PrimaryHelpSwitch()`, returns the explicit `.HelpSwitch`, else `.Switch`, else `.NoSwitch`, else the first `.Switches` entry, else nothing. The application and the validator both use this order; `GetSwitches` and its hash set are not involved.
-- **Namespaces:** `<encoder>.` for encoder files, `staxrip.` for `staxrip.md`, `concept.` for `concepts.md`, `shared.` for `shared.md`. A variant file overrides a base stanza by repeating the base ID; a stanza whose namespace belongs to a file outside the chain is an orphan (E5).
-- **Lookup:** the loader walks encoder, `Inherits` chain, `staxrip` and takes the first stanza whose ID matches. If that stanza is `reviewed`, it displays. If it is `draft`, lookup stops and nothing displays; a draft is also a shadow that blocks inherited text a variant author has decided is wrong for the variant. If nothing matches, the control behaves as today.
+- **Namespaces and inheritance:** an identity in the encoder's own namespace is resolved namespace-relative: each file in the chain is probed for `<that file's encoder>.<local part>`, the encoder's own file first, then each ancestor, then `staxrip`. An identity in any other namespace (`staxrip`, `shared`, `concept`, or another encoder's) is probed verbatim in each chain file. A variant overrides a base stanza by defining the same local part in its own namespace; it never repeats the base id.
+- **Lookup:** the first stanza found wins. If it is `reviewed`, it displays. If it is `draft`, lookup stops and nothing displays; a draft is also a shadow that blocks inherited text a variant author has decided is wrong for the variant. If nothing matches, the control behaves as today.
 - **Aliases for search:** every switch from `GetSwitches`, sorted ordinally, plus the caption.
 
 SVT-AV1 explicit keys in this slice: `svt-av1.content-light.max-cll`, `svt-av1.content-light.max-fall`, `none` for the hidden combined `--content-light` field, and the `staxrip.*` keys on the thirteen switch-less controls (four `Custom` boxes share `staxrip.custom`; two `Pipe` dropdowns share `staxrip.pipe`).
@@ -310,7 +310,7 @@ A deterministic PowerShell 7 script. It reads text; it does not build or run Sta
 | `-SelfTest` | Runs the fixture suite in 6.5 and exits non-zero on any mismatch |
 | `-CompareFacts <json>` | Reconciles the extractor against an application export, see 6.7 |
 
-Exit code 0 when no error rule fires; 1 otherwise. Output: one table row per encoder file (total, excluded, reviewed, draft, missing, the three counters, percentages for humans, pass or fail), the list of missing IDs with their captions, and every error as `file:line: E<n> <message>`.
+Exit code 0 when no error rule fires; 1 otherwise. The report is one `ENCODER <id> total= excluded= reviewed= draft= missing= allowed-missing= minimum-reviewed= reviewed-complete= result=` row per encoder file, ordinal by encoder id, each followed by `MISSING <id> <caption>` once per id; then every error as `<code> <file>:<line> <message>`, sorted ordinally by code, file, line, and message; then every warning as `<code> <file> <message>`, sorted ordinally by code, file, and message; then `RESULT PASS` or `RESULT FAIL`.
 
 ### 6.2 Parameter extraction from VB
 
@@ -322,12 +322,12 @@ Known blind spots, recorded in the script's README: parameters declared but neve
 
 | Id | Level | Rule |
 | --- | --- | --- |
-| E1 | error | File-level grammar violation from 4.2 and 5.6, including unknown `Schema`, invalid encoding, header and file-name disagreement, duplicate header key, `Inherits` cycle or unknown target, and verification headers missing once a stanza is reviewed |
+| E1 | error | File-level grammar violation from 4.2 and 5.6, including unknown `Schema`, invalid encoding, header and file-name disagreement, duplicate header key, two help files for the same encoder and locale, `Inherits` cycle or unknown target, and verification headers missing once a stanza is reviewed |
 | E2 | error | `Summary` missing, empty, over 200 characters, or not ending with `.`; `When to change` missing on a `reviewed` stanza; any field over its limit |
 | E3 | error | Unknown field, field out of the order in 4.3, or duplicate field in one stanza |
-| E4 | error | `Values` on a non-option parameter, or a value key that is not one of the option's emitted values |
-| E5 | error | Orphan stanza: an ID that matches no parameter of the file's encoder or of any encoder that inherits from it; `staxrip.md` and `concepts.md` are exempt in this slice and gain orphan checks when a second encoder is added |
-| E6 | error | `Related` or `Use` target that does not exist, or a `Use` target that is not reviewed |
+| E4 | error | `Values` on a stanza that no option parameter resolves to, or a value key that none of the parameters resolving to the stanza emits; reported once per stanza and value |
+| E5 | error | Orphan stanza: an encoder-file stanza outside the file's own namespace, or whose local part matches no own-namespace identity of that encoder or of any encoder inheriting from it, transitively; `staxrip.md` and `concepts.md` are exempt |
+| E6 | error | `Related` or `Use` target that does not exist, or a `Use` target that is not reviewed; applies to shared files too |
 | E7 | error | `missing > Allowed-Missing`, or `reviewed < Minimum-Reviewed`, or `Reviewed-Complete: true` with any parameter not resolved to reviewed text |
 | E8 | error | Duplicate stanza ID within one file |
 | E9 | error | The `Source:` file does not override `OptionHelpId` with this file's `Encoder` id |
@@ -347,13 +347,13 @@ For each encoder file, over parameters that are not excluded:
 - `draft` is the count whose first matching stanza is a draft;
 - `reviewed` is the count whose first matching stanza is reviewed, counting a `Use` alias only when both alias and target are reviewed.
 
-The file passes when `missing <= Allowed-Missing`, `reviewed >= Minimum-Reviewed`, and, when `Reviewed-Complete` is true, `missing = 0` and `draft = 0`. Adding a parameter raises `missing` past the allowance, so the check fails until the author adds at least a draft; adding the draft restores the previous count and passes. Once a file is `Reviewed-Complete`, a draft is no longer enough. Counters cannot hide behind rounding; percentages appear in the report only for people. `-AdvanceRatchet` is the only way counters move, in the strict direction only, and the resulting header diff is reviewed like any other change. `Reviewed-Complete` is set by hand.
+The file passes when `missing <= Allowed-Missing`, `reviewed >= Minimum-Reviewed`, and, when `Reviewed-Complete` is true, `missing = 0` and `draft = 0`. Adding a parameter raises `missing` past the allowance, so the check fails until the author adds at least a draft; adding the draft restores the previous count and passes. Once a file is `Reviewed-Complete`, a draft is no longer enough. `-AdvanceRatchet` is the only way counters move, in the strict direction only, and the resulting header diff is reviewed like any other change. `Reviewed-Complete` is set by hand.
 
 The skeleton `svt-av1.md` created in step 1 starts at `Allowed-Missing: 100`, `Minimum-Reviewed: 0`, `Reviewed-Complete: false` (101 declared parameters, one excluded); step 4 ends at `Allowed-Missing: 0`, `Minimum-Reviewed: 100`, `Reviewed-Complete: true`.
 
 ### 6.5 Self-test fixtures
 
-`Source/Tools/OptionHelp/fixtures/` holds a small fake VB file exercising every extraction pattern (property declarations, inline `New ... With {` inside `Add(...)`, nested braces in `.Config`, quoted braces, commented-out declarations, shared switches, switch-less controls with explicit keys, an excluded control, and an unrecognized construction for E11), one Markdown file per rule E1 to E13, a clean pair, and security fixtures: HTML characters in every field, fake and nested links, unmatched backticks, `javascript:` and `file:` schemes, protocol-relative links, duplicate headers, locale collisions, and a variant draft shadowing a reviewed base stanza. `expected.json` records the report for each; `-SelfTest` compares and prints the first difference as a bounded failure packet.
+`Source/Tools/OptionHelp/fixtures/` holds a small fake VB file exercising every extraction pattern (property declarations, inline `New ... With {` inside `Add(...)`, nested braces in `.Config`, quoted braces, commented-out declarations, shared switches, switch-less controls with explicit keys, an excluded control, and an unrecognized construction for E11), one Markdown file per rule E1 to E13, a clean pair, and security fixtures: HTML characters in every field, fake and nested links, unmatched backticks, `javascript:` and `file:` schemes, protocol-relative links, duplicate headers, locale collisions, and a variant draft shadowing a reviewed base stanza. Per-fixture canonical dumps and report expectations under `fixtures/expected/*.txt` record the result for each; `-SelfTest` compares and prints the first difference as a bounded failure packet.
 
 ### 6.6 Not in this slice
 
@@ -365,7 +365,7 @@ An upstream drift mode that diffs the tool's cached `--help` text against implem
 
 ### 6.8 Parser harness
 
-`Source/Tests/OptionHelp/OptionHelpTests.vbproj`, a .NET Framework 4.8 x64 console project outside `Source/StaxRip.sln` with no package references, source-links `Source/General/OptionHelp.vb` and runs the fixture files from 6.5 through `OptionHelpParser` and `OptionHelpCatalog`, comparing with `expected.json`. This follows the `SLICE-001.md` precedent for a standalone deterministic harness and gives the loader the same fixtures as the validator, so the two parsers cannot drift silently.
+`Source/Tests/OptionHelp/OptionHelpTests.vbproj`, a .NET Framework 4.8 x64 console project outside `Source/StaxRip.sln` with no package references, source-links `Source/General/OptionHelp.vb` and runs the fixture files from 6.5 through `OptionHelpParser` and `OptionHelpCatalog`, comparing with the per-fixture canonical dumps and report expectations under `fixtures/expected/*.txt`. This follows the `SLICE-001.md` precedent for a standalone deterministic harness and gives the loader the same fixtures as the validator, so the two parsers cannot drift silently.
 
 ## 7. Linux and web contract
 
@@ -404,7 +404,7 @@ In scope, in build order:
 
 | Step | Contents | Success test |
 | --- | --- | --- |
-| 1. Grammar, validator, repository files | `Check-OptionHelp.ps1`, fixtures, `expected.json`, `Docs/OptionHelp/README.md` (rules, template, drafting workflow), the `AGENTS.md` paragraph, the `.gitattributes` line, and skeleton `svt-av1.md`, `staxrip.md`, and `concepts.md` with headers and no stanzas | `-SelfTest` passes; the repository run reports `svt-av1` at 101 missing within its allowance, W1 for every other encoder, and no errors |
+| 1. Grammar, validator, repository files | `Check-OptionHelp.ps1`, fixtures, the per-fixture expectations under `fixtures/expected/*.txt`, `Docs/OptionHelp/README.md` (rules, template, drafting workflow), the `AGENTS.md` paragraph, the `.gitattributes` line, and skeleton `svt-av1.md`, `staxrip.md`, and `concepts.md` with headers and no stanzas | `-SelfTest` passes; the repository run reports `svt-av1` at 100 missing within its allowance, W1 for every other encoder, and no errors |
 | 2. Parameter model and loader | 5.2 in `VideoEncoderCommandLine.vb` and the SVT-AV1 keys; `OptionHelp.vb`; the harness in 6.8; the export command in 6.7; vbproj entries | Debug x64 build; harness green; `-CompareFacts` on a fresh export reports no difference |
 | 3. Dialog and help window | 5.3 and 5.4, with the `HelpDocument` and `HelpForm` hygiene changes in their own commit | Manual checklist V4 on the SVT-AV1 dialog; V6 command-line equivalence |
 | 4. Tier 1 content | `svt-av1.md` for every ID in section 9, `staxrip.md` for the nine StaxRip-owned controls, `concepts.md` entries that Tier 1 stanzas link to; verification headers filled from the bundled build | `Reviewed-Complete: true` with `-AdvanceRatchet` applied; the maintainer reads the text on the real dialog |
@@ -494,7 +494,7 @@ Because: Prose-first editing on GitHub with a rendered preview, no new dependenc
 
 Options considered: inline `.Help` in VB (VB-only, rebuild per wording fix, no coverage check); generated from upstream documentation (expert prose, GPL text in an MIT project); YAML or JSON (escaping and indentation traps for non-programmer authors); switch-keyed stanzas without IDs (ambiguous for shared switches, unstable across captions).
 
-Consequences: The grammar becomes a cross-platform contract with a validator as its authority; about sixteen SVT-AV1 declarations gain an explicit key. Revisit when: a second consumer needs fields the grammar cannot express.
+Consequences: The grammar becomes a cross-platform contract with a validator as its authority; about sixteen SVT-AV1 declarations gain an explicit key. Own-namespace identities resolve namespace-relative through the chain, so a variant inherits every base stanza without repeating ids; value notes on a shared stanza are valid for the union of the controls' values. Revisit when: a second consumer needs fields the grammar cannot express.
 
 ### D-061: Only reviewed text displays; drafts shadow; coverage is an exact ratchet
 
