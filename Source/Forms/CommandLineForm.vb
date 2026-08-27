@@ -45,6 +45,9 @@ Public Class CommandLineForm
         OptionHelpCatalog.Log = AddressOf g.WriteDebugLog
         Catalog = OptionHelpCatalog.Get(params.OptionHelpId)
 
+        lblDescription.Height = FontHeight * 3 + 6
+        lblDescription.Text = "Point at an option, or move focus to it, to see what it does. Press F1 for details."
+
         InitUI()
         SelectLastPage()
         AddHandler params.ValueChanged, AddressOf ValueChanged
@@ -371,16 +374,27 @@ Public Class CommandLineForm
         Dim caption = item.Param.Text.TrimEnd(":"c).Trim()
         Dim summary = OptionHelpParser.PlainText(item.Stanza.Summary)
         Dim tip = summary + BR + "Press F1 or right-click for details"
+        Dim attached As New HashSet(Of Control)
+
+        item.SearchText = OptionHelpCatalog.SearchText(item.Stanza, item.Identity)
 
         For Each target In item.Targets
-            OptionHelpTips.SetToolTip(target, tip)
-            AddHandler target.MouseEnter, Sub() SetDescription(item)
-            AddHandler target.Enter, Sub() SetDescription(item)
+            'NumEdit and TextEdit are user controls, their inner text box receives the mouse
+            'and the focus, so every descendant has to be registered as well.
+            For Each ctrl In {target}.Concat(target.GetAllControls())
+                If Not attached.Add(ctrl) Then
+                    Continue For
+                End If
 
-            If Not TypeOf target Is Label Then
-                target.AccessibleName = caption
-                target.AccessibleDescription = summary
-            End If
+                OptionHelpTips.SetToolTip(ctrl, tip)
+                AddHandler ctrl.MouseEnter, Sub() SetDescription(item)
+                AddHandler ctrl.Enter, Sub() SetDescription(item)
+
+                If Not TypeOf ctrl Is Label Then
+                    ctrl.AccessibleName = caption
+                    ctrl.AccessibleDescription = summary
+                End If
+            Next
         Next
     End Sub
 
@@ -393,7 +407,16 @@ Public Class CommandLineForm
     End Function
 
     Private Sub SetDescription(item As Item)
-        ' Task 6 replaces this stub with the description strip update.
+        If item.Stanza Is Nothing Then Exit Sub
+        Dim caption = item.Param.Text.TrimEnd(":"c).Trim()
+        Dim text = caption + ": " + OptionHelpParser.PlainText(item.Stanza.Summary)
+        Dim whenToChange = item.Stanza.WhenToChange
+
+        If whenToChange <> "" Then
+            text += BR + "When to change: " + OptionHelpParser.PlainText(whenToChange)
+        End If
+
+        lblDescription.Text = text
     End Sub
 
     Private Sub ShowOptionHelp(item As Item)
@@ -408,6 +431,7 @@ Public Class CommandLineForm
         Property Targets As New List(Of Control)
         Property Stanza As OptionHelpStanza
         Property Identity As String
+        Property SearchText As String
     End Class
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
@@ -505,7 +529,7 @@ Public Class CommandLineForm
                     matchedItems.Add(item)
                 End If
 
-                If item.Stanza IsNot Nothing AndAlso OptionHelpCatalog.SearchText(item.Stanza, item.Identity).Contains(find) Then
+                If item.SearchText IsNot Nothing AndAlso item.SearchText.Contains(find) Then
                     matchedItems.Add(item)
                 End If
 

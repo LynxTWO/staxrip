@@ -22,6 +22,7 @@ Partial Class CommandLineForm
         Me.tlpMain = New System.Windows.Forms.TableLayoutPanel()
         Me.tlpRTB = New System.Windows.Forms.TableLayoutPanel()
         Me.rtbCommandLine = New StaxRip.UI.CommandLineRichTextBox()
+        Me.lblDescription = New StaxRip.UI.LabelEx()
         Me.cmsCommandLine = New StaxRip.UI.ContextMenuStripEx(Me.components)
         Me.tlpMain.SuspendLayout()
         Me.tlpRTB.SuspendLayout()
@@ -85,6 +86,19 @@ Partial Class CommandLineForm
         Me.cms.Name = "cms"
         Me.cms.Size = New System.Drawing.Size(61, 4)
         '
+        'lblDescription
+        '
+        Me.lblDescription.Anchor = CType((System.Windows.Forms.AnchorStyles.Left Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.lblDescription.AutoEllipsis = True
+        Me.lblDescription.AutoSize = False
+        Me.tlpMain.SetColumnSpan(Me.lblDescription, 4)
+        Me.lblDescription.Location = New System.Drawing.Point(15, 428)
+        Me.lblDescription.Margin = New System.Windows.Forms.Padding(15, 0, 15, 8)
+        Me.lblDescription.Name = "lblDescription"
+        Me.lblDescription.Size = New System.Drawing.Size(1279, 60)
+        Me.lblDescription.TabIndex = 12
+        Me.lblDescription.UseMnemonic = False
+        '
         'tlpMain
         '
         Me.tlpMain.AutoSize = True
@@ -94,18 +108,20 @@ Partial Class CommandLineForm
         Me.tlpMain.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
         Me.tlpMain.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
         Me.tlpMain.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.tlpMain.Controls.Add(Me.bnCancel, 3, 2)
-        Me.tlpMain.Controls.Add(Me.bnMenu, 1, 2)
-        Me.tlpMain.Controls.Add(Me.bnOK, 2, 2)
-        Me.tlpMain.Controls.Add(Me.cbGoTo, 0, 2)
+        Me.tlpMain.Controls.Add(Me.bnCancel, 3, 3)
+        Me.tlpMain.Controls.Add(Me.bnMenu, 1, 3)
+        Me.tlpMain.Controls.Add(Me.bnOK, 2, 3)
+        Me.tlpMain.Controls.Add(Me.cbGoTo, 0, 3)
         Me.tlpMain.Controls.Add(Me.SimpleUI, 0, 0)
-        Me.tlpMain.Controls.Add(Me.tlpRTB, 0, 1)
+        Me.tlpMain.Controls.Add(Me.lblDescription, 0, 1)
+        Me.tlpMain.Controls.Add(Me.tlpRTB, 0, 2)
         Me.tlpMain.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tlpMain.Location = New System.Drawing.Point(0, 0)
         Me.tlpMain.Margin = New System.Windows.Forms.Padding(2)
         Me.tlpMain.Name = "tlpMain"
-        Me.tlpMain.RowCount = 3
+        Me.tlpMain.RowCount = 4
         Me.tlpMain.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
+        Me.tlpMain.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tlpMain.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tlpMain.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tlpMain.Size = New System.Drawing.Size(1309, 592)
@@ -176,5 +192,6 @@ Partial Class CommandLineForm
     Friend WithEvents tlpMain As TableLayoutPanel
     Friend WithEvents tlpRTB As TableLayoutPanel
     Friend WithEvents rtbCommandLine As CommandLineRichTextBox
+    Friend WithEvents lblDescription As StaxRip.UI.LabelEx
     Friend WithEvents cmsCommandLine As ContextMenuStripEx
 End Class
