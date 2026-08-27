@@ -5,8 +5,8 @@ Encoder: svt-av1
 Locale: en
 Title: SVT-AV1
 Source: Source/Encoding/SvtAv1Enc.vb
-Allowed-Missing: 71
-Minimum-Reviewed: 29
+Allowed-Missing: 50
+Minimum-Reviewed: 50
 Reviewed-Complete: false
 Verified-Encoder-Version: SVT-AV1 v4.2.0+71+88-17cd99550 [Mod by Patman] (release)
 Verified-Encoder-Build: 17cd99550
@@ -26,7 +26,7 @@ Values:
 - 8: The encoder's own default.
 - 9: StaxRip's default and a practical starting point.
 - 13: Fastest, with the largest compression tradeoff.
-Related: concept.compression-efficiency
+Related: svt-av1.crf, concept.compression-efficiency
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md
 Status: reviewed
@@ -179,7 +179,7 @@ Values:
 - 3: Still-image quality. With the usual random-access prediction structure the bundled build stops with an error.
 - 4: MS-SSIM. The help's MS-SSIM and SSIMULACRA2 optimized mode; overrides Sharpness, Variance Boost and quant matrices.
 - 5: VMAF. Video only; the bundled build adds an unsharp-mask pre-processing step. For when VMAF is the metric tested.
-Related: svt-av1.preset, concept.psnr, concept.ssim, concept.vmaf, concept.vq
+Related: svt-av1.preset, svt-av1.crf, concept.psnr, concept.ssim, concept.vmaf, concept.vq
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#encoder-global-options
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#options-that-give-the-best-encoding-bang-for-buck
@@ -220,4 +220,249 @@ Values:
 - 64: Every transform size allowed. The encoder default.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+Status: reviewed
+
+## svt-av1.rc
+Label: Rate Control Mode
+Summary: Chooses what the encoder holds steady: a quality level (Quality, the default) or a bitrate (Variable or Constant Bitrate). It decides which controls below appear and which the encoder uses.
+When to change: Leave it at Quality for video you keep; set the level with Constant Rate Factor and the size follows. Use Variable Bitrate when the file must hit a size; the main window's size and bitrate boxes then feed Target Bitrate. Constant Bitrate needs Prediction Structure at Low Delay and Variable Bitrate needs Random Access, the default; the bundled build stops on the wrong pairing (tested).
+Example: Encode the same clip once at Quality with CRF 35 and once at Variable Bitrate with the size the first run produced, and compare the look. Upstream recommends the quality mode wherever a target size is not required.
+Values:
+- 0: Quality. Holds a quality level; Adaptive Quantization decides whether you set it as CRF, QP, or CQP. The default.
+- 1: Variable Bitrate. Aims at Target Bitrate over the whole video; needs Prediction Structure at Random Access (tested).
+- 2: Constant Bitrate. Holds the target throughout; the bundled build refuses it unless Prediction Structure is Low Delay.
+Related: svt-av1.crf, svt-av1.tbr, svt-av1.aq-mode, svt-av1.pass, staxrip.comp-check, concept.rate-control, concept.bitrate, concept.quality-level
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#bitrate-control-modes
+Status: reviewed
+
+## svt-av1.crf
+Label: Constant Rate Factor
+Summary: Sets the quality level the encoder keeps for the whole video: lower is a better picture and a larger file, higher is smaller and rougher. It is the main dial in the default Quality mode.
+Used when: Rate Control Mode at Quality with Adaptive Quantization at 2, the defaults. With a bitrate target it is not sent; with Adaptive Quantization 0 or 1 you set CQP or QP instead.
+When to change: StaxRip starts you at 35, which is also the encoder's default. The dialog takes 1 to 70 in steps of 0.25. Lower it for quality and raise it for a small file, then judge a short test encode by eye rather than by the number. The main window's encoder panel shows the same value as Quality, with named steps from 15 (incredible high) through 35 (higher, the default) to 60 (ultra low).
+Example: Encode the same 60-second scene at CRF 30 and at CRF 40 with everything else unchanged. Compare the two file sizes, then step through a detailed frame in each; take the higher value if you cannot see the difference.
+Related: svt-av1.rc, svt-av1.aq-mode, svt-av1.mbr, svt-av1.cqp, svt-av1.qp, svt-av1.preset, concept.quality-level, concept.compression-efficiency
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#options-that-give-the-best-encoding-bang-for-buck
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#bitrate-control-modes
+Status: reviewed
+
+## svt-av1.cqp
+Label: Constant Quantization Parameter
+Summary: Sets one fixed quantizer for the whole video on the same 1 to 70 scale as CRF, but with adaptive quantization off: lower is a better picture and a larger file.
+Used when: Quality mode with Adaptive Quantization at 0: Off. The help likens it to `--rc 0 --aq-mode 0 --qp x`; in a test, `--cqp 30` and `--crf 30` gave identical output with adaptive quantization off.
+When to change: Leave Adaptive Quantization at 2 and use Constant Rate Factor unless you want every frame quantized the same way, say for a comparison. With adaptive quantization off the bundled build also switches off its temporal dependency model (TPL) and ignores Maximum Bitrate; it prints a warning for each. StaxRip starts you at 35, the encoder default, in steps of 0.25.
+Related: svt-av1.crf, svt-av1.qp, svt-av1.aq-mode, svt-av1.rc, concept.quality-level
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.qp
+Label: Quantization Parameter
+Summary: Sets the base quantizer for the video as a whole number from 1 to 63; lower is a better picture and a larger file. Keyframes and the lower frame layers get offsets from it.
+Used when: Rate Control Mode at Quality with Adaptive Quantization at 1, which the bundled build labels a demo and experimentation feature in a warning.
+When to change: Prefer Constant Rate Factor; this control appears only with Adaptive Quantization level 1, which the bundled build says is not ready for benchmarking. Whole numbers only: in a test the bundled build refused 30.5 and 64. StaxRip starts you at 35, the encoder default.
+Related: svt-av1.crf, svt-av1.cqp, svt-av1.aq-mode, svt-av1.rc, concept.quality-level
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#usefixedqindexoffsets-and-more-information
+Status: reviewed
+
+## svt-av1.tbr
+Label: Target Bitrate
+Summary: The average bitrate in kbps the encoder aims for when Rate Control Mode is Variable Bitrate or Constant Bitrate. With the running time it sets the file size.
+Used when: Variable Bitrate and Constant Bitrate. StaxRip always sends it in those modes and never in Quality mode.
+When to change: Set the size or bitrate in the main window instead; both boxes feed this value, and Comp. Check can set it for you. Range 100 to 100000 kbps. A value typed here is used by a single pass or the first pass; later passes take the main window's bitrate. The help names 7000 as the encoder's default, but a run without the switch used 2000, as upstream documents; StaxRip sends the value anyway.
+Example: Type a size into the main window's target size box and reopen this dialog: this value follows. Twenty minutes at 4000 kbps is roughly 600 MB of video before audio (4000 x 1200 / 8 / 1000).
+Related: svt-av1.rc, svt-av1.mbr, svt-av1.max-qp, svt-av1.min-qp, svt-av1.pass, staxrip.comp-check, staxrip.aimed-quality, concept.bitrate, concept.rate-control
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#bitrate-control-modes
+Status: reviewed
+
+## svt-av1.mbr
+Label: Maximum Bitrate
+Summary: Caps the bitrate of a CRF encode in kbps: the encoder keeps the CRF quality where it fits under the cap and cuts back where it would not. 0 means no cap; the encoder calls the result capped CRF.
+Used when: Only with Constant Rate Factor visible, that is Quality mode with Adaptive Quantization 2. With a bitrate target the bundled build refuses it, and with CQP it ignores it with a warning (tested).
+When to change: Leave it at 0 unless a player or a bandwidth limit needs a ceiling; then set the ceiling and check the hardest scene. In a test on a small clip, CRF 20 with a cap below its natural rate came out at the cap, and a cap above it left the file byte for byte unchanged. The dialog goes up to 100000 kbps in steps of 100.
+Related: svt-av1.crf, svt-av1.tbr, svt-av1.rc, svt-av1.aq-mode, concept.bitrate
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.max-qp
+Label: Maximum Quantizer
+Summary: Caps how coarse the quantizer may get in a bitrate encode; 63, the default and the top of the AV1 scale, means no cap. Lowering it puts a floor under the roughest frames.
+Used when: Shown with Variable Bitrate or Constant Bitrate and not sent in Quality mode. The help ties it to VBR and CBR, though in a test it changed a CRF encode too (reachable only through Custom).
+When to change: Leave it at 63. If a bitrate encode has frames that look too rough, lower it a little and re-check the size: a cap leaves the encoder fewer ways to hold the target in hard scenes. It must stay at or above Minimum Quantizer, or the bundled build stops with "MinQpAllowed must be smaller than or equal to MaxQpAllowed".
+Related: svt-av1.min-qp, svt-av1.tbr, svt-av1.rc, concept.quality-level
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.min-qp
+Label: Minimum Quantizer
+Summary: Sets the finest quantizer a bitrate encode may use; 1 is the finest the dialog offers. Raising it stops any frame from being quantized finer than that, however easy the scene.
+Used when: Shown with Variable Bitrate or Constant Bitrate and not sent in Quality mode. The help ties it to VBR and CBR, though in a test it changed a CRF encode too (reachable only through Custom).
+When to change: Leave it at 1, the default in the bundled help; the upstream document says 0, and the bundled build accepted 0 in a test. The dialog goes up to 62. Keep it at or below Maximum Quantizer, or the bundled build stops before encoding. Both at the same number ran in a test; that pins the quantizer there whatever the target.
+Related: svt-av1.max-qp, svt-av1.tbr, svt-av1.rc, concept.quality-level
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.tf-strength
+Label: Temporal Filtering Strength
+Summary: Sets how strongly the encoder smooths its alternate reference frames by averaging across neighboring frames, 0 to 4; higher is stronger. Upstream says the visible effect depends on the material.
+Used when: Only while ALT-REF Frames (the temporally filtered frames, on the AV1 Specific page) is on; with it off, 0, 3 and 4 gave byte-identical output in a test.
+When to change: Leave it at 3. Lower it if grain or fine texture looks softened in a test encode, raise it on clean, static footage, and compare a short scene each way. With Tune VQ the encoder also applies a keyframe offset, per upstream.
+Values:
+- 0: The weakest setting.
+- 3: The encoder default and StaxRip's.
+- 4: The strongest filtering.
+Related: svt-av1.tune, svt-av1.ac-bias
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.luminance-qp-bias
+Label: Luminance QP Bias
+Summary: Shifts each frame's quantizer by how dark the frame is on average, so dark scenes get finer quantization; 0 is off and 100 the strongest shift. Upstream added it to improve quality in dark scenes.
+When to change: Leave it at 0 unless dark scenes lose detail or show banding in a test encode. Then try a moderate value and compare the dark scene and the file size; the help gives no guidance on strength, so treat it as an experiment. The bundled build accepted 100 in a test.
+Related: svt-av1.crf, svt-av1.aq-mode, concept.quality-level
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+Status: reviewed
+
+## svt-av1.sharpness
+Label: Sharpness Bias
+Summary: Biases the deblocking filter and the rate control toward a softer (negative) or sharper (positive) picture, -7 to 7. Upstream says it may help perceived quality in video too.
+Used when: Ignored with Tune 4: MS-SSIM, which overrides it; the bundled build says so in a warning. Tune 3 overrides it too but stops anyway with the usual prediction structure.
+When to change: Leave it at 0. Try 1 or 2 when a test encode looks soft, and compare the file size as well as the picture: in a test on a small clip, 7 gave a clearly larger file than 0 and -7 a smaller one, so the bias spends and saves bits, not only filtering. Upstream made it for the still-image tunes.
+Values:
+- -7: Softest bias. In a test the file got smaller than at 0.
+- 0: No bias. The encoder default and StaxRip's.
+- 7: Sharpest bias. In a test the file got clearly larger than at 0.
+Related: svt-av1.tune, svt-av1.ac-bias
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+Status: reviewed
+
+## svt-av1.pass
+Label: Passes
+Summary: Chooses whether the encoder first analyzes the whole video and then encodes it with that knowledge, so a bitrate target is met more accurately. 1-pass encodes in one go.
+Used when: Shown with Variable Bitrate (1 or 2 passes) or Constant Bitrate (1 to 3). Quality mode has no pass control, and the bundled build refuses a second pass in CRF mode anyway (tested).
+When to change: For Variable Bitrate pick 2-pass when the size matters; upstream says multi-pass is what lets VBR reach its target. For Constant Bitrate leave it at 1-pass: the bundled build refuses multi-pass with the Low Delay structure CBR needs, and `--pass 3` outright (tested), so 2-pass and 3-pass fail. StaxRip keeps the first-pass statistics in a file named after the output plus `_2pass.log`.
+Values:
+- 1: One pass. The default, and the only choice that works for Constant Bitrate in the bundled build.
+- 2: First pass gathers statistics, second pass encodes with them. Works for Variable Bitrate (tested).
+- 3: Constant Bitrate only. The bundled build refuses multi-pass CBR and `--pass 3` itself, so nothing is encoded.
+Related: svt-av1.rc, svt-av1.tbr, staxrip.custom, concept.two-pass
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#multi-pass-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#pass-information
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#multi-pass-encoding
+Status: reviewed
+
+## svt-av1.aq-mode
+Label: Adaptive Quantization
+Summary: Lets the encoder vary the quantizer within a frame instead of using one value everywhere. In StaxRip it also decides which quality control you set: CQP at 0, QP at 1, CRF at 2.
+When to change: Leave it at 2, the encoder default, and set the quality with Constant Rate Factor. Level 0 turns adaptive quantization off, and with it the temporal dependency model (TPL) and Maximum Bitrate, as the bundled build warns. Level 1 is described by the bundled build as a demo and experimentation feature that should not be used for benchmarking.
+Values:
+- 0: Off. One quantizer per frame, set as CQP. The bundled build also disables TPL and ignores Maximum Bitrate (tested).
+- 1: Variance based, using AV1 segments; set as QP. The bundled build warns it is at demo and experimentation level.
+- 2: Per-block deltas driven by prediction efficiency; set as CRF. The encoder default and StaxRip's.
+Related: svt-av1.crf, svt-av1.cqp, svt-av1.qp, svt-av1.mbr, svt-av1.rc
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.hbd-mds
+Label: High Bit Depth Mode Decisions
+Summary: Chooses the bit depth the encoder uses for its mode decisions with 10-bit video: 8-bit, 10-bit, or a mix. -1 lets the preset decide, and in this dialog it is the only entry that works.
+Used when: 10-bit video only. Upstream says 10-bit decisions need 10-bit input, and the bundled build refuses 1 and 2 with 8-bit video (tested).
+When to change: Leave it at -1: Off. StaxRip sends each entry's position rather than the number in its label, so the list is off by one and every other entry either stops the encode or, with 10-bit video, crashed the bundled build in a test unless Level Of Parallelism was 1 to 4. The notes on each entry say what is sent.
+Encoder default: -1
+Example: To try 10-bit mode decisions anyway, put `--hbd-mds 1` in the Custom box (StaxRip then drops its own copy) and set Level Of Parallelism to 1 to 4: in a test with the bundled build (640x480 10-bit clip, 16-core machine) 1 and 2 crashed at the automatic level 6 and ran at 1 to 4.
+Values:
+- 0: The -1: Off entry. Nothing is sent and the preset decides; the only entry that works in this dialog.
+- 1: The 0: Forces 8-bit entry sends `--hbd-mds 1` (10-bit): refused for 8-bit video, crashed with 10-bit in a test.
+- 2: The 1: Forces 10-bit entry sends `--hbd-mds 2` (hybrid): refused for 8-bit video, crashed with 10-bit in a test.
+- 3: The 2: 8/10-bit Hybrid entry sends `--hbd-mds 3`, outside the encoder's range; the bundled build always stops.
+Related: svt-av1.lp, svt-av1.preset, staxrip.custom
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#8-or-10-bit-encoding
+Status: reviewed
+
+## svt-av1.qp-scale-compress-strength
+Label: QP Scale Compress Strength
+Summary: Narrows the spread of quantizers between the frame layers of each group of pictures, 0 (off) to 3, so quality is steadier from frame to frame at some cost in average quality, per upstream.
+When to change: Leave it at 0 unless quality pulses between frames. Upstream calls 1 nearly free at almost any quality level, 2 the choice for high-quality encodes, and 3 the limit for the highest fidelity or a very low CRF, where it can even improve fidelity. Reference frames then sit closer in quality to the frames built on them, so upstream expects a small drop in average quality; check a short scene.
+Related: svt-av1.crf, svt-av1.aq-mode, concept.quality-level
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.ac-bias
+Label: AC Bias in Rate Distortion
+Summary: Tilts the encoder's rate-distortion choices toward keeping high-frequency detail such as texture and grain, from 0.0 (off) to 8.0. Upstream calls it an energy-preserving psychovisual metric.
+When to change: Leave it at 0.0 for a first encode. Upstream suggests 1.0 to 1.5 to keep textures and busy motion crisp, and 4.0 to 6.0 together with temporal filtering and CDEF (the Constrained Directional Enhancement Filter) turned off to retain film grain and noise. It costs bits: in a test on a small clip, 1.25 and 8 both grew the file. Compare a grainy scene at 0 and at 1.25 before using it everywhere.
+Related: svt-av1.sharpness, svt-av1.tf-strength, svt-av1.tune
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.recode-loop
+Label: Recode Loop
+Summary: Lets the encoder encode a frame a second time when the first try misses its bitrate limits; higher levels allow it for more frame types. 4 leaves the choice to the preset.
+Used when: Matters for bitrate targets: in a test with the bundled build, changing it left a CRF encode byte for byte unchanged and altered a Variable Bitrate encode.
+When to change: Leave it at 4. Encoding a frame twice takes time and only helps when a frame overshoots a bitrate limit, so try 0 to speed up a bitrate encode that lands close to its target anyway, or 3 when a Variable Bitrate encode misses its target badly and time is no object. The bundled help states no default; upstream's table says 4.
+Values:
+- 0: Off. No frame is encoded twice.
+- 1: Keyframes, and any frame that exceeds the maximum frame bandwidth.
+- 2: Keyframes, alternate reference frames, and golden frames only.
+- 3: Every frame type, when bitrate constraints call for it.
+- 4: The preset decides. The default per upstream and StaxRip's.
+Related: svt-av1.rc, svt-av1.tbr, svt-av1.preset
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#recode-loop-level-table
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.enable-qm
+Label: Enable quantisation matrices
+Summary: Turns on quantization matrices, which weight frequencies differently instead of treating every coefficient the same. In CRF mode upstream expects a smaller file with slightly lower quality.
+When to change: Leave it off unless you want a smaller file and accept a little quality loss. Upstream says the saving is larger at a low CRF than at a high one; in a test on a small synthetic clip, turning it on at CRF 20 with flatness 0 to 15 cut the file by more than a quarter. Set the range with Min and Max quant matrix flatness; Tune MS-SSIM overrides all three (bundled build warning).
+Related: svt-av1.qm-min, svt-av1.qm-max, svt-av1.crf, svt-av1.tune
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#enableqm-and-more-information
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.qm-max
+Label: Max quant matrix flatness
+Summary: The flattest quantization matrix the encoder may pick, 0 to 15; 15 is fully flat, with no frequency weighting. The encoder picks each frame's level between Min and Max from its quantizer.
+Used when: Only with Enable quantisation matrices on. The control is always shown, but the encoder ignores the value while matrices are off (tested: byte-identical output).
+When to change: Leave it at 15. Lower it to force some weighting on every frame, which shrinks the file further at a quality cost. Keep it at or above Min quant matrix flatness, or the bundled build stops before encoding; in a test, matrices on with Min and Max both at 0 gave the smallest file of the settings tried.
+Related: svt-av1.qm-min, svt-av1.enable-qm
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#enableqm-and-more-information
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.qm-min
+Label: Min quant matrix flatness
+Summary: The least flat quantization matrix the encoder may pick, 0 (strongest frequency weighting) to 15 (flat). The encoder maps each frame's quantizer onto the range from here to Max.
+Used when: Shown and sent only with Enable quantisation matrices on.
+When to change: Leave it at 8, the encoder default. Lower it toward 0 for a smaller file at some quality cost; upstream's own example uses 0 to 15. Keep it at or below Max quant matrix flatness, or the bundled build stops with "Min quant matrix level must not greater than max quant matrix level".
+Related: svt-av1.qm-max, svt-av1.enable-qm
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#enableqm-and-more-information
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
 Status: reviewed

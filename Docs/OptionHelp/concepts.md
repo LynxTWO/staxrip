@@ -47,3 +47,36 @@ References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-a-encoder-parameters
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#threading-and-efficiency
 Status: reviewed
+
+## concept.rate-control
+Label: Rate control
+Summary: The encoder's rule for how many bits each frame gets. Quality modes (CRF, QP) hold a quality level and let the size fall where it may; bitrate modes (VBR, CBR) hold a bitrate and let quality vary.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#bitrate-control-modes
+Status: reviewed
+
+## concept.quality-level
+Label: Quality level (CRF, QP)
+Summary: The number a quality mode holds. AV1 quantizers run 0 to 63: lower is finer quantization, a better picture, a larger file; higher is smaller and rougher. SVT-AV1's CRF runs to 70 in quarter steps.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#options-that-give-the-best-encoding-bang-for-buck
+Status: reviewed
+
+## concept.bitrate
+Label: Bitrate
+Summary: How many bits the video uses per second, in kbps here; bitrate times running time is the file size. A bitrate mode aims at a number, a quality mode lets it float with the content.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#bitrate-control-modes
+Status: reviewed
+
+## concept.two-pass
+Label: Two-pass encoding
+Summary: A first pass that only analyzes the video and a second that encodes it with that knowledge. Upstream says it is useful for reaching a VBR target and not critical in CRF mode; CBR is always one pass.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#multi-pass-encoding
+Status: reviewed
