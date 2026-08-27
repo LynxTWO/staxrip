@@ -489,12 +489,15 @@
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\svt-av1.md">
       <Link>OptionHelp\svt-av1.md</Link>
+      <LogicalName>StaxRip.OptionHelp.svt-av1.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\staxrip.md">
       <Link>OptionHelp\staxrip.md</Link>
+      <LogicalName>StaxRip.OptionHelp.staxrip.md</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\concepts.md">
       <Link>OptionHelp\concepts.md</Link>
+      <LogicalName>StaxRip.OptionHelp.concepts.md</LogicalName>
     </EmbeddedResource>
     <None Include="..\README.md">
       <Link>README.md</Link>

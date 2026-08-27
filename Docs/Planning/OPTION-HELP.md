@@ -280,7 +280,7 @@ All changes are in `Source/Forms/CommandLineForm.vb` and its designer file.
 
 ### 5.5 Build metadata and repository files
 
-- `Source/StaxRip.vbproj` gains `<Compile Include="General\OptionHelp.vb" />` and, for each content file, `<EmbeddedResource Include="..\Docs\OptionHelp\<file>.md"><Link>OptionHelp\<file>.md</Link></EmbeddedResource>`, mirroring the existing `CHANGELOG.md` item. This is the "normal explicit entries" touch that `SLICE-001.md` section 6 already allows; no configuration, solution mapping, or packaging script changes.
+- `Source/StaxRip.vbproj` gains `<Compile Include="General\OptionHelp.vb" />` and, for each content file, `<EmbeddedResource Include="..\Docs\OptionHelp\<file>.md"><Link>OptionHelp\<file>.md</Link><LogicalName>StaxRip.OptionHelp.<file>.md</LogicalName></EmbeddedResource>`, mirroring the existing `CHANGELOG.md` item. VB names an embedded resource `<RootNamespace>.<file name>` and ignores the link folder, so the `LogicalName` is what gives the loader its `.OptionHelp.` marker; the validator's E12 requires it. This is the "normal explicit entries" touch that `SLICE-001.md` section 6 already allows; no configuration, solution mapping, or packaging script changes.
 - `.gitattributes` gains `Docs/OptionHelp/** text eol=lf`.
 - `AGENTS.md` gains a short "Option help" paragraph pointing to `Docs/OptionHelp/README.md` and stating the drafting workflow from 4.5.
 - Because `AGENTS.md` lists build files as approval-gated, the maintainer's approval of this document is the approval for exactly these entries.
