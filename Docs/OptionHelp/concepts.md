@@ -8,7 +8,7 @@ Title: Glossary
 ## concept.compression-efficiency
 Label: Compression efficiency
 Summary: How small a file the encoder can make for a given picture quality. Better efficiency means a smaller file that looks the same, usually at the cost of encoding time.
-When to change: Not a setting; a way to compare choices such as presets.
+When to change: Not a setting. See the options that link here; it is how you compare choices such as presets.
 Status: reviewed
 
 ## concept.psnr
@@ -33,7 +33,7 @@ Status: reviewed
 
 ## concept.vq
 Label: VQ (visual quality)
-Summary: Visual quality, the encoder's name for tuning toward what viewers see rather than a measured score. Upstream says it often gives a sharper picture, aimed at people's eyes rather than at PSNR.
+Summary: Visual quality, the encoder's name for tuning toward what viewers see rather than a measured score. Upstream says it often gives a sharper picture, meant to look good to people, not to score well.
 When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#options-that-give-the-best-encoding-bang-for-buck
@@ -58,7 +58,7 @@ Status: reviewed
 
 ## concept.quality-level
 Label: Quality level (CRF, QP)
-Summary: The number a quality mode holds. AV1 quantizers run 0 to 63: lower is finer quantization, a better picture, a larger file; higher is smaller and rougher. SVT-AV1's CRF runs to 70 in quarter steps.
+Summary: The number a quality mode (CRF, QP) holds steady: lower means a finer quantizer, a better picture and a larger file. AV1's quantizer scale is 0 to 63; SVT-AV1's CRF runs to 70 in quarter steps.
 When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
@@ -75,7 +75,7 @@ Status: reviewed
 
 ## concept.two-pass
 Label: Two-pass encoding
-Summary: A first pass that only analyzes the video and a second that encodes it with that knowledge. Upstream says it is useful for reaching a VBR target and not critical in CRF mode; CBR is always one pass.
+Summary: An analysis pass over the video, then an encoding pass that uses what it learned. Upstream says it helps hit a bitrate target (VBR) but matters less in quality (CRF) mode; CBR is always one pass.
 When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#multi-pass-encoding
@@ -91,7 +91,7 @@ Status: reviewed
 
 ## concept.gop
 Label: GOP (group of pictures)
-Summary: A keyframe and the frames up to the next one. Its length, set by Keyint, trades quick seeking (short) against file size (long). SVT-AV1 builds it from mini-GOPs, short layered runs of frames.
+Summary: A keyframe (a frame stored whole) and the frames up to the next. Keyint sets its length: short for quick seeking, long for a small file; SVT-AV1 builds it from mini-GOPs, layered runs of frames.
 When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#gop-size-selection

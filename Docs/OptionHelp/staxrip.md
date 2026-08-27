@@ -36,6 +36,7 @@ Summary: Adds your own switches to the encoder command line, as typed. Use it fo
 Used when: The all-passes box is always available. First Pass and Second Pass appear for 2-pass and 3-pass encodes, Third Pass for 3-pass; each applies to that pass only.
 When to change: Only for a switch that has no control here; Ctrl+F1 in this dialog lists them all. Type it as on a command line, one switch per line if you like. If you name a switch the dialog already sets, StaxRip leaves its own copy out and yours wins. A misspelled switch or a bad value stops the encode with the encoder's own error message. StaxRip macros such as `%source_name%` are expanded.
 Example: In a CRF encode, put `--force-key-frames 1500f,3000f` in the all-passes box to force keyframes at frames 1500 and 3000. The encoder documents it for CRF mode only; Ctrl+F1 shows the format.
+Related: concept.two-pass
 Status: reviewed
 
 ## staxrip.override-target-file-name
@@ -67,7 +68,7 @@ Summary: Splits the video into this many pieces, encodes them as separate encode
 Used when: Needs the AviSynth/VapourSynth decoder with avs2pipemod or vspipe and the mkvmerge or MP4Box muxer. Other setups are not blocked but silently wrong: repeated opening frames, or pieces never joined.
 When to change: Leave it at 1 unless the encoder leaves cores idle; SVT-AV1 already uses many threads for one encode. Pieces run in parallel, sharing the parallel-processes limit in the settings (3 by default) with audio encoding. The cost: every piece starts with its own keyframe, and with a bitrate target each piece is held to that bitrate by itself, so bits cannot move from easy pieces to hard ones.
 Example: Set 2 with the parallel-processes limit at 2 or more and compare the total time with a plain encode of the same clip before using it for a real job.
-Related: staxrip.decoder, staxrip.pipe
+Related: staxrip.decoder, staxrip.pipe, concept.rate-control
 Status: reviewed
 
 ## staxrip.comp-check
@@ -75,7 +76,7 @@ Label: Comp. Check
 Summary: The quality level (CRF or QP) used by the compressibility check, a short test encode that measures how many bits your video needs at that quality. Its result is the 100% mark for Aimed Quality.
 Used when: The check is offered only with a bitrate target (VBR or CBR rate control); in a quality mode (CRF or QP) there is no target size to adjust, so the button and the menu entry are hidden.
 When to change: Leave it at 18; moving it only shifts what 100% means. Run the check once source, crop, and filters are set. StaxRip encodes 5% of the video in 2-second blocks at this quality, measures bits per pixel per frame, and, as chosen under Options > Misc, sets the target size or shrinks the picture (needs a Resize filter) to reach the Aimed Quality share. Repeat it after changing filters or size.
-Related: staxrip.aimed-quality
+Related: staxrip.aimed-quality, concept.quality-level, concept.rate-control
 Status: reviewed
 
 ## staxrip.aimed-quality
@@ -84,5 +85,5 @@ Summary: After the compressibility check, StaxRip sets the target file size, or 
 Used when: Only with a bitrate target (VBR or CBR rate control), together with Comp. Check.
 When to change: 50 is the default; the assistant calls 50 to 70 comfortable and warns when the size you set later drifts more than 20 points from this value. Go toward 70 when quality matters more than size, lower for small files. It is applied when you close this dialog with OK, so set it before the check or run the check again. The main window's size menu has 50% and 60% entries that reuse the check.
 Example: If the check finds the video needs 10 Mbps at quality 18, 50 sets the target size for about 5 Mbps and 70 for about 7 Mbps at the same resolution and frame rate.
-Related: staxrip.comp-check
+Related: staxrip.comp-check, concept.rate-control, concept.bitrate
 Status: reviewed

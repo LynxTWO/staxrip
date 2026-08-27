@@ -7,7 +7,7 @@ Title: SVT-AV1
 Source: Source/Encoding/SvtAv1Enc.vb
 Allowed-Missing: 0
 Minimum-Reviewed: 100
-Reviewed-Complete: false
+Reviewed-Complete: true
 Verified-Encoder-Version: SVT-AV1 v4.2.0+71+88-17cd99550 [Mod by Patman] (release)
 Verified-Encoder-Build: 17cd99550
 Verified-Date: 2026-08-27
