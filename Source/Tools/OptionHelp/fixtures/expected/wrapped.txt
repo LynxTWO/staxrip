@@ -1,0 +1,18 @@
+FILE wrapped.md
+H Schema=1
+H Encoder=wrapped
+H Locale=en
+H Title=Wrapped
+H Source=Source/Encoding/WrappedEnc.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S wrapped.alpha 10
+F Summary=This summary wraps onto a second line and then a third line with a bad tick `.
+F Status=draft
+S wrapped.beta 16
+F Label=Beta Label
+F Use=wrapped.alpha
+F Status=draft
+ERR 11 STANZA E13
+END

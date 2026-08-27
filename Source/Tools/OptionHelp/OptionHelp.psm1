@@ -21,7 +21,7 @@ function New-OhError {
 function New-OhStanza {
     param([string]$Id, [int]$Line)
     [pscustomobject]@{
-        Id = $Id; Line = $Line; Fields = [ordered]@{}; Values = [System.Collections.Generic.List[object]]::new()
+        Id = $Id; Line = $Line; Fields = [ordered]@{}; FieldLines = [ordered]@{}; Values = [System.Collections.Generic.List[object]]::new()
         References = [System.Collections.Generic.List[string]]::new(); Status = ''
     }
 }
@@ -127,6 +127,7 @@ function ConvertFrom-OptionHelpText {
                 $value = ''
             }
             $stanza.Fields[$field] = $value
+            $stanza.FieldLines[$field] = $lineNo
             if ($field -eq 'Status') { $stanza.Status = $value }
             $currentField = $field
             continue
@@ -458,6 +459,29 @@ function Invoke-OptionHelpSelfTest {
         if (($lines -join "`n") -ne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
     }
     finally { Remove-Item $tmp -Recurse -Force }
+    # Ratchet CRLF safety: same fixture, but clean.md is converted to CRLF before advancing. The
+    # counters must land on the same values as the LF case, and the CR count must be unchanged,
+    # proving the regex rewrote only the digits and never touched the line endings.
+    $count++
+    $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("optionhelp-ratchet-crlf-" + [guid]::NewGuid().ToString('N'))
+    Copy-Item (Join-Path $FixturesRoot 'repo-clean') $tmp -Recurse
+    try {
+        $cleanPath = Join-Path $tmp 'Docs\OptionHelp\clean.md'
+        $lf = [System.IO.File]::ReadAllText($cleanPath).Replace("`r`n", "`n")
+        $crlf = $lf.Replace("`n", "`r`n")
+        [System.IO.File]::WriteAllText($cleanPath, $crlf, [System.Text.UTF8Encoding]::new($false))
+        $crBefore = @([System.IO.File]::ReadAllBytes($cleanPath) | Where-Object { $_ -eq 0x0D }).Count
+        $rep = Test-OptionHelpRepository -RepoRoot $tmp
+        Update-OptionHelpRatchet -RepoRoot $tmp -Report $rep
+        $afterBytes = [System.IO.File]::ReadAllBytes($cleanPath)
+        $crAfter = @($afterBytes | Where-Object { $_ -eq 0x0D }).Count
+        $after = [System.Text.UTF8Encoding]::new($false).GetString($afterBytes).Replace("`r`n", "`n")
+        $lines = @(($after -split "`n") | Where-Object { $_ -match '^(Allowed-Missing|Minimum-Reviewed): ' })
+        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\ratchet-repo-clean.txt')).Replace("`r`n", "`n").TrimEnd("`n")
+        if (($lines -join "`n") -ne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet-crlf counters`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
+        if ($crAfter -ne $crBefore) { $failures++; [Console]::Error.WriteLine("FAIL ratchet-crlf CR count changed: before=$crBefore after=$crAfter") }
+    }
+    finally { Remove-Item $tmp -Recurse -Force }
     # Facts comparison against the fake repository.
     $count++
     $diff = Compare-OptionHelpFacts -RepoRoot (Join-Path $FixturesRoot 'repo') -FactsPath (Join-Path $FixturesRoot 'facts\fake-export.json')
@@ -546,7 +570,7 @@ function Complete-OhValidation {
             }
             if ($k -in @('Summary', 'Used when', 'When to change', 'Example', 'Encoder default', 'Label')) {
                 $m = Test-OhInline -Text $f[$k]
-                if ($m) { $errors.Add((New-OhError ($s.Line + [array]::IndexOf(@($f.Keys), $k) + 1) 'STANZA' 'E13' "$k`: $m")) }
+                if ($m) { $errors.Add((New-OhError $s.FieldLines[$k] 'STANZA' 'E13' "$k`: $m")) }
             }
         }
         foreach ($v in $s.Values) {
@@ -589,21 +613,29 @@ function Test-OptionHelpRepository {
     $encoders = [System.Collections.Generic.List[object]]::new()
     $resources = Get-OhResourceEntries -ProjectPath (Join-Path $RepoRoot 'Source\StaxRip.vbproj')
 
+    # File-level parse errors and the file-to-resource E12 check: scoped to -Encoder when given.
     foreach ($f in $files.Values) {
+        if ($Encoder -and $f.Encoder -ne $Encoder) { continue }
         foreach ($e in $f.Errors) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $e.Line; Code = $e.Code; Message = $e.Message }) }
-        if ($resources -notcontains $f.Name) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = 'No EmbeddedResource entry in Source/StaxRip.vbproj' }) }
-    }
-    foreach ($r in $resources) {
-        if (-not (Test-Path (Join-Path $docs $r))) { $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$r' has no file" }) }
+        $hits = @($resources | Where-Object { $_ -ceq $f.Name }).Count
+        if ($hits -eq 0) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = 'No EmbeddedResource entry in Source/StaxRip.vbproj' }) }
+        elseif ($hits -gt 1) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = "Duplicate EmbeddedResource entries ($hits) in Source/StaxRip.vbproj" }) }
     }
 
-    # W1: encoder sources without a help file.
-    $sourcesWithFile = @($files.Values | Where-Object { $_.Header.Contains('Source') } | ForEach-Object { $_.Header['Source'].Replace('\', '/') })
-    foreach ($vb in Get-ChildItem (Join-Path $RepoRoot 'Source\Encoding') -Filter '*.vb' | Sort-Object Name) {
-        $rel = "Source/Encoding/$($vb.Name)"
-        if ($sourcesWithFile -notcontains $rel) {
-            $text = [System.IO.File]::ReadAllText($vb.FullName)
-            if ($text -match 'Inherits\s+CommandLineParams') { $warnings.Add([pscustomobject]@{ File = $rel; Line = 0; Code = 'W1'; Message = 'no help file' }) }
+    # Repository-wide checks: only when not scoped to a single -Encoder.
+    if (-not $Encoder) {
+        foreach ($r in $resources) {
+            if (-not (Test-Path (Join-Path $docs $r))) { $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$r' has no file" }) }
+        }
+
+        # W1: encoder sources without a help file.
+        $sourcesWithFile = @($files.Values | Where-Object { $_.Header.Contains('Source') } | ForEach-Object { $_.Header['Source'].Replace('\', '/') })
+        foreach ($vb in Get-ChildItem (Join-Path $RepoRoot 'Source\Encoding') -Filter '*.vb' | Sort-Object Name) {
+            $rel = "Source/Encoding/$($vb.Name)"
+            if ($sourcesWithFile -notcontains $rel) {
+                $text = [System.IO.File]::ReadAllText($vb.FullName)
+                if ($text -match 'Inherits\s+CommandLineParams') { $warnings.Add([pscustomobject]@{ File = $rel; Line = 0; Code = 'W1'; Message = 'no help file' }) }
+            }
         }
     }
 
@@ -635,15 +667,14 @@ function Test-OptionHelpRepository {
         catch { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E1'; Message = $_.Exception.Message }); continue }
         $params = $allParams[$f.Encoder]
         $reviewed = 0; $draft = 0; $missingList = [System.Collections.Generic.List[object]]::new(); $excluded = 0
-        $covered = @{}
         foreach ($p in $params) {
             if ($p.Excluded) { $excluded++; $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W3'; Message = "$($p.Name) excluded" }); continue }
             if (-not $p.Identity) { continue }
             $r = Resolve-OhId -Chain $chain -Files $files -Id $p.Identity
             switch ($r.Outcome) {
-                'reviewed' { $reviewed++; $covered[$p.Identity] = $true }
-                'alias' { $reviewed++; $covered[$p.Identity] = $true }
-                'draft' { $draft++; $covered[$p.Identity] = $true }
+                'reviewed' { $reviewed++ }
+                'alias' { $reviewed++ }
+                'draft' { $draft++ }
                 default { $missingList.Add([pscustomobject]@{ Id = $p.Identity; Caption = $p.Caption }) }
             }
             # E4: value notes must name emitted values.
@@ -668,12 +699,12 @@ function Test-OptionHelpRepository {
                 foreach ($rel in ($s.Fields['Related'] -split ',\s*')) {
                     $target = $null
                     foreach ($other in $files.Values) { $t = Find-OhStanza -File $other -Id $rel; if ($t) { $target = $t; break } }
-                    if (-not $target) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = ($s.Line + [array]::IndexOf(@($s.Fields.Keys), 'Related') + 1 + $s.Values.Count); Code = 'E6'; Message = "Related target '$rel' does not exist" }) }
+                    if (-not $target) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $s.FieldLines['Related']; Code = 'E6'; Message = "Related target '$rel' does not exist" }) }
                 }
             }
             if ($s.Fields.Contains('Use')) {
                 $r2 = Resolve-OhId -Chain @($f) -Files $files -Id $s.Id
-                if ($r2.Outcome -ne 'alias') { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = ($s.Line + 1); Code = 'E6'; Message = "Use target '$($s.Fields['Use'])' does not exist or is not reviewed" }) }
+                if ($r2.Outcome -ne 'alias') { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $s.FieldLines['Use']; Code = 'E6'; Message = "Use target '$($s.Fields['Use'])' does not exist or is not reviewed" }) }
             }
         }
         $allowed = [int]$f.Header['Allowed-Missing']; $minimum = [int]$f.Header['Minimum-Reviewed']; $complete = $f.Header['Reviewed-Complete'] -eq 'true'
@@ -710,41 +741,72 @@ function Format-OptionHelpReport {
 }
 
 function Update-OptionHelpRatchet {
+    # Writes every changed file to a .tmp sibling first, then moves every .tmp into place only
+    # once all writes succeeded, so a failure anywhere before the moves leaves every real file
+    # byte-identical. The finally sweeps up any .tmp a partial run left behind. The counter regex
+    # uses a lookahead for the end of line instead of consuming it, so it matches a line ending in
+    # either \n or \r\n without eating the \r: a bare \d+$ never matches on a CRLF checkout because
+    # in .NET (?m) mode $ sits immediately before \n, and \r is still sitting in that gap.
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)]$Report)
     if (-not $Report.Pass) { throw 'Refusing to advance the ratchet after a failed validation' }
-    foreach ($e in $Report.Encoders) {
-        $path = Join-Path $RepoRoot "Docs\OptionHelp\$($e.Encoder).md"
-        $text = [System.IO.File]::ReadAllText($path)
-        $newAllowed = [Math]::Min($e.AllowedMissing, $e.Missing)
-        $newMinimum = [Math]::Max($e.MinimumReviewed, $e.Reviewed)
-        $updated = [regex]::Replace($text, '(?m)^Allowed-Missing: \d+$', "Allowed-Missing: $newAllowed")
-        $updated = [regex]::Replace($updated, '(?m)^Minimum-Reviewed: \d+$', "Minimum-Reviewed: $newMinimum")
-        if ($updated -ne $text) {
-            $tmp = "$path.tmp"
-            [System.IO.File]::WriteAllText($tmp, $updated, [System.Text.UTF8Encoding]::new($false))
-            [System.IO.File]::Move($tmp, $path, $true)
+    $moves = [System.Collections.Generic.List[object]]::new()
+    try {
+        foreach ($e in $Report.Encoders) {
+            $path = Join-Path $RepoRoot "Docs\OptionHelp\$($e.Encoder).md"
+            $text = [System.IO.File]::ReadAllText($path)
+            $newAllowed = [Math]::Min($e.AllowedMissing, $e.Missing)
+            $newMinimum = [Math]::Max($e.MinimumReviewed, $e.Reviewed)
+            $updated = [regex]::Replace($text, '(?m)^Allowed-Missing: \d+(?=\r?$)', "Allowed-Missing: $newAllowed")
+            $updated = [regex]::Replace($updated, '(?m)^Minimum-Reviewed: \d+(?=\r?$)', "Minimum-Reviewed: $newMinimum")
+            if ($updated -ne $text) {
+                $tmp = "$path.tmp"
+                [System.IO.File]::WriteAllText($tmp, $updated, [System.Text.UTF8Encoding]::new($false))
+                $moves.Add([pscustomobject]@{ Tmp = $tmp; Path = $path })
+            }
         }
+        foreach ($mv in $moves) { [System.IO.File]::Move($mv.Tmp, $mv.Path, $true) }
+    }
+    finally {
+        foreach ($mv in $moves) { if (Test-Path $mv.Tmp) { Remove-Item $mv.Tmp -Force } }
     }
 }
 
 function Compare-OptionHelpFacts {
     param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][string]$FactsPath)
     $facts = Get-Content -Raw $FactsPath | ConvertFrom-Json
-    $files = Read-OhDirectory -Directory (Join-Path $RepoRoot 'Docs\OptionHelp')
     $out = [System.Collections.Generic.List[string]]::new()
+    if ($null -eq $facts.PSObject.Properties['encoders']) {
+        $out.Add("E11 $FactsPath has no encoders array")
+        return $out
+    }
+    $files = Read-OhDirectory -Directory (Join-Path $RepoRoot 'Docs\OptionHelp')
     foreach ($enc in $facts.encoders) {
         if (-not $files.ContainsKey($enc.encoder)) { $out.Add("E11 $($enc.encoder) has no help file"); continue }
         $f = $files[$enc.encoder]
-        $extraction = Get-VbParameters -Path (Join-Path $RepoRoot $f.Header['Source']) -EncoderId $enc.encoder
+        $sourceRel = if ($f.Header.Contains('Source')) { $f.Header['Source'] } else { $null }
+        if (-not $sourceRel -or $sourceRel -match '\.\.' -or -not (Test-OhPathCase -RepoRoot $RepoRoot -RelativePath $sourceRel)) {
+            $out.Add("E11 $($enc.encoder) Source path is missing, outside the repository, or its case does not match")
+            continue
+        }
+        $extraction = Get-VbParameters -Path (Join-Path $RepoRoot $sourceRel) -EncoderId $enc.encoder
+        # Key both sides by identity regardless of exclusion, so an exclusion mismatch is caught
+        # explicitly instead of silently dropping one side's entry.
         $app = @{}
-        foreach ($p in $enc.parameters) { if (-not $p.excluded) { $app[$p.identity] = $p } }
+        foreach ($p in $enc.parameters) { if ($p.identity) { $app[$p.identity] = $p } }
         foreach ($p in $extraction.Parameters) {
-            if ($p.Excluded -or -not $p.Identity) { continue }
+            if (-not $p.Identity) { continue }
             if (-not $app.ContainsKey($p.Identity)) { $out.Add("E11 $($p.Identity) missing from the application export"); continue }
             $a = $app[$p.Identity]
-            if (($a.switches -join ',') -ne ($p.Switches -join ',')) { $out.Add("E11 $($p.Identity) switches differ: application '$($a.switches -join ',')' extractor '$($p.Switches -join ',')'") }
-            if (($a.values -join ',') -ne ($p.EmittedValues -join ',')) { $out.Add("E11 $($p.Identity) values differ: application '$($a.values -join ',')' extractor '$($p.EmittedValues -join ',')'") }
-            if ($a.caption -ne $p.Caption) { $out.Add("E11 $($p.Identity) caption differs: application '$($a.caption)' extractor '$($p.Caption)'") }
+            if ([bool]$a.excluded -ne [bool]$p.Excluded) {
+                $out.Add("E11 $($p.Identity) excluded differs: application '$($a.excluded.ToString().ToLower())' extractor '$($p.Excluded.ToString().ToLower())'")
+                $app.Remove($p.Identity)
+                continue
+            }
+            if (-not $p.Excluded) {
+                if (($a.switches -join ',') -ne ($p.Switches -join ',')) { $out.Add("E11 $($p.Identity) switches differ: application '$($a.switches -join ',')' extractor '$($p.Switches -join ',')'") }
+                if (($a.values -join ',') -ne ($p.EmittedValues -join ',')) { $out.Add("E11 $($p.Identity) values differ: application '$($a.values -join ',')' extractor '$($p.EmittedValues -join ',')'") }
+                if ($a.caption -ne $p.Caption) { $out.Add("E11 $($p.Identity) caption differs: application '$($a.caption)' extractor '$($p.Caption)'") }
+            }
             $app.Remove($p.Identity)
         }
         foreach ($k in $app.Keys) { $out.Add("E11 $k missing from the extractor") }

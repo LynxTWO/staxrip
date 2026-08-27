@@ -9,6 +9,7 @@ E10 Source/Encoding/FakeEnc.vb:66 Parameter 'NoKey' (Custom) has no identity; se
 E11 Source/Encoding/FakeEnc.vb:81 Unrecognized parameter type 'WeirdParam'
 E11 Source/Encoding/FakeEnc.vb:82 Parameter of type 'NumParam' is not declared with 'With {'
 E12 Docs/OptionHelp/badid.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
+E12 Docs/OptionHelp/concepts.md:1 Duplicate EmbeddedResource entries (2) in Source/StaxRip.vbproj
 E12 Source/StaxRip.vbproj:1 EmbeddedResource 'ghost.md' has no file
 E4 Docs/OptionHelp/fake.md:14 Values on non-option parameter fake.alpha
 E4 Docs/OptionHelp/fake.md:28 Value '3' is not an emitted value of fake.beta

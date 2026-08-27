@@ -9,6 +9,9 @@
     <EmbeddedResource Include="..\Docs\OptionHelp\concepts.md">
       <Link>OptionHelp\concepts.md</Link>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\concepts.md">
+      <Link>OptionHelp\concepts.md</Link>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\ghost.md">
       <Link>OptionHelp\ghost.md</Link>
     </EmbeddedResource>

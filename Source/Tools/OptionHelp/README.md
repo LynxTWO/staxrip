@@ -14,7 +14,7 @@ pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1 -CompareFacts
 pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1 -Dump Docs/OptionHelp/svt-av1.md
 ```
 
-`-Json` writes only JSON to stdout; diagnostics go to stderr. `-AdvanceRatchet` runs only after a clean validation, lowers `Allowed-Missing` and raises `Minimum-Reviewed` to the current counts, never the other way, and never touches `Reviewed-Complete`. `-CompareFacts` takes the file written by the StaxRip command `-ExportOptionHelpFacts:<path>` and reports every difference between the application's view of the parameters and this script's extraction as E11.
+`-Encoder <id>` checks that file alone; repository-wide checks (W1, resource entries without a file) run only in the unscoped mode. `-Json` writes only JSON to stdout; diagnostics go to stderr. `-AdvanceRatchet` runs only after a clean validation, lowers `Allowed-Missing` and raises `Minimum-Reviewed` to the current counts, never the other way, and never touches `Reviewed-Complete`. `-CompareFacts` takes the file written by the StaxRip command `-ExportOptionHelpFacts:<path>` and reports every difference between the application's view of the parameters and this script's extraction as E11.
 
 ## Rules
 
