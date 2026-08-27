@@ -39,6 +39,10 @@ After the last commit: validator self-test 35 cases, 0 failures; the unscoped ch
 
 Untested boundary: no person has yet read the text in the real dialog (section 2). The claims about the bundled build's behaviour (crashes, refusals, hangs, sizes, timings) were reproduced by each task's reviewer on this machine (Ryzen 9 5950X); a timing claim carries its clip, preset, and run count in the stanza, and CRF was the comparison mode wherever bytes were compared because the build's VBR output varies between identical runs.
 
+Untested boundary, validator: W2's alias branch (for a `Use:` alias the Label checked is the alias stanza's own, in the file that holds it) is exercised by no fixture and no real stanza, because no alias exists yet; add the fixture together with the first `shared.md` alias in Tier 2, in the same change.
+
+Unratified boundary, validator: a scoped `-Encoder` run now applies the stanza rules to the translations of every encoder in the chain as well (`-Encoder svt-av1` would check a future `svt-av1.de.md`), a scope the plan never named; it is kept, because spec 4.2 makes `<Encoder>.<Locale>.md` a file of that encoder and only that encoder's dialog displays it, the validator README's `-Encoder` sentence ("its files") documents it, and the `-Encoder fakevar` self-test case pins it. English-only scoping would be a one-line `Locale` filter on the scope in `OptionHelp.psm1`.
+
 Security, privacy, and logging: nothing new. The validator reads text; the help renders through the trust boundary of plan 2; opening a help window still makes no network request.
 
 ### What plan 3 changed besides the text
@@ -133,7 +137,7 @@ Against the bundled help and the upstream documents at the v4.2.0 tag.
 2. Super-resolution mode 3 never scaled a frame on the test clip at any q-threshold (even 0), at CRF 35 and 60 and at preset 12; the gating condition is in no source. `svt-av1.superres-mode`, `svt-av1.superres-qthres`, and `svt-av1.superres-kf-qthres` report the observation without explaining it.
 3. `--fast-decode 1` and `2` changed nothing at preset 8 on the test clip (byte-identical output, mini-GOP still 32) although upstream says fast decode defaults to a 5-layer structure; `svt-av1.fast-decode` attributes the claim to upstream.
 4. `--pin` is documented only in Parameters.md prose (Appendix A) and the build rejects it; `--ss` and `--enable-tpl-la` appear in no source at all (a4).
-5. Final-review pointer: `svt-av1.recode-loop` says changing it "altered a Variable Bitrate encode" on single runs (1.3 to 2%) against the 0.4% run-to-run spread above; probably real, unproven by repeats. Soften it or repeat the test if the review cannot confirm it.
+5. `svt-av1.recode-loop` once said changing it "altered a Variable Bitrate encode" on single runs (1.3 to 2%) against the 0.4% run-to-run spread above; the final review judged that below the plan's evidence bar, and the stanza now rests on upstream's recode table and the byte-identical CRF half of the test. The VBR observation stays in the task 4 report, probably real and unproven by repeats; repeat it with several runs per level if a VBR sentence is wanted.
 
 ## 4. Follow-up
 

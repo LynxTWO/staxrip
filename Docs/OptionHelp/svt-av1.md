@@ -421,8 +421,8 @@ Status: reviewed
 ## svt-av1.recode-loop
 Label: Recode Loop
 Summary: Lets the encoder encode a frame a second time when the first try misses its bitrate limits; higher levels allow it for more frame types. 4 leaves the choice to the preset.
-Used when: Matters for bitrate targets: in a test with the bundled build, changing it left a CRF encode byte for byte unchanged and altered a Variable Bitrate encode.
-When to change: Leave it at 4. Encoding a frame twice takes time and only helps when a frame overshoots a bitrate limit, so try 0 to speed up a bitrate encode that lands close to its target anyway, or 3 when a Variable Bitrate encode misses its target badly and time is no object. The bundled help states no default; upstream's table says 4.
+Used when: Matters for bitrate targets, which is what upstream's recode table describes; in a test with the bundled build, changing it left a CRF encode byte for byte unchanged.
+When to change: Leave it at 4. Encoding a frame twice takes time and only helps when a frame overshoots a bitrate limit; upstream's table says which frame types each level may recode and no more. If you experiment, try 0 on a bitrate encode that lands close to its target anyway and compare time and size on a short scene. The bundled help states no default; upstream's table says 4.
 Values:
 - 0: Off. No frame is encoded twice.
 - 1: Keyframes, and any frame that exceeds the maximum frame bandwidth.
