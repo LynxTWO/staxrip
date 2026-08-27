@@ -1,0 +1,15 @@
+OPTIONHELPID fake
+P 12 Alpha NumParam id=fake.alpha excluded=false caption=Alpha switches=--alpha values=
+P 18 Beta OptionParam id=fake.beta excluded=false caption=Beta switches=--beta values=0,1
+P 25 Gamma OptionParam id=fake.gamma excluded=false caption=Gamma switches=--gamma values=0,1,2
+P 32 Delta OptionParam id=fake.delta excluded=false caption=Delta switches=--delta values=ultrafast,veryslow,0:"quoted"text
+P 38 Epsilon OptionParam id=fake.pass excluded=false caption=Passes switches=--pass,--passes,--stats values=1,2
+P 44 Zeta NumParam id=fake.zeta excluded=false caption=Zeta switches=--zeta values=
+P 49 Eta BoolParam id=fake.eta excluded=false caption=Eta switches=--eta,--no-eta values=
+P 55 Chunks NumParam id=staxrip.chunks excluded=false caption=Chunks switches= values=
+P 61 Hidden StringParam id=- excluded=true caption=Hidden switches=--hidden values=
+P 66 NoKey StringParam id=- excluded=false caption=Custom switches= values=
+P 78 - NumParam id=fake.inline excluded=false caption=Inline switches=--inline values=
+ERR 66 E10
+ERR 81 E11
+ERR 82 E11
