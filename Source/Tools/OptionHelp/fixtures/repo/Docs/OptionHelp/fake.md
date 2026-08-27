@@ -40,3 +40,7 @@ Status: draft
 ## fake.delta
 Use: shared.missing
 Status: reviewed
+
+## fake.sigma
+Summary: Only a grandchild variant declares this switch.
+Status: draft

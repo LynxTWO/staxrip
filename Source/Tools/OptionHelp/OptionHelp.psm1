@@ -137,6 +137,9 @@ function ConvertFrom-OptionHelpText {
         }
 
         if ($null -eq $stanza) {
+            # The shape test stays case-insensitive on purpose: 'encoder: fake' is then captured as
+            # a key and rejected by the case-sensitive key lookup with the error that names it,
+            # instead of falling through to the vaguer 'not a header line'.
             if ($line -match '^([A-Z][A-Za-z-]*): ?(.*)$') {
                 $key = $Matches[1]; $value = $Matches[2].Trim()
                 if ($script:HeaderKeys -cnotcontains $key) {
@@ -153,6 +156,9 @@ function ConvertFrom-OptionHelpText {
             continue
         }
 
+        # Case-insensitive for the same reason as the header: 'summary: x' is caught as an unknown
+        # field rather than joined silently into whatever field came before it. The name itself is
+        # then matched case-sensitively, because Array.IndexOf compares strings ordinally.
         if ($line -match '^([A-Z][A-Za-z]*(?: [a-z]+)*): ?(.*)$') {
             $field = $Matches[1]; $value = $Matches[2].Trim()
             $index = [array]::IndexOf($script:FieldOrder, $field)
@@ -573,7 +579,7 @@ function Invoke-OptionHelpSelfTest {
         $after = [System.IO.File]::ReadAllText((Join-Path $tmp 'Docs\OptionHelp\clean.md')).Replace("`r`n", "`n")
         $lines = @(($after -split "`n") | Where-Object { $_ -match '^(Allowed-Missing|Minimum-Reviewed): ' })
         $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\ratchet-repo-clean.txt')).Replace("`r`n", "`n").TrimEnd("`n")
-        if (($lines -join "`n") -ne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
+        if (($lines -join "`n") -cne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
     }
     finally { Remove-Item $tmp -Recurse -Force }
     # Ratchet CRLF safety: same fixture, but clean.md is converted to CRLF before advancing. The
@@ -595,7 +601,7 @@ function Invoke-OptionHelpSelfTest {
         $after = [System.Text.UTF8Encoding]::new($false).GetString($afterBytes).Replace("`r`n", "`n")
         $lines = @(($after -split "`n") | Where-Object { $_ -match '^(Allowed-Missing|Minimum-Reviewed): ' })
         $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\ratchet-repo-clean.txt')).Replace("`r`n", "`n").TrimEnd("`n")
-        if (($lines -join "`n") -ne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet-crlf counters`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
+        if (($lines -join "`n") -cne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet-crlf counters`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
         if ($crAfter -ne $crBefore) { $failures++; [Console]::Error.WriteLine("FAIL ratchet-crlf CR count changed: before=$crBefore after=$crAfter") }
     }
     finally { Remove-Item $tmp -Recurse -Force }
@@ -603,7 +609,7 @@ function Invoke-OptionHelpSelfTest {
     $count++
     $diff = Compare-OptionHelpFacts -RepoRoot (Join-Path $FixturesRoot 'repo') -FactsPath (Join-Path $FixturesRoot 'facts\fake-export.json')
     $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\compare-facts.txt')).Replace("`r`n", "`n").TrimEnd("`n")
-    if (($diff -join "`n") -ne $expected) { $failures++; [Console]::Error.WriteLine("FAIL compare-facts`n--- expected`n$expected`n--- actual`n$($diff -join "`n")") }
+    if (($diff -join "`n") -cne $expected) { $failures++; [Console]::Error.WriteLine("FAIL compare-facts`n--- expected`n$expected`n--- actual`n$($diff -join "`n")") }
     [Console]::Error.WriteLine("self-test: $count dump cases, $failures failures")
     if ($failures -gt 0) { return 1 }
     return 0
@@ -655,7 +661,7 @@ function Complete-OhValidation {
             if ($missing.Count -gt 0) { $errors.Add((New-OhError 1 'FILE' 'E1' "Reviewed stanzas require headers: $($missing -join ', ')")) }
         }
         if ($h.Contains('Verified-Date') -and $h['Verified-Date'] -cnotmatch '^\d{4}-\d{2}-\d{2}$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Verified-Date must be an ISO date')) }
-        if ($h.Contains('Documentation') -and $h['Documentation'] -cnotmatch '^https?://\S+$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Documentation must be an http or https URL')) }
+        if ($h.Contains('Documentation') -and $h['Documentation'] -notmatch '^https?://\S+$') { $errors.Add((New-OhError 1 'FILE' 'E1' 'Documentation must be an http or https URL')) }
         if ($h.Contains('Inherits') -and ($h['Inherits'] -cnotmatch $script:EncoderPattern -or $script:SharedIds -ccontains $h['Inherits'])) {
             $errors.Add((New-OhError 1 'FILE' 'E1' 'Inherits must name an encoder file'))
         }
@@ -722,6 +728,8 @@ function Test-OhPathCase {
 
 function Get-OhDescendants {
     # Every encoder whose Inherits chain reaches $EncoderId, transitively; $EncoderId is not in it.
+    # The ids go to the pipeline one by one, so a caller's @() gets the ids and never an array
+    # holding an array, which would silently match no encoder at all.
     param([Parameter(Mandatory)][hashtable]$Files, [Parameter(Mandatory)][string]$EncoderId)
     $found = New-OhMap
     $frontier = [System.Collections.Generic.List[string]]::new()
@@ -737,7 +745,7 @@ function Get-OhDescendants {
             $frontier.Add($f.Encoder)
         }
     }
-    return ,@($found.Keys)
+    return @($found.Keys)
 }
 
 function Add-OhLinkErrors {
@@ -983,7 +991,7 @@ function Update-OptionHelpRatchet {
             $newMinimum = [Math]::Max($e.MinimumReviewed, $e.Reviewed)
             $updated = [regex]::Replace($text, '(?m)^Allowed-Missing: \d+(?=\r?$)', "Allowed-Missing: $newAllowed")
             $updated = [regex]::Replace($updated, '(?m)^Minimum-Reviewed: \d+(?=\r?$)', "Minimum-Reviewed: $newMinimum")
-            if ($updated -ne $text) {
+            if ($updated -cne $text) {
                 $tmp = "$path.tmp"
                 [System.IO.File]::WriteAllText($tmp, $updated, [System.Text.UTF8Encoding]::new($false))
                 $moves.Add([pscustomobject]@{ Tmp = $tmp; Path = $path })

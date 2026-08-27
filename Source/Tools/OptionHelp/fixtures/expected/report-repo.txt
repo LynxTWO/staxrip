@@ -8,6 +8,7 @@ MISSING staxrip.custom Custom Second Pass
 MISSING fake.inline Inline
 ENCODER fakevar total=3 excluded=0 reviewed=2 draft=0 missing=1 allowed-missing=1 minimum-reviewed=2 reviewed-complete=false result=PASS
 MISSING fakevar.omega Omega
+ENCODER fakevar2 total=1 excluded=0 reviewed=0 draft=1 missing=0 allowed-missing=1 minimum-reviewed=0 reviewed-complete=false result=PASS
 E1 Docs/OptionHelp/badid.en.md:1 Duplicate help file for encoder 'badid' locale 'en'
 E1 Docs/OptionHelp/badid.md:1 Minimum-Reviewed must be a non-negative integer
 E1 Docs/OptionHelp/cyc.md:1 Inheritance cycle at 'cyc'
