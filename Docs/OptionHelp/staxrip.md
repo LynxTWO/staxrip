@@ -83,7 +83,7 @@ Status: reviewed
 Label: Aimed Quality
 Summary: After the compressibility check, StaxRip sets the target file size, or the picture size, so the encode gets this percentage of the bits the test encode used. 50 means half.
 Used when: Only with a bitrate target (VBR or CBR rate control), together with Comp. Check.
-When to change: 50 is the default; the assistant calls 50 to 70 comfortable and warns when the size you set later drifts more than 20 points from this value. Go toward 70 when quality matters more than size, lower for small files. It is applied when you close this dialog with OK, so set it before the check or run the check again. The main window's size menu has 50% and 60% entries that reuse the check.
+When to change: 50 is the default; the assistant asks for 50 to 70 and warns when the size you set later drifts more than 20 points from this value. Go toward 70 when quality matters more than size, lower for small files. It is applied when you close this dialog with OK, so set it before the check or run the check again. The main window's size menu has 50% and 60% entries that reuse the check.
 Example: If the check finds the video needs 10 Mbps at quality 18, 50 sets the target size for about 5 Mbps and 70 for about 7 Mbps at the same resolution and frame rate.
 Related: staxrip.comp-check, concept.rate-control, concept.bitrate
 Status: reviewed
