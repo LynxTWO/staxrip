@@ -33,6 +33,7 @@ E6 Docs/OptionHelp/staxrip.md:9 Related target 'concept.nowhere' does not exist
 E7 Docs/OptionHelp/fake.md:1 missing 5 exceeds Allowed-Missing 2
 E9 Source/Encoding/BadIdEnc.vb:1 OptionHelpId is 'wrong', expected 'badid'
 W1 Source/Encoding/OtherEnc.vb no help file
+W2 Docs/OptionHelp/fake.md Label 'Alfa' differs from caption 'Alpha'
 W3 fake Hidden excluded
 W3 fake Hidden2 excluded
 W3 fake Mismatch excluded

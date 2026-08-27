@@ -281,11 +281,11 @@ function Read-OhVbStrings {
     return @{ Items = $items.ToArray(); End = $Text.Length - 1 }
 }
 
-function Read-OhVbString {
-    # Returns the string value of `.Name = "..."` inside an initializer, or $null. A caption may be
-    # split over two lines in the dialog with `"a" + BR + "b"` (or `& BR &`, vbLf, vbCrLf); the
-    # literals around such a token are joined with one space so the value compares equal to the
-    # single-line caption the application reports for the same control.
+function Read-OhVbStringParts {
+    # The string literals of `.Name = "..."` inside an initializer, or $null when the member is
+    # absent. A caption may be split over two lines in the dialog with `"a" + BR + "b"` (or `& BR &`,
+    # vbLf, vbCrLf); each literal around such a token is one line of the caption, so the first
+    # element is what the dialog shows on the first line and what a shared stanza's Label may match.
     param([string]$Init, [string]$Member)
     $chain = $script:VbLiteral + '(?:\s*[+&]\s*' + $script:VbBreakToken + '\s*[+&]\s*' + $script:VbLiteral + ')*'
     $m = [regex]::Match($Init, '\.' + [regex]::Escape($Member) + '\s*=\s*(' + $chain + ')')
@@ -293,7 +293,17 @@ function Read-OhVbString {
     $parts = foreach ($lm in [regex]::Matches($m.Groups[1].Value, $script:VbLiteral)) {
         $lm.Value.Substring(1, $lm.Value.Length - 2).Replace('""', '"')
     }
-    return (@($parts) -join ' ')
+    return ,[string[]]@($parts)
+}
+
+function Read-OhVbString {
+    # Returns the string value of `.Name = "..."` inside an initializer, or $null. The literals of a
+    # two-line caption are joined with one space so the value compares equal to the single-line
+    # caption the application reports for the same control.
+    param([string]$Init, [string]$Member)
+    $parts = Read-OhVbStringParts -Init $Init -Member $Member
+    if ($null -eq $parts) { return $null }
+    return ($parts -join ' ')
 }
 
 function ConvertTo-OhCaption {
@@ -368,7 +378,8 @@ function Get-VbParameters {
         $switch = Read-OhVbString $init 'Switch'
         $noSwitch = Read-OhVbString $init 'NoSwitch'
         $switches = Read-OhVbArray $init 'Switches'
-        $caption = Read-OhVbString $init 'Text'
+        $captionLines = Read-OhVbStringParts $init 'Text'
+        $caption = if ($null -eq $captionLines) { $null } else { $captionLines -join ' ' }
         $values = Read-OhVbArray $init 'Values'
         $options = Read-OhVbArray $init 'Options'
         $integerValue = $init -match '\.IntegerValue\s*=\s*True'
@@ -404,7 +415,7 @@ function Get-VbParameters {
 
         $result.Add([pscustomobject]@{
             Name = $name; Type = $type; Line = $lineNo; Identity = $identity; Excluded = $excluded
-            Switches = $all.ToArray(); Caption = $caption; EmittedValues = $emitted; Errors = $errors
+            Switches = $all.ToArray(); Caption = $caption; CaptionLines = $captionLines; EmittedValues = $emitted; Errors = $errors
         })
     }
     return [pscustomobject]@{ Parameters = $result; Errors = $errors; OptionHelpId = (Get-VbOptionHelpId -Path $Path) }
@@ -482,7 +493,8 @@ function Find-OhStanza {
 function Split-OhId {
     # An id is <namespace>.<local part>; the local part keeps any further dots.
     param([Parameter(Mandatory)][string]$Id)
-    $dot = $Id.IndexOf('.')
+    # The char overload: IndexOf(string) is culture-sensitive, and the VB side splits on "."c.
+    $dot = $Id.IndexOf([char]'.')
     if ($dot -lt 1) { return [pscustomobject]@{ Namespace = ''; Local = $Id } }
     return [pscustomobject]@{ Namespace = $Id.Substring(0, $dot); Local = $Id.Substring($dot + 1) }
 }
@@ -502,20 +514,23 @@ function Resolve-OhId {
         $probe = if ($ownNamespace) { "$($file.Encoder).$($parts.Local)" } else { $Id }
         $s = Find-OhStanza -File $file -Id $probe
         if ($null -eq $s) { continue }
-        # ProbeFile is the chain file the probe actually matched. For an alias, File is the target's
+        # ProbeFile is the chain file the probe actually matched, and ProbeEncoder its encoder id
+        # (from the file name, which the header must match). For an alias, File is the target's
         # file instead, so only ProbeFile can answer "which chain file supplied this stanza".
-        if ($s.Status -cne 'reviewed') { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name } }
+        if ($s.Status -cne 'reviewed') { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name; ProbeEncoder = $file.Encoder } }
         if ($s.Fields.Contains('Use')) {
             $targetId = $s.Fields['Use']
             $targetFileId = (Split-OhId -Id $targetId).Namespace
-            if (-not $Files.ContainsKey($targetFileId)) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name } }
+            # A target file the loader refuses (file-level errors) supplies no stanza, exactly as
+            # OptionHelpCatalog.FindByFileKey returns Nothing for it.
+            if (-not $Files.ContainsKey($targetFileId) -or (Test-OhFileErrors -File $Files[$targetFileId])) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name; ProbeEncoder = $file.Encoder } }
             $t = Find-OhStanza -File $Files[$targetFileId] -Id $targetId
-            if ($null -eq $t -or $t.Status -cne 'reviewed' -or $t.Fields.Contains('Use')) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name } }
-            return @{ Outcome = 'alias'; File = $Files[$targetFileId].Name; Stanza = $t; Alias = $s; ProbeFile = $file.Name }
+            if ($null -eq $t -or $t.Status -cne 'reviewed' -or $t.Fields.Contains('Use')) { return @{ Outcome = 'draft'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name; ProbeEncoder = $file.Encoder } }
+            return @{ Outcome = 'alias'; File = $Files[$targetFileId].Name; Stanza = $t; Alias = $s; ProbeFile = $file.Name; ProbeEncoder = $file.Encoder }
         }
-        return @{ Outcome = 'reviewed'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name }
+        return @{ Outcome = 'reviewed'; File = $file.Name; Stanza = $s; ProbeFile = $file.Name; ProbeEncoder = $file.Encoder }
     }
-    return @{ Outcome = 'none'; File = $null; Stanza = $null; ProbeFile = $null }
+    return @{ Outcome = 'none'; File = $null; Stanza = $null; ProbeFile = $null; ProbeEncoder = $null }
 }
 
 function Invoke-OptionHelpSelfTest {
@@ -579,6 +594,13 @@ function Invoke-OptionHelpSelfTest {
     $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected/report-repo-bogus.txt')).Replace("`r`n", "`n")
     $actual = Format-OptionHelpReport -Report (Test-OptionHelpRepository -RepoRoot (Join-Path $FixturesRoot 'repo') -Encoder 'bogus')
     if ($expected -cne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-repo-bogus`n--- expected`n$expected`n--- actual`n$actual") }
+    # A scoped run applies the stanza rules to the chain and shared files too: -Encoder fakevar must
+    # report fake.md's and staxrip.md's link errors, fake.de.md's parse and resource errors, and the
+    # W2 that fakevar's Alpha reaches through the chain, but nothing of badid's or cyc's.
+    $count++
+    $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected/report-repo-fakevar.txt')).Replace("`r`n", "`n")
+    $actual = Format-OptionHelpReport -Report (Test-OptionHelpRepository -RepoRoot (Join-Path $FixturesRoot 'repo') -Encoder 'fakevar')
+    if ($expected -cne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-repo-fakevar`n--- expected`n$expected`n--- actual`n$actual") }
     # Ratchet: copy repo-clean to a temp dir, advance, compare the two counter lines.
     $count++
     $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("optionhelp-ratchet-" + [guid]::NewGuid().ToString('N'))
@@ -837,21 +859,37 @@ function Test-OptionHelpRepository {
         $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$Encoder.md"; Line = 1; Code = 'E1'; Message = "No help file for encoder '$Encoder'" })
     }
 
+    # A scoped run keeps the source-level checks, the counters and E5 to the named encoder, but the
+    # stanza rules (parse errors, E6, the E12 pairing) apply to every file whose text that encoder's
+    # dialog can show: its own files, those of every encoder in its inheritance chain, and the
+    # shared files, which hold the Related and Use targets. Unscoped, every file is in scope.
+    $scopeEncoders = $null
+    if ($Encoder) {
+        $scopeEncoders = New-OhMap
+        $scopeEncoders[$Encoder] = $true
+        # An -Encoder that names no file has nothing to display through; the E1 above is the report.
+        if ($files.ContainsKey($Encoder)) {
+            foreach ($sid in $script:SharedIds) { $scopeEncoders[$sid] = $true }
+            # A broken chain is reported as E1 by the encoder loop below; the scope then stays minimal.
+            try { foreach ($cf in (Get-OhChain -Files $files -EncoderId $Encoder)) { $scopeEncoders[$cf.Encoder] = $true } } catch { }
+        }
+    }
+
     # Parse errors and the file-to-resource E12 check, for translations and displaced duplicates as
     # much as for the English files: spec 5.5 gives every content file a resource entry. Both are
-    # scoped to -Encoder when it is given.
+    # scoped to the files in scope when -Encoder is given.
     $allFiles = [System.Collections.Generic.List[object]]::new()
     foreach ($f in $englishFiles) { $allFiles.Add($f) }
     foreach ($f in $directory.Others) { $allFiles.Add($f) }
     foreach ($f in $allFiles) {
-        if ($Encoder -and $f.Encoder -cne $Encoder) { continue }
+        if ($Encoder -and -not $scopeEncoders.ContainsKey($f.Encoder)) { continue }
         foreach ($e in $f.Errors) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $e.Line; Code = $e.Code; Message = $e.Message }) }
         $hits = @($resources | Where-Object { $_.Name -ceq $f.Name }).Count
         if ($hits -eq 0) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = 'No EmbeddedResource entry in Source/StaxRip.vbproj' }) }
         elseif ($hits -gt 1) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = "Duplicate EmbeddedResource entries ($hits) in Source/StaxRip.vbproj" }) }
     }
     foreach ($e in $directory.Errors) {
-        if ($Encoder -and $e.Encoder -cne $Encoder) { continue }
+        if ($Encoder -and -not $scopeEncoders.ContainsKey($e.Encoder)) { continue }
         $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($e.Name)"; Line = $e.Line; Code = $e.Code; Message = $e.Message })
     }
 
@@ -915,6 +953,11 @@ function Test-OptionHelpRepository {
     # resolves to it, so a value note on a stanza two controls share is valid when either control
     # emits it and each bad value is reported once. Groups are keyed by the stanza's file and line.
     $valueGroups = New-OhOrderedMap
+    # W2 is judged the same way: a stanza's Label passes when it equals the caption, or the first
+    # line of the caption, of any control that resolves to the stanza, and fires once when it
+    # matches none. The dialog wraps a long caption at a line break, which is how the four Custom
+    # boxes ('Custom', 'Custom' over 'First Pass', ...) share the one Label 'Custom'.
+    $labelGroups = New-OhOrderedMap
 
     foreach ($f in $englishFiles) {
         if ($script:SharedIds -ccontains $f.Encoder) { continue }
@@ -928,11 +971,13 @@ function Test-OptionHelpRepository {
             if ($p.Excluded) { $excluded++; $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W3'; Message = "$($p.Name) excluded" }); continue }
             if (-not $p.Identity) { continue }
             $r = Resolve-OhId -Chain $chain -Files $files -Id $p.Identity -HomeEncoder $f.Encoder
-            # W4: staxrip.md closes every chain, so an own-namespace identity whose local part is
-            # defined nowhere earlier still resolves when a StaxRip-owned key happens to carry the
-            # same name. That text is about StaxRip's own setting, not this encoder's switch. It
-            # still counts as reviewed; the warning is what makes the collision visible.
-            if ($r.ProbeFile -ceq 'staxrip.md' -and (Split-OhId -Id $p.Identity).Namespace -ceq $f.Encoder) {
+            # W4: the staxrip file closes every chain, so an own-namespace identity whose local part
+            # is defined nowhere earlier still resolves when a StaxRip-owned key happens to carry the
+            # same name. That text is about StaxRip's own setting, not this encoder's switch. The
+            # parameter is counted by whatever it resolved to (reviewed, alias or draft); the warning
+            # is what makes the collision visible. Keyed on the probe file's encoder id rather than
+            # its name, so that a staxrip.en.md is caught as well.
+            if ($r.ProbeEncoder -ceq 'staxrip' -and (Split-OhId -Id $p.Identity).Namespace -ceq $f.Encoder) {
                 $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W4'; Message = "$($p.Identity) resolves in staxrip.md" })
             }
             switch ($r.Outcome) {
@@ -955,6 +1000,25 @@ function Test-OptionHelpRepository {
                     foreach ($v in $p.EmittedValues) { [void]$group.Emitted.Add($v) }
                 }
             }
+            # For an alias the Label checked is the alias stanza's own, the one written beside this
+            # id in the chain file; the target's Label belongs to the controls that reach it directly.
+            $labelStanza = if ($r.Outcome -ceq 'alias') { $r.Alias } else { $r.Stanza }
+            if ($labelStanza -and $labelStanza.Fields.Contains('Label')) {
+                $labelFile = if ($r.Outcome -ceq 'alias') { $r.ProbeFile } else { $r.File }
+                $labelKey = "$labelFile|$($labelStanza.Line)"
+                if (-not $labelGroups.Contains($labelKey)) {
+                    $labelGroups[$labelKey] = [pscustomobject]@{
+                        File = $labelFile; Stanza = $labelStanza; Matched = $false
+                        Captions = [System.Collections.Generic.List[string]]::new()
+                    }
+                }
+                $labelGroup = $labelGroups[$labelKey]
+                $label = ConvertTo-OhCaption -Text $labelStanza.Fields['Label']
+                $captionText = ConvertTo-OhCaption -Text $p.Caption
+                $firstLine = if ($p.CaptionLines -and $p.CaptionLines.Length -gt 0) { ConvertTo-OhCaption -Text $p.CaptionLines[0] } else { $captionText }
+                if ($captionText -ne '' -and $labelGroup.Captions -cnotcontains $captionText) { $labelGroup.Captions.Add($captionText) }
+                if ($label -ceq $captionText -or $label -ceq $firstLine) { $labelGroup.Matched = $true }
+            }
         }
         $total = @($params | Where-Object { -not $_.Excluded }).Count
         # E5: a stanza in an encoder file must be in that file's own namespace, and its local part
@@ -975,7 +1039,6 @@ function Test-OptionHelpRepository {
                 $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $s.Line; Code = 'E5'; Message = "Orphan stanza '$($s.Id)'" })
             }
         }
-        Add-OhLinkErrors -File $f -Files $files -Errors $errors
         # The parser already reported a counter header that is not a non-negative integer; count it
         # as 0 here so the report still prints, and show the header text itself in the row.
         $allowedText = if ($f.Header.Contains('Allowed-Missing')) { [string]$f.Header['Allowed-Missing'] } else { '0' }
@@ -994,11 +1057,11 @@ function Test-OptionHelpRepository {
         })
     }
 
-    # E6 for the shared files: they carry no parameters, so E5 stays exempt, but a Related or Use
-    # target that does not exist is the same defect there as in an encoder file.
+    # E6 for every file in scope, encoder and shared alike: the shared files carry no parameters, so
+    # E5 stays exempt there, but a Related or Use target that does not exist is the same defect in
+    # any file, and a scoped run checks the chain and shared files its encoder displays through.
     foreach ($f in $englishFiles) {
-        if ($script:SharedIds -cnotcontains $f.Encoder) { continue }
-        if ($Encoder -and $f.Encoder -cne $Encoder) { continue }
+        if ($Encoder -and -not $scopeEncoders.ContainsKey($f.Encoder)) { continue }
         Add-OhLinkErrors -File $f -Files $files -Errors $errors
     }
 
@@ -1014,6 +1077,15 @@ function Test-OptionHelpRepository {
         elseif ($group.Stanza.Values.Count -gt 0) {
             $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($group.File)"; Line = $group.Stanza.Line; Code = 'E4'; Message = "Values on non-option parameter $($group.Stanza.Id)" })
         }
+    }
+
+    foreach ($labelKey in @($labelGroups.Keys)) {
+        $labelGroup = $labelGroups[$labelKey]
+        if ($labelGroup.Matched) { continue }
+        $shown = if ($labelGroup.Captions.Count -eq 0) { 'no caption on the control' }
+        elseif ($labelGroup.Captions.Count -eq 1) { "caption '$($labelGroup.Captions[0])'" }
+        else { 'captions ' + (@($labelGroup.Captions | ForEach-Object { "'$_'" }) -join ', ') }
+        $warnings.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($labelGroup.File)"; Line = $labelGroup.Stanza.Line; Code = 'W2'; Message = "Label '$($labelGroup.Stanza.Fields['Label'])' differs from $shown" })
     }
 
     $overall = ($errors.Count -eq 0)

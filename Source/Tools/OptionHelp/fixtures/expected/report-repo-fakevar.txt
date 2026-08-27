@@ -1,0 +1,11 @@
+ENCODER fakevar total=3 excluded=0 reviewed=2 draft=0 missing=1 allowed-missing=1 minimum-reviewed=2 reviewed-complete=false result=PASS
+MISSING fakevar.omega Omega
+E12 Docs/OptionHelp/concepts.md:1 Duplicate EmbeddedResource entries (2) in Source/StaxRip.vbproj
+E12 Docs/OptionHelp/fake.de.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
+E13 Docs/OptionHelp/fake.de.md:11 Summary: Malformed link; only [text](http://...) or [text](https://...) is allowed
+E4 Docs/OptionHelp/fake.md:14 Values on non-option parameter fake.alpha
+E6 Docs/OptionHelp/fake.md:20 Related target 'fake.nothing' does not exist
+E6 Docs/OptionHelp/fake.md:41 Use target 'shared.missing' does not exist or is not reviewed
+E6 Docs/OptionHelp/staxrip.md:9 Related target 'concept.nowhere' does not exist
+W2 Docs/OptionHelp/fake.md Label 'Alfa' differs from caption 'Alpha'
+RESULT FAIL
