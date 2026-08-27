@@ -468,12 +468,12 @@ Status: reviewed
 
 ## svt-av1.keyint
 Label: Keyint / GOP Size
-Summary: Sets how often a new group of pictures starts with a keyframe, a frame stored whole. Closer keyframes make seeking quicker and the file larger; the default is about five seconds.
+Summary: Sets how often a new group of pictures starts with a keyframe, a frame stored whole. Closer keyframes make seeking quicker and the file larger; the default is five to seven seconds by frame rate.
 Used when: Two lists share this switch: with Constant Rate Factor on screen you get -1 for a single keyframe, otherwise 0 instead. Nothing is sent at the default entry; the encoder's own -2 applies.
 When to change: Leave it at -2 for video you keep; upstream says home users often choose 5 to 10 seconds, and every keyframe costs bits. Pick 1s or 2s when quick seeking matters more than size; upstream says video-on-demand services commonly use about one second. In Variable Bitrate the default and the seconds entries work; on 0 the bundled build writes no file yet reports success (tested).
-Example: Encode a short scene at -2 and again at 1s, compare the two sizes, then seek around both files in your player. In tests the bundled build reported a GOP of 161 frames for -2 at 24, 25 and 30 fps and 321 frames at 60 fps: about five seconds at 30 and 60, nearer seven at 24.
+Example: Encode a short scene at -2 and again at 1s, compare the two sizes, then seek around both files in your player. In tests -2 placed a keyframe every 161 frames from 23.976 to 30 fps and every 321 at 50 and 60 fps: 5.4 s at 30 and 60, 6.4 at 25 and 50, 6.7 at 24 and 23.976.
 Values:
-- -2: The encoder default and StaxRip's; 161 frames in tests, about five seconds, nearer seven at 24 fps.
+- -2: The encoder default and StaxRip's; 161 frames in tests, 321 at 50 and 60 fps: five to seven seconds by frame rate.
 - -1: One keyframe at the start and never again. Offered with Constant Rate Factor; the help calls it CRF-only.
 - 0: Same as -1, for the other modes. Variable Bitrate writes no file yet reports success; Constant Bitrate ran (tested).
 - 1s: A keyframe about every second at your frame rate; in tests it came one frame later than the rate, 26 at 25 fps.
