@@ -437,13 +437,13 @@ Public Interface ISafeSerialization
 End Interface
 
 Public Class HelpDocument
-    Private ReadOnly Path As String
+    Public ReadOnly Property Path As String
     Private IsClosed As Boolean
 
     Property Writer As XmlTextWriter
 
     Sub New(path As String)
-        Me.Path = path
+        _Path = path
     End Sub
 
     Sub WriteStart(title As String)
@@ -454,8 +454,6 @@ Public Class HelpDocument
         Dim script = "<script type=""text/javascript""></script>"
 
         Dim style = "<style type=""text/css"">
-@import url(https://fonts.googleapis.com/css?family=Lato:700,900);
-
 body {
     font-family: Tahoma, Geneva, sans-serif;
     font-size: 90%;
@@ -498,6 +496,9 @@ table {
         Writer.WriteRaw("<!doctype html>")
         Writer.WriteStartElement("html")
         Writer.WriteStartElement("head")
+        Writer.WriteStartElement("meta")
+        Writer.WriteAttributeString("charset", "utf-8")
+        Writer.WriteEndElement()
         Writer.WriteElementString("title", title)
         Writer.WriteRaw(BR + style.ToString + BR)
         Writer.WriteRaw(BR + script.ToString + BR)
@@ -717,6 +718,79 @@ table {
         Next
 
         Writer.WriteEndElement() 'table
+    End Sub
+
+    Private Shared Function IsAllowedHref(url As String) As Boolean
+        If url Is Nothing Then Return False
+        Return url.StartsWith("http://", StringComparison.Ordinal) OrElse
+               url.StartsWith("https://", StringComparison.Ordinal) OrElse
+               url.StartsWith("staxrip://", StringComparison.Ordinal)
+    End Function
+
+    Private Sub WriteNodeContent(nodes As IEnumerable(Of OptionHelpNode))
+        For Each n In nodes
+            Select Case n.Kind
+                Case "code"
+                    Writer.WriteElementString("code", n.Text)
+                Case "link"
+                    If IsAllowedHref(n.Url) Then
+                        Writer.WriteStartElement("a")
+                        Writer.WriteAttributeString("href", n.Url)
+                        Writer.WriteString(n.Text)
+                        Writer.WriteEndElement()
+                    Else
+                        Writer.WriteString(n.Text)
+                    End If
+                Case Else
+                    Writer.WriteString(n.Text)
+            End Select
+        Next
+    End Sub
+
+    ''' <summary>Writes authored text as encoded nodes. Never passes authored text to WriteRaw.</summary>
+    Sub WriteNodes(elementName As String, nodes As IEnumerable(Of OptionHelpNode))
+        Writer.WriteStartElement(elementName)
+        WriteNodeContent(nodes)
+        Writer.WriteEndElement()
+    End Sub
+
+    Sub WriteNodesTable(rows As IEnumerable(Of KeyValuePair(Of String, IEnumerable(Of OptionHelpNode))))
+        Writer.WriteStartElement("table")
+        Writer.WriteAttributeString("border", "1")
+        Writer.WriteAttributeString("cellspacing", "0")
+        Writer.WriteAttributeString("cellpadding", "3")
+
+        For Each row In rows
+            Writer.WriteStartElement("tr")
+            Writer.WriteElementString("td", row.Key)
+            Writer.WriteStartElement("td")
+            WriteNodeContent(row.Value)
+            Writer.WriteEndElement()
+            Writer.WriteEndElement()
+        Next
+
+        Writer.WriteEndElement()
+    End Sub
+
+    Sub WriteLinkList(links As IEnumerable(Of KeyValuePair(Of String, String)))
+        Writer.WriteStartElement("ul")
+
+        For Each link In links
+            Writer.WriteStartElement("li")
+
+            If IsAllowedHref(link.Value) Then
+                Writer.WriteStartElement("a")
+                Writer.WriteAttributeString("href", link.Value)
+                Writer.WriteString(link.Key)
+                Writer.WriteEndElement()
+            Else
+                Writer.WriteString(link.Key)
+            End If
+
+            Writer.WriteEndElement()
+        Next
+
+        Writer.WriteEndElement()
     End Sub
 
     Sub WriteDocument()

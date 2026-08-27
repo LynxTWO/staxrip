@@ -785,3 +785,27 @@ Public Class OptionHelpCatalog
         Return String.Join(" ", parts.Where(Function(t) Not String.IsNullOrEmpty(t)).Select(Function(t) OptionHelpParser.PlainText(t))).ToLowerInvariant()
     End Function
 End Class
+
+Public Class OptionHelpRoute
+    Property Kind As String
+    Property Id As String
+
+    ''' <summary>Accepts exactly staxrip://console-help and staxrip://option/&lt;id&gt;; everything else is rejected.</summary>
+    Shared Function TryParse(uri As Uri, ByRef route As OptionHelpRoute) As Boolean
+        route = Nothing
+        If uri Is Nothing OrElse Not uri.IsAbsoluteUri OrElse uri.Scheme <> "staxrip" Then Return False
+        Dim path = uri.AbsolutePath.Trim("/"c)
+
+        If uri.Host = "console-help" AndAlso path = "" Then
+            route = New OptionHelpRoute With {.Kind = "ConsoleHelp"}
+            Return True
+        End If
+
+        If uri.Host = "option" AndAlso Regex.IsMatch(path, OptionHelpParser.IdPattern) Then
+            route = New OptionHelpRoute With {.Kind = "Option", .Id = path}
+            Return True
+        End If
+
+        Return False
+    End Function
+End Class

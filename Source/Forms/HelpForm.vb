@@ -51,12 +51,14 @@ Public Class HelpForm
     End Sub
 
     Private DocumentValue As HelpDocument
+    Private DocumentPath As String
+    Property RouteAction As Action(Of OptionHelpRoute)
 
     Property Doc() As HelpDocument
         Get
             If DocumentValue Is Nothing Then
                 Dim path = IO.Path.Combine(Folder.Temp, Guid.NewGuid.ToString + ".htm")
-                AddHandler g.MainForm.Disposed, Sub() FileHelp.Delete(path)
+                DocumentPath = path
                 DocumentValue = New HelpDocument(path)
             End If
 
@@ -84,6 +86,13 @@ Public Class HelpForm
     End Sub
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
+        If DocumentPath <> "" AndAlso File.Exists(DocumentPath) Then
+            Try
+                FileHelp.Delete(DocumentPath)
+            Catch
+            End Try
+        End If
+
         Dispose()
     End Sub
 
@@ -106,9 +115,27 @@ Public Class HelpForm
     End Sub
 
     Sub Browser_Navigating(sender As Object, e As WebBrowserNavigatingEventArgs) Handles Browser.Navigating
-        If e.Url.AbsoluteUri.StartsWith("http") Then
-            e.Cancel = True
-            g.ShellExecute(e.Url.ToString)
-        End If
+        Dim url = e.Url
+        If url Is Nothing OrElse Not url.IsAbsoluteUri Then Exit Sub
+
+        Select Case url.Scheme
+            Case "staxrip"
+                e.Cancel = True
+                Dim route As OptionHelpRoute = Nothing
+
+                If OptionHelpRoute.TryParse(url, route) Then
+                    RouteAction?.Invoke(route)
+                Else
+                    g.WriteDebugLog("HelpForm: rejected internal route " + url.ToString)
+                End If
+            Case "http", "https"
+                e.Cancel = True
+                g.ShellExecute(url.ToString)
+            Case "about", "file"
+                ' The control's blank page and local help documents.
+            Case Else
+                e.Cancel = True
+                g.WriteDebugLog("HelpForm: blocked navigation to " + url.Scheme + ":")
+        End Select
     End Sub
 End Class
