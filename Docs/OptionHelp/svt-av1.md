@@ -653,11 +653,12 @@ Status: reviewed
 ## svt-av1.enable-dlf
 Label: Deblocking Loop Filter
 Summary: Smooths the seams between coded blocks before a frame is shown or used as a reference, so heavy compression looks less like a grid. On by default; 2 is a slower, more accurate version.
-When to change: Leave it at 1: On; upstream keeps this filter on at every preset. Off leaves the block seams in the picture and in every frame predicted from it, and in CRF tests the file even grew a little. 2 is upstream's slower, more accurate filtering: it changed the output at every preset tried, with the size moving by up to 2% either way, so judge it on a short scene. Sharpness Bias steers this filter.
+When to change: Leave it at 1: On; upstream keeps this filter on at every preset. Off leaves the block seams in the picture and in every frame predicted from it, and saved no measurable time in a timed test. 2 is upstream's slower, more accurate filtering: about 9% slower in that test, with the output changed at every preset tried, so judge it on a short scene. Sharpness Bias steers this filter.
+Example: Timed test: 1280x720 testsrc2 clip, 120 frames, preset 8, CRF 35, 16-core Ryzen 9 5950X, three runs each, speed by the encoder's own figure. Off matched the default within 1%; 2 encoded about 9% fewer frames per second. In CRF tests off moved the size by up to 2% either way.
 Values:
-- 0: Off. Block seams stay; in CRF tests the file grew by 0.3% (640x480 clip) and 2% (noisy 160x120 clip).
+- 0: Off. Block seams stay; no time saved in the timed test; size moved by up to 2% either way in CRF tests.
 - 1: On. The encoder default and StaxRip's; on at every preset in upstream's table.
-- 2: Slower, more accurate filtering, per upstream. Changed the output at every preset tested; size moved by up to 2%.
+- 2: Slower, more accurate filtering, per upstream: about 9% slower in the timed test; output changed at every preset tried.
 Related: svt-av1.enable-cdef, svt-av1.enable-restoration, svt-av1.sharpness, svt-av1.preset, concept.deblocking
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
@@ -668,7 +669,8 @@ Status: reviewed
 ## svt-av1.enable-cdef
 Label: Constrained Directional Enhancement Filter
 Summary: Cleans ringing and coding noise along edges inside the coding loop, following the direction of each edge so the edge itself stays sharp. On by default and at every preset in upstream's table.
-When to change: Leave it on; upstream's preset table keeps it on from preset 0 to 10, and off leaves the noise in the picture and in every frame predicted from it. Upstream names one reason to switch it off: together with ALT-REF Frames off and an AC Bias of 4 to 6, to hold on to film grain and noise. In CRF tests the file grew without it, by 0.3% on a 640x480 clip and 4% on a noisy 160x120 clip.
+When to change: Leave it on; upstream's table keeps it on from preset 0 to 10, and off leaves the noise in the picture and in every frame predicted from it for about 3% more speed (timed test). Upstream's one reason to switch it off: with ALT-REF Frames off and an AC Bias of 4 to 6, to keep film grain and noise. In CRF tests the size moved from nothing at 1280x720 to 4% up on a noisy 160x120 clip.
+Example: Timed test: 1280x720 testsrc2 clip, 120 frames, preset 8, CRF 35, 16-core Ryzen 9 5950X, three runs each: off encoded about 3% more frames per second by the encoder's own figure, close to the spread between runs. With all three loop filters off the gain was about 10%.
 Related: svt-av1.enable-dlf, svt-av1.enable-restoration, svt-av1.ac-bias, svt-av1.enable-tf, svt-av1.film-grain, concept.deblocking
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
@@ -680,7 +682,8 @@ Status: reviewed
 Label: Loop Restoration Filter
 Summary: Runs AV1's third in-loop filter, which repairs some of the detail that quantization blurred, after deblocking and CDEF. On by default, but faster presets already skip parts of it.
 Used when: Presets 8 and below. Upstream's table turns its self-guided part off from preset 4 and its Wiener part from preset 9; at presets 9, 10 and 13 the switch changed nothing in tests (byte-identical).
-When to change: Leave it on. At StaxRip's default preset 8 only the Wiener part still runs, and in CRF tests turning it off moved the file size by under 1% either way. Turn it off only for an experiment of your own, and keep Preset in mind: from 9 up the switch has nothing left to switch.
+When to change: Leave it on. At StaxRip's default preset 8 only the Wiener part still runs; off is the biggest saving among the three loop filters, about 8% more speed in a timed test, at an unmeasured cost to the picture, with the file size moving under 1% either way in CRF tests. Turn it off only for an experiment of your own, and keep Preset in mind: from 9 up the switch has nothing left to switch.
+Example: Timed test: 1280x720 testsrc2 clip, 120 frames, preset 8, CRF 35, 16-core Ryzen 9 5950X, three runs each: off went from about 182 to 196 frames per second by the encoder's own figure, and all three loop filters off reached about 200.
 Related: svt-av1.enable-dlf, svt-av1.enable-cdef, svt-av1.preset, concept.deblocking
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
