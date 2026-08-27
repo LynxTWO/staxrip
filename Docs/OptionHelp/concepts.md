@@ -80,3 +80,36 @@ When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#multi-pass-encoding
 Status: reviewed
+
+## concept.keyframe
+Label: Keyframe
+Summary: A frame stored whole, borrowing from no other frame, so playback can start there. Each group of pictures opens with one; it costs far more bits than the frames between, which hold only changes.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#gop-size-selection
+Status: reviewed
+
+## concept.gop
+Label: GOP (group of pictures)
+Summary: A keyframe and the frames up to the next one. Its length, set by Keyint, trades quick seeking (short) against file size (long). SVT-AV1 builds it from mini-GOPs, short layered runs of frames.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#gop-size-selection
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+Status: reviewed
+
+## concept.lookahead
+Label: Lookahead
+Summary: The frames the encoder reads ahead of the one it is coding, to plan bits and frame types with what comes next in view. More means better planning, more memory and a longer start-up wait.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+Status: reviewed
+
+## concept.scene-change
+Label: Scene change
+Summary: A cut between shots, where the next frame shares little with the last. Upstream says SVT-AV1 adds no keyframe there; it leans less on earlier frames instead, so keyframe spacing stays as set.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#scene-change-detection
+Status: reviewed

@@ -5,8 +5,8 @@ Encoder: svt-av1
 Locale: en
 Title: SVT-AV1
 Source: Source/Encoding/SvtAv1Enc.vb
-Allowed-Missing: 50
-Minimum-Reviewed: 50
+Allowed-Missing: 38
+Minimum-Reviewed: 62
 Reviewed-Complete: false
 Verified-Encoder-Version: SVT-AV1 v4.2.0+71+88-17cd99550 [Mod by Patman] (release)
 Verified-Encoder-Build: 17cd99550
@@ -193,7 +193,7 @@ Values:
 - 0: Off. The default; no decoding shortcuts.
 - 1: Upstream's first suggestion for a stuttering player; it says the gain can come even without multithreaded decoding.
 - 2: The faster of the two levels for the decoder, per upstream. Check the picture.
-Related: svt-av1.preset
+Related: svt-av1.preset, svt-av1.hierarchical-levels
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#encoder-global-options
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#improving-decoding-performance
@@ -231,7 +231,7 @@ Values:
 - 0: Quality. Holds a quality level; Adaptive Quantization decides whether you set it as CRF, QP, or CQP. The default.
 - 1: Variable Bitrate. Aims at Target Bitrate over the whole video; needs Prediction Structure at Random Access (tested).
 - 2: Constant Bitrate. Holds the target throughout; the bundled build refuses it unless Prediction Structure is Low Delay.
-Related: svt-av1.crf, svt-av1.tbr, svt-av1.aq-mode, svt-av1.pass, staxrip.comp-check, concept.rate-control, concept.bitrate, concept.quality-level
+Related: svt-av1.crf, svt-av1.tbr, svt-av1.aq-mode, svt-av1.pass, svt-av1.pred-struct, staxrip.comp-check, concept.rate-control, concept.bitrate, concept.quality-level
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#bitrate-control-modes
@@ -360,7 +360,7 @@ Values:
 - 1: One pass. The default, and the only choice that works for Constant Bitrate in the bundled build.
 - 2: First pass gathers statistics, second pass encodes with them. Works for Variable Bitrate (tested).
 - 3: Constant Bitrate only. The bundled build refuses multi-pass CBR and `--pass 3` itself, so nothing is encoded.
-Related: svt-av1.rc, svt-av1.tbr, staxrip.custom, concept.two-pass
+Related: svt-av1.rc, svt-av1.tbr, svt-av1.pred-struct, staxrip.custom, concept.two-pass
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#multi-pass-options
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#pass-information
@@ -464,5 +464,164 @@ When to change: Leave it at 8, the encoder default. Lower it toward 0 for a smal
 Related: svt-av1.qm-max, svt-av1.enable-qm
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#enableqm-and-more-information
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.keyint
+Label: Keyint / GOP Size
+Summary: Sets how often a new group of pictures starts with a keyframe, a frame stored whole. Closer keyframes make seeking quicker and the file larger; the default is five to seven seconds.
+Used when: Two lists share this switch: with Constant Rate Factor on screen you get -1 for a single keyframe, in other modes 0 instead. Nothing is sent at the default entry; the encoder's own -2 applies.
+When to change: Leave it at -2 for video you keep; upstream says home users often choose 5 to 10 seconds, and every keyframe costs bits. Pick 1s or 2s when quick seeking matters more than size; upstream says video-on-demand services commonly use about one second. In Variable Bitrate the default and the seconds entries work; the bundled build stops on 0 and writes no file (tested).
+Example: Encode a short scene at -2 and again at 1s, compare the two sizes, then seek around both files in your player. In tests the bundled build reported a GOP of 161 frames for -2 at 24, 25 and 30 fps and 321 frames at 60 fps, so five to seven seconds depending on the frame rate.
+Values:
+- -2: About five seconds per the help; 161 frames at 24 to 30 fps in tests, over six. The encoder default and StaxRip's.
+- -1: One keyframe at the start and never again. Offered with Constant Rate Factor; the help calls it CRF-only.
+- 0: Same as -1, for the other modes. Variable Bitrate stops on it and writes no file; Constant Bitrate ran (tested).
+- 1s: A keyframe about every second at your frame rate; in tests it came one frame later than the rate, 26 at 25 fps.
+- 10s: The longest entry. Upstream calls 5 to 10 seconds common for home use.
+Related: svt-av1.irefresh-type, svt-av1.scd, svt-av1.rc, staxrip.chunks, concept.keyframe, concept.gop
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#gop-size-selection
+Status: reviewed
+
+## svt-av1.irefresh-type
+Label: Intra Refresh Type
+Summary: Chooses what opens each new group of pictures: a keyframe that closes the group, or a forward keyframe that leaves it open so frames just before it may predict from it. Closed is the default.
+Used when: In effect Quality mode only: Variable Bitrate kept closed groups with 1 selected, and Constant Bitrate with Low Delay hung the bundled build without finishing (tested).
+When to change: Leave it at 2: Key Frame. Closed groups are the safe choice for seeking and cutting. Try 1 only as an experiment in Quality mode: the bundled build then forces Hierarchical Levels to 4 with a warning, and the help says no more about it. Never pick 1 with Constant Bitrate: in a test the encoder printed "Unexpected temporal_layer" errors, wrote a 4 KB stub and never finished.
+Values:
+- 1: Forward keyframe (open GOP). Forces Hierarchical Levels 4; ignored in Variable Bitrate; hangs Constant Bitrate.
+- 2: Keyframe, closed GOP. The encoder default and StaxRip's.
+Related: svt-av1.keyint, svt-av1.hierarchical-levels, svt-av1.pred-struct, svt-av1.rc, concept.keyframe, concept.gop
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+Status: reviewed
+
+## svt-av1.scd
+Label: Scene Change Detection Control
+Summary: Turns on the encoder's scene change detector. It adds no keyframes at cuts: upstream says the encoder handles scene changes in its mode decisions instead, and the bundled build warns as much.
+When to change: Leave it off. In tests with a hard cut in the clip, turning it on left CRF and Constant Bitrate output byte for byte unchanged, changed a Variable Bitrate encode slightly, and printed "will not insert a key frame at scene changes" every time. To get a keyframe at a cut, put `--force-key-frames` with the frame or time in the Custom box; upstream documents it for CRF only.
+Values:
+- 0: Off. The encoder default and StaxRip's.
+- 1: On. No keyframe at cuts; the bundled build says so in a warning. CRF output was unchanged in a test.
+Related: svt-av1.keyint, staxrip.custom, concept.scene-change, concept.keyframe
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#scene-change-detection
+Status: reviewed
+
+## svt-av1.lookahead
+Label: Lookahead
+Summary: Controls how many frames ahead of the ones it is coding the encoder looks, so it can plan bits and frame types with what comes next in view; -1 lets it choose. A longer lookahead costs memory.
+When to change: Leave it at -1. The bundled build sets its own bounds anyway: a 2-pass Variable Bitrate run forces it to 42 with a warning, and 0 in Variable Bitrate was raised to 25 (tested). Do not type -1 into the Custom box: the bundled build refuses `--lookahead -1` as invalid; StaxRip sends nothing at -1. Values above 120 are refused.
+Example: In a CRF test on a 6-second synthetic clip (160x120, 25 fps, preset 8), every value from 0 to 26 gave the same file, about a quarter larger than at -1, while 32 and above matched the default byte for byte. Check a real scene before trusting a number.
+Related: svt-av1.pass, svt-av1.rc, svt-av1.hierarchical-levels, svt-av1.tf-strength, staxrip.custom, concept.lookahead
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+Status: reviewed
+
+## svt-av1.hierarchical-levels
+Label: Hierarchical Levels
+Summary: Sets the frame layers per mini-GOP, 0 (flat) to 5 (six layers, 32 frames). Per upstream, slower presets use more layers for efficiency and fewer make a simpler stream that decodes faster.
+Used when: Bounded by other choices: Constant Bitrate caps it at 2 and open GOP (Intra Refresh Type 1) forces 4, each with a warning from the bundled build (tested).
+When to change: Leave it alone. StaxRip sends nothing at its default entry and the encoder picks by preset: in CRF tests 5 up to preset 8 and 4 from preset 9, and 4 in Variable Bitrate at presets 4 to 10, so the help's "5 up to preset 12" did not hold. The entry marked default says 4, and changing Preset here moves the default to 3 (2 at preset 13); neither is sent. Any other entry you pick is sent.
+Encoder default: 5 or 4 by preset, see below
+Values:
+- 0: Flat, no layers, one-frame mini-GOPs. Accepted by the bundled build although its help starts at 2.
+- 2: Three layers, 4-frame mini-GOPs. Constant Bitrate's ceiling: the bundled build caps it there with a warning.
+- 3: Four layers, 8-frame mini-GOPs. Where StaxRip's default entry lands after you change Preset here.
+- 4: Five layers, 16-frame mini-GOPs. StaxRip's default entry; the encoder's pick from preset 9 and in Variable Bitrate.
+- 5: Six layers, 32-frame mini-GOPs. The encoder's pick up to preset 8 in CRF tests; the help says up to preset 12.
+Related: svt-av1.preset, svt-av1.fast-decode, svt-av1.pred-struct, svt-av1.irefresh-type, svt-av1.rc, svt-av1.qp-scale-compress-strength, svt-av1.startup-mg-size, concept.gop
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#encoder-global-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
+Status: reviewed
+
+## svt-av1.pred-struct
+Label: Prediction Structure
+Summary: Chooses how frames may borrow from each other: Random Access lets a frame predict from pictures before and after it; Low Delay only from earlier ones, for live use, at a cost in compression.
+Used when: Variable Bitrate needs Random Access and Constant Bitrate needs Low Delay; the bundled build stops on either other pairing. Quality mode (CRF, CQP) ran with both (tested).
+When to change: Leave it at 2: Random Access unless you choose Constant Bitrate, which the bundled build refuses with it ("use VBR mode"); then pick 1: Low Delay. The price: in a CRF test on a small synthetic clip the Low Delay file was about 70% larger, upstream says low delay handles one picture at a time, and the bundled build refuses multi-pass with it. Tune 3 (still-image quality) needs it too.
+Values:
+- 1: Low Delay. Required for Constant Bitrate; no multi-pass with it, and about 70% larger in a CRF test.
+- 2: Random Access. The encoder default and StaxRip's; required for Variable Bitrate (tested).
+Related: svt-av1.rc, svt-av1.pass, svt-av1.hierarchical-levels, svt-av1.irefresh-type, svt-av1.tune, svt-av1.lp, concept.rate-control
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-a-encoder-parameters
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#bitrate-control-modes
+Status: reviewed
+
+## svt-av1.enable-dg
+Label: Dynamic GOP
+Summary: Lets the encoder reshape the layer structure of a mini-GOP to suit the content instead of keeping one fixed pattern, per upstream. On by default; the keyframe spacing stays as set.
+When to change: Leave it on. Upstream's one-line description is all the documentation there is. In tests on short synthetic clips, turning it off left CRF encodes at presets 4 and 8 byte for byte unchanged and altered Variable Bitrate encodes a little, so switch it off only to compare against a fixed structure in a bitrate test.
+Values:
+- 0: Off, one fixed structure. Changed nothing in CRF tests; altered Variable Bitrate output.
+- 1: On. The encoder default and StaxRip's.
+Related: svt-av1.hierarchical-levels, svt-av1.startup-mg-size, svt-av1.rc, concept.gop
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+Status: reviewed
+
+## svt-av1.startup-mg-size
+Label: Startup Mini-GOP Size
+Summary: Gives the first mini-GOP after each keyframe a layer structure of its own, 3 to 5 layers; 0 keeps the usual one. Quality mode only.
+Used when: Quality mode only. In Variable or Constant Bitrate the bundled build stops with "Startup MG size feature only supports CRF/CQP rate control mode" (tested); the control stays visible anyway.
+When to change: Leave it at 0. The help says only that it swaps in another mini-GOP configuration after each keyframe, nothing about when that helps, so treat it as an experiment: in a test on a synthetic clip, 2, 3 and 4 each moved the file size a little with no keyframe change. Set it back to 0 before a bitrate encode or the encode stops.
+Values:
+- 0: Off. The encoder default and StaxRip's.
+- 2: Three layers for the first mini-GOP after each keyframe.
+- 3: Four layers for the first mini-GOP.
+- 4: Five layers for the first mini-GOP.
+Related: svt-av1.hierarchical-levels, svt-av1.keyint, svt-av1.enable-dg, svt-av1.rc, concept.gop
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#gop-size-and-type-options
+Status: reviewed
+
+## svt-av1.enable-variance-boost
+Label: Enable Variance Boost
+Summary: Gives flat and dark areas more bits by lowering their quantizer, so smooth gradients and shadows keep their detail instead of turning into bands or blocks. Off by default; the file grows.
+Used when: Not applied with Constant Bitrate or with Adaptive Quantization 1: the bundled build switches it off with a warning in both cases (tested). Tune MS-SSIM overrides its strength.
+When to change: Turn it on when dark scenes or skies band or block in a test encode, then compare that scene and the file size against the same encode without it. Strength and Octile appear once it is on; start with their defaults. In a test on a small synthetic clip the file grew markedly at the default strength; a synthetic clip exaggerates this, so measure on your own footage.
+Example: Test context: a 160x120 synthetic gradient-and-noise clip, 3 s, CRF 35, preset 8, went from 16278 bytes off to 48234 on. On your footage, encode a short dark scene both ways, step through the darkest frames, and decide whether the cleaner shadows are worth the bits.
+Values:
+- 0: Off. The encoder default and StaxRip's.
+- 1: On; shows Strength and Octile. The bundled build turns it off with Constant Bitrate or Adaptive Quantization 1.
+Related: svt-av1.variance-boost-strength, svt-av1.variance-octile, svt-av1.aq-mode, svt-av1.luminance-qp-bias, svt-av1.tune, svt-av1.rc, concept.quality-level
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.variance-boost-strength
+Label: Variance Boost Strength
+Summary: Sets how much extra quality the flat and dark areas get, 1 (mild) to 4 (aggressive). Each step spends more bits there, so expect a larger file.
+Used when: Only with Enable Variance Boost on; the control is hidden otherwise. Tune MS-SSIM overrides it, per the bundled build's warning.
+When to change: Leave it at 2: Gentle, the encoder default. Go to 3 only if banding survives at 2, and compare the size: in a test on a small synthetic clip the file grew with every step, and 4 gave the largest file by far. The bundled build warns that 4 is a curve for specific situations, to be used with caution.
+Values:
+- 1: Mild.
+- 2: Gentle. The encoder default and StaxRip's.
+- 3: Medium.
+- 4: Aggressive. The bundled build warns it is only useful in specific situations and says to use it with caution.
+Related: svt-av1.enable-variance-boost, svt-av1.variance-octile, svt-av1.tune
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.variance-octile
+Label: Variance Octile
+Summary: Sets how picky the boost is about flatness: the encoder ranks each area's 8x8 blocks by variance and judges it by the block at this eighth. Lower boosts more of the picture, higher less.
+Used when: Only with Enable Variance Boost on; the control is hidden otherwise.
+When to change: Leave it at 5: 5/8th, the encoder default. Lower it to spread the boost over more of the picture, raise it to confine it to areas that are flat throughout; in a test on a small synthetic clip the file shrank steadily as the octile rose, 1 giving the largest file and 8 the smallest.
+Values:
+- 1: The flattest eighth decides, so an area counts as flat when an eighth of its blocks are. Largest file in the test.
+- 4: The median block decides.
+- 5: The encoder default and StaxRip's.
+- 8: The busiest block decides, so only areas flat throughout are boosted. Smallest file in the test.
+Related: svt-av1.enable-variance-boost, svt-av1.variance-boost-strength
+References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
 Status: reviewed
