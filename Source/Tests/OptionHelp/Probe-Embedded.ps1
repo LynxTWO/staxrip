@@ -96,9 +96,10 @@ $summary = [string]$st.GetProperty('Summary').GetValue($presetStanza)
 "preset Stanza.Summary: $summary"
 Assert-Probe -Actual ([bool]($summary.Length -gt 0)) -Expected $true -What 'preset Stanza.Summary is not empty'
 
-$r2 = $resolve.Invoke($cat, @('svt-av1.crf'))
-Assert-Probe -Actual ([string]$rt.GetProperty('Outcome').GetValue($r2)) -Expected 'none' -What 'Resolve("svt-av1.crf") Outcome'
-Assert-Probe -Actual ($null -eq $rt.GetProperty('Stanza').GetValue($r2)) -Expected $true -What 'crf stanza is null'
+# A never-existing id must resolve to 'none' with no stanza. svt-av1.crf served here until plan 3 Task 4 wrote it.
+$r2 = $resolve.Invoke($cat, @('svt-av1.no-such-option'))
+Assert-Probe -Actual ([string]$rt.GetProperty('Outcome').GetValue($r2)) -Expected 'none' -What 'Resolve("svt-av1.no-such-option") Outcome'
+Assert-Probe -Actual ($null -eq $rt.GetProperty('Stanza').GetValue($r2)) -Expected $true -What 'no-such-option stanza is null'
 
 $g = $t.GetMethod('Lookup').Invoke($cat, @('concept.compression-efficiency'))
 Assert-Probe -Actual ($null -ne $g) -Expected $true -What 'Lookup("concept.compression-efficiency") is not null'
