@@ -199,7 +199,7 @@ Public Class OptionHelpParser
 
     Shared Function Parse(text As String, name As String) As OptionHelpFile
         Dim file As New OptionHelpFile With {.Name = name}
-        Dim base = Regex.Replace(name, "\.md$", "")
+        Dim base = Regex.Replace(name, "\.md$", "", RegexOptions.IgnoreCase Or RegexOptions.CultureInvariant)
         Dim nameParts = base.Split({"."c}, 2)
         file.Encoder = nameParts(0)
         file.Locale = If(nameParts.Length > 1, nameParts(1), "en")
@@ -557,5 +557,213 @@ Public Class OptionHelpJson
     Shared Function Array(values As IEnumerable(Of String)) As String
         If values Is Nothing Then Return "[]"
         Return "[" & String.Join(",", values.Select(Function(v) Quote(v))) & "]"
+    End Function
+End Class
+
+Public Class OptionHelpResolution
+    Property Outcome As String = "none"
+    Property FileName As String
+    Property Stanza As OptionHelpStanza
+    Property AliasStanza As OptionHelpStanza
+End Class
+
+Public Class OptionHelpCatalog
+    Public Shared Property Log As Action(Of String)
+    Private Shared ReadOnly Cache As New Dictionary(Of String, OptionHelpCatalog)(StringComparer.Ordinal)
+    Private Shared ReadOnly CacheLock As New Object
+    Private ReadOnly Files As New Dictionary(Of String, OptionHelpFile)(StringComparer.Ordinal)
+
+    Public ReadOnly Property EncoderId As String
+    Public ReadOnly Property Chain As New List(Of OptionHelpFile)
+
+    Private Sub New(encoderId As String)
+        Me.EncoderId = encoderId
+    End Sub
+
+    Public Shared Function [Get](encoderId As String) As OptionHelpCatalog
+        If String.IsNullOrEmpty(encoderId) Then Return Nothing
+
+        SyncLock CacheLock
+            Dim cached As OptionHelpCatalog = Nothing
+            If Cache.TryGetValue(encoderId, cached) Then Return cached
+            Dim catalog = FromFiles(ReadEmbedded(), encoderId)
+            Cache(encoderId) = catalog
+            Return catalog
+        End SyncLock
+    End Function
+
+    ''' <summary>Reads every embedded resource whose name contains ".OptionHelp." and ends with ".md", keyed by file name.</summary>
+    Public Shared Function ReadEmbedded() As Dictionary(Of String, Byte())
+        Dim result As New Dictionary(Of String, Byte())(StringComparer.Ordinal)
+        Dim asm = GetType(OptionHelpCatalog).Assembly
+        Const marker = ".OptionHelp."
+
+        For Each res In asm.GetManifestResourceNames()
+            Dim at = res.IndexOf(marker, StringComparison.Ordinal)
+            If at < 0 OrElse Not res.EndsWith(".md", StringComparison.Ordinal) Then Continue For
+
+            Using stream = asm.GetManifestResourceStream(res)
+                Using ms As New MemoryStream
+                    stream.CopyTo(ms)
+                    result(res.Substring(at + marker.Length)) = ms.ToArray()
+                End Using
+            End Using
+        Next
+
+        Return result
+    End Function
+
+    Public Shared Function FromFiles(files As IDictionary(Of String, Byte()), encoderId As String) As OptionHelpCatalog
+        Dim catalog As New OptionHelpCatalog(encoderId)
+
+        For Each kv In files
+            Dim parsed = OptionHelpParser.ParseBytes(kv.Value, kv.Key)
+            If parsed.Locale <> "en" Then Continue For
+
+            For Each e In parsed.Errors
+                Log?.Invoke("OptionHelp " & kv.Key & ":" & e.Line & " " & e.Code & " " & e.Message)
+            Next
+
+            catalog.Files(parsed.Encoder) = parsed
+        Next
+
+        Dim current = encoderId
+        Dim seen As New HashSet(Of String)(StringComparer.Ordinal)
+
+        While Not String.IsNullOrEmpty(current)
+            If Not seen.Add(current) Then
+                Log?.Invoke("OptionHelp: inheritance cycle at '" & current & "'")
+                Return Nothing
+            End If
+
+            Dim f As OptionHelpFile = Nothing
+
+            If Not catalog.Files.TryGetValue(current, f) Then
+                Log?.Invoke("OptionHelp: no file for encoder '" & current & "'")
+                Return Nothing
+            End If
+
+            catalog.Chain.Add(f)
+            current = f.Inherits
+        End While
+
+        ' staxrip is the universal base. It is appended only when the encoder itself is not staxrip,
+        ' matching Get-OhChain's "$EncoderId -cne 'staxrip'" guard; without it, resolving "staxrip"
+        ' itself (whose own while-loop pass above already added it once) would add it a second time.
+        If Not String.Equals(encoderId, "staxrip", StringComparison.Ordinal) Then
+            Dim staxrip As OptionHelpFile = Nothing
+            If catalog.Files.TryGetValue("staxrip", staxrip) Then catalog.Chain.Add(staxrip)
+        End If
+
+        For Each f In catalog.Chain
+            If f.HasFileErrors Then
+                Log?.Invoke("OptionHelp: '" & f.Name & "' has file-level errors; help for '" & encoderId & "' is disabled")
+                Return Nothing
+            End If
+        Next
+
+        Return catalog
+    End Function
+
+    Private Function FindAny(id As String) As OptionHelpStanza
+        If String.IsNullOrEmpty(id) Then Return Nothing
+        Dim fileId = id.Split("."c)(0)
+        Dim f As OptionHelpFile = Nothing
+        If Not Files.TryGetValue(fileId, f) OrElse f.HasFileErrors Then Return Nothing
+        Return f.FindStanza(id)
+    End Function
+
+    ''' <summary>
+    ''' An identity is namespace.local, split at the first dot. When the namespace equals this
+    ''' catalog's own EncoderId (which is also the chain's root file), the identity resolves
+    ''' namespace-relative: each file in the chain is probed for "&lt;that file's encoder&gt;.&lt;local&gt;",
+    ''' so a variant inherits every base stanza without repeating base ids, and overrides one by
+    ''' defining the same local part in its own namespace. Any other namespace (staxrip, shared,
+    ''' concept, or a foreign encoder) is probed verbatim in each chain file. Mirrors Resolve-OhId in
+    ''' Source/Tools/OptionHelp/OptionHelp.psm1 (HomeEncoder there is always this catalog's EncoderId).
+    ''' </summary>
+    Public Function Resolve(identity As String) As OptionHelpResolution
+        Dim r As New OptionHelpResolution
+        If String.IsNullOrEmpty(identity) OrElse identity = "none" Then Return r
+
+        Dim dot = identity.IndexOf("."c)
+        Dim namespacePart As String
+        Dim localPart As String
+
+        If dot < 1 Then
+            namespacePart = ""
+            localPart = identity
+        Else
+            namespacePart = identity.Substring(0, dot)
+            localPart = identity.Substring(dot + 1)
+        End If
+
+        Dim ownNamespace = Not String.IsNullOrEmpty(EncoderId) AndAlso String.Equals(EncoderId, namespacePart, StringComparison.Ordinal)
+
+        For Each f In Chain
+            Dim probe = If(ownNamespace, f.Encoder & "." & localPart, identity)
+            Dim st = f.FindStanza(probe)
+            If st Is Nothing Then Continue For
+            r.FileName = f.Name
+
+            If Not st.IsReviewed Then
+                r.Outcome = "draft"
+                r.Stanza = st
+                Return r
+            End If
+
+            If st.HasField("Use") Then
+                Dim target = FindAny(st.Use)
+
+                If target Is Nothing OrElse Not target.IsReviewed OrElse target.HasField("Use") Then
+                    r.Outcome = "draft"
+                    r.Stanza = st
+                    Return r
+                End If
+
+                r.Outcome = "alias"
+                r.Stanza = target
+                r.AliasStanza = st
+                r.FileName = target.FileName
+                Return r
+            End If
+
+            r.Outcome = "reviewed"
+            r.Stanza = st
+            Return r
+        Next
+
+        Return r
+    End Function
+
+    ''' <summary>A reviewed stanza by id from any loaded file, for Related links. Aliases are followed once.</summary>
+    Public Function Lookup(id As String) As OptionHelpStanza
+        Dim st = FindAny(id)
+        If st Is Nothing OrElse Not st.IsReviewed Then Return Nothing
+
+        If st.HasField("Use") Then
+            Dim target = FindAny(st.Use)
+            If target Is Nothing OrElse Not target.IsReviewed OrElse target.HasField("Use") Then Return Nothing
+            Return target
+        End If
+
+        Return st
+    End Function
+
+    Public Function ValueNote(stanza As OptionHelpStanza, emittedValue As String) As String
+        If stanza Is Nothing OrElse emittedValue Is Nothing Then Return Nothing
+
+        For Each v In stanza.Values
+            If v.Value = emittedValue Then Return v.Note
+        Next
+
+        Return Nothing
+    End Function
+
+    Public Shared Function SearchText(stanza As OptionHelpStanza, identity As String) As String
+        Dim parts As New List(Of String) From {identity, stanza.Id, stanza.Label, stanza.Summary, stanza.UsedWhen, stanza.WhenToChange, stanza.Example}
+        parts.AddRange(stanza.Values.Select(Function(v) v.Note))
+        parts.AddRange(stanza.Related)
+        Return String.Join(" ", parts.Where(Function(t) Not String.IsNullOrEmpty(t)).Select(Function(t) OptionHelpParser.PlainText(t))).ToLowerInvariant()
     End Function
 End Class

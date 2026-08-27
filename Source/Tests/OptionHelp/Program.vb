@@ -25,32 +25,31 @@ Module Program
             End If
         Next
 
-        ' Task 2 enables this block
-        'Dim chainDir = Path.Combine(root, "chain")
-        'Dim files As New Dictionary(Of String, Byte())(StringComparer.Ordinal)
+        Dim chainDir = Path.Combine(root, "chain")
+        Dim files As New Dictionary(Of String, Byte())(StringComparer.Ordinal)
 
-        'For Each f In Directory.GetFiles(chainDir, "*.md")
-        '    files(Path.GetFileName(f)) = File.ReadAllBytes(f)
-        'Next
+        For Each f In Directory.GetFiles(chainDir, "*.md")
+            files(Path.GetFileName(f)) = File.ReadAllBytes(f)
+        Next
 
-        'For Each line In File.ReadAllLines(Path.Combine(chainDir, "cases.txt"))
-        '    If line.Trim() = "" Then Continue For
-        '    count += 1
-        '    Dim parts = line.Split({" => "}, StringSplitOptions.None)
-        '    Dim lhs = parts(0).Split(" "c)
-        '    Dim catalog = OptionHelpCatalog.FromFiles(files, lhs(0))
-        '    Dim actual = "none"
+        For Each line In File.ReadAllLines(Path.Combine(chainDir, "cases.txt"))
+            If line.Trim() = "" Then Continue For
+            count += 1
+            Dim parts = line.Split({" => "}, StringSplitOptions.None)
+            Dim lhs = parts(0).Split(" "c)
+            Dim catalog = OptionHelpCatalog.FromFiles(files, lhs(0))
+            Dim actual = "none"
 
-        '    If catalog IsNot Nothing Then
-        '        Dim r = catalog.Resolve(lhs(1))
-        '        If r.Outcome <> "none" Then actual = r.Outcome & ":" & r.FileName
-        '    End If
+            If catalog IsNot Nothing Then
+                Dim r = catalog.Resolve(lhs(1))
+                If r.Outcome <> "none" Then actual = r.Outcome & ":" & r.FileName
+            End If
 
-        '    If actual <> parts(1) Then
-        '        failures += 1
-        '        Console.Error.WriteLine("FAIL chain '" & line & "' actual '" & actual & "'")
-        '    End If
-        'Next
+            If actual <> parts(1) Then
+                failures += 1
+                Console.Error.WriteLine("FAIL chain '" & line & "' actual '" & actual & "'")
+            End If
+        Next
 
         Console.Error.WriteLine("harness: " & count & " cases, " & failures & " failures")
         Return If(failures > 0, 1, 0)
