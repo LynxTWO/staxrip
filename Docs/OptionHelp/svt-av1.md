@@ -1003,7 +1003,7 @@ Status: reviewed
 Label: Avif (Still-Picture Coding)
 Summary: Switches the encoder to still-picture coding for AVIF images and cuts the output to 3 frames: on a video it prints an error and still reports success (tested). Leave it off.
 Used when: Quality mode only: with Variable Bitrate the bundled build hung and never finished (tested with a 20-second limit, and once for 10 minutes), and with Constant Bitrate it stops with an error.
-When to change: Leave it off for video. Turn it on only to code one frame as an image, with Frames To Be Encoded at 1: every frame is then a keyframe, and Tune 3 (IQ), which the bundled build refuses in the default Random Access structure, becomes usable. On a video it stops after 3 frames with "AVIF flag is specified, but more than 3 frames were sent" and exit code 0, so StaxRip would mux a 3-frame file.
+When to change: Leave it off. Use it only to code one frame as an image, with Frames To Be Encoded at 1: every frame is then a keyframe, and Tune 3 (Still Image Quality), which the bundled build refuses in the default Random Access structure, becomes usable. On a video it stops after 3 frames with "AVIF flag is specified, but more than 3 frames were sent" and exit code 0, so StaxRip would mux a 3-frame file.
 Example: Test: 640x480 testsrc2 clip, preset 8, CRF 35. One frame: 6770 bytes with it on, 8053 off, quality not compared. The 24-frame clip with it on: 3 frames, 20726 bytes, exit code 0. Upstream describes it as still-picture optimizations for efficiency and lower memory use.
 Related: svt-av1.frames, svt-av1.tune, svt-av1.rc, svt-av1.lossless, concept.keyframe
 References:
