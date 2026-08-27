@@ -618,7 +618,7 @@ Public Class OptionHelpCatalog
 
         For Each kv In files
             Dim parsed = OptionHelpParser.ParseBytes(kv.Value, kv.Key)
-            If parsed.Locale <> "en" Then Continue For
+            If Not String.Equals(parsed.Locale, "en", StringComparison.Ordinal) Then Continue For
 
             For Each e In parsed.Errors
                 Log?.Invoke("OptionHelp " & kv.Key & ":" & e.Line & " " & e.Code & " " & e.Message)
@@ -665,12 +665,30 @@ Public Class OptionHelpCatalog
         Return catalog
     End Function
 
-    Private Function FindAny(id As String) As OptionHelpStanza
+    ''' <summary>Target-file lookup for a Use alias inside Resolve: mirrors Resolve-OhId's
+    ''' "$targetFileId = (Split-OhId -Id $targetId).Namespace" (OptionHelp.psm1 line 500) -- the
+    ''' target's file key is the identity's first segment, not a scan of every loaded file.</summary>
+    Private Function FindByFileKey(id As String) As OptionHelpStanza
         If String.IsNullOrEmpty(id) Then Return Nothing
         Dim fileId = id.Split("."c)(0)
         Dim f As OptionHelpFile = Nothing
         If Not Files.TryGetValue(fileId, f) OrElse f.HasFileErrors Then Return Nothing
         Return f.FindStanza(id)
+    End Function
+
+    ''' <summary>Verbatim scan across every loaded file, used by Lookup for Related targets: mirrors
+    ''' Add-OhLinkErrors's "foreach ($other in $Files.Values) { $t = Find-OhStanza -File $other -Id
+    ''' $rel; if ($t) { break } }" (OptionHelp.psm1 line 760), so a glossary id like "concept.size" is
+    ''' found in concepts.md even though the file's own key is "concepts", not "concept".</summary>
+    Private Function FindInAnyFile(id As String) As OptionHelpStanza
+        If String.IsNullOrEmpty(id) Then Return Nothing
+
+        For Each f In Files.Values
+            Dim st = f.FindStanza(id)
+            If st IsNot Nothing Then Return st
+        Next
+
+        Return Nothing
     End Function
 
     ''' <summary>
@@ -713,7 +731,7 @@ Public Class OptionHelpCatalog
             End If
 
             If st.HasField("Use") Then
-                Dim target = FindAny(st.Use)
+                Dim target = FindByFileKey(st.Use)
 
                 If target Is Nothing OrElse Not target.IsReviewed OrElse target.HasField("Use") Then
                     r.Outcome = "draft"
@@ -738,11 +756,11 @@ Public Class OptionHelpCatalog
 
     ''' <summary>A reviewed stanza by id from any loaded file, for Related links. Aliases are followed once.</summary>
     Public Function Lookup(id As String) As OptionHelpStanza
-        Dim st = FindAny(id)
+        Dim st = FindInAnyFile(id)
         If st Is Nothing OrElse Not st.IsReviewed Then Return Nothing
 
         If st.HasField("Use") Then
-            Dim target = FindAny(st.Use)
+            Dim target = FindInAnyFile(st.Use)
             If target Is Nothing OrElse Not target.IsReviewed OrElse target.HasField("Use") Then Return Nothing
             Return target
         End If
@@ -754,7 +772,7 @@ Public Class OptionHelpCatalog
         If stanza Is Nothing OrElse emittedValue Is Nothing Then Return Nothing
 
         For Each v In stanza.Values
-            If v.Value = emittedValue Then Return v.Note
+            If String.Equals(v.Value, emittedValue, StringComparison.Ordinal) Then Return v.Note
         Next
 
         Return Nothing

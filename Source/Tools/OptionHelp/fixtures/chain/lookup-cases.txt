@@ -1,0 +1,6 @@
+shadow-variant concept.size => found:concepts.md
+shadow-variant shared.delta => found:shared.md
+shadow-variant shared.epsilon-draft => none
+shadow-variant shadow-base.delta => found:shared.md
+shadow-variant shadow-base.gamma => none
+shadow-variant nowhere.x => none

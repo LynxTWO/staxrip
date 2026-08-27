@@ -51,6 +51,25 @@ Module Program
             End If
         Next
 
+        For Each line In File.ReadAllLines(Path.Combine(chainDir, "lookup-cases.txt"))
+            If line.Trim() = "" Then Continue For
+            count += 1
+            Dim parts = line.Split({" => "}, StringSplitOptions.None)
+            Dim lhs = parts(0).Split(" "c)
+            Dim catalog = OptionHelpCatalog.FromFiles(files, lhs(0))
+            Dim actual = "none"
+
+            If catalog IsNot Nothing Then
+                Dim st = catalog.Lookup(lhs(1))
+                If st IsNot Nothing Then actual = "found:" & st.FileName
+            End If
+
+            If actual <> parts(1) Then
+                failures += 1
+                Console.Error.WriteLine("FAIL lookup '" & line & "' actual '" & actual & "'")
+            End If
+        Next
+
         Console.Error.WriteLine("harness: " & count & " cases, " & failures & " failures")
         Return If(failures > 0, 1, 0)
     End Function
