@@ -12,12 +12,14 @@ Public Class HelpForm
         End If
         MyBase.Dispose(disposing)
 
-        'Deleting here and not in OnFormClosed covers the shutdown path too: MainForm disposes the
-        'windows it has left over without ever closing them. The browser has released the file by
-        'the time the base Dispose returns; a delete that still fails leaves one file in %TEMP%.
+        'Deleting here and not in OnFormClosed covers the shutdown path too: when the main form
+        'closes, WinForms disposes every window still open on the thread without closing it. The
+        'browser has released the file by the time the base Dispose returns; a delete that still
+        'fails leaves one file in %TEMP%. IO.File.Delete rather than FileHelp.Delete, whose
+        'UIOption.OnlyErrorDialogs could raise a dialog in the middle of teardown.
         If disposing AndAlso DocumentPath <> "" AndAlso File.Exists(DocumentPath) Then
             Try
-                FileHelp.Delete(DocumentPath)
+                IO.File.Delete(DocumentPath)
             Catch
             End Try
         End If
