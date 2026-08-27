@@ -414,7 +414,7 @@ Public Class OptionHelpParser
             If Not hasUse Then
                 If Not st.HasField("Summary") OrElse st.GetField("Summary").Length = 0 Then
                     errors.Add(NewError(st.Line, "STANZA", "E2", "Summary is required"))
-                ElseIf Not st.GetField("Summary").EndsWith(".") Then
+                ElseIf Not st.GetField("Summary").EndsWith(".", StringComparison.Ordinal) Then
                     errors.Add(NewError(st.Line, "STANZA", "E2", "Summary must end with a period"))
                 End If
 
@@ -428,6 +428,10 @@ Public Class OptionHelpParser
                     errors.Add(NewError(st.Line, "STANZA", "E2", k & " exceeds " & limit & " characters"))
                 End If
 
+                If HasControlCharacter(st.GetField(k)) Then
+                    errors.Add(NewError(st.FieldLines(k), "STANZA", "E13", "Control character in " & k))
+                End If
+
                 If InlineTextFields.Contains(k, StringComparer.Ordinal) Then
                     Dim m = TestInline(st.GetField(k))
                     If m IsNot Nothing Then errors.Add(NewError(st.FieldLines(k), "STANZA", "E13", k & ": " & m))
@@ -436,11 +440,27 @@ Public Class OptionHelpParser
 
             For Each v In st.Values
                 If v.Note.Length > NoteLimit Then errors.Add(NewError(v.Line, "STANZA", "E2", "Value note exceeds " & NoteLimit & " characters"))
+                If HasControlCharacter(v.Note) Then errors.Add(NewError(v.Line, "STANZA", "E13", "Control character in Value note"))
                 Dim m = TestInline(v.Note)
                 If m IsNot Nothing Then errors.Add(NewError(v.Line, "STANZA", "E13", "Value note: " & m))
             Next
         Next
     End Sub
+
+    ''' <summary>True when the text carries a C0 control character other than tab. CR and LF are
+    ''' consumed by the line split, but a lone CR survives it, and U+0000 to U+0008 or U+000B to
+    ''' U+001F would otherwise reach the tooltip, the strip, and the help document as invisible or
+    ''' document-breaking bytes. Mirrors Test-OhControlCharacter in OptionHelp.psm1.</summary>
+    Shared Function HasControlCharacter(text As String) As Boolean
+        If text Is Nothing Then Return False
+
+        For Each c In text
+            Dim code = AscW(c)
+            If code < 32 AndAlso code <> 9 Then Return True
+        Next
+
+        Return False
+    End Function
 
     Shared Function TestInline(text As String) As String
         If text Is Nothing Then Return Nothing
@@ -684,6 +704,9 @@ Public Class OptionHelpCatalog
         If String.IsNullOrEmpty(id) Then Return Nothing
 
         For Each f In Files.Values
+            'A file with file-level errors is one the chain loader refuses outright; a link target
+            'found only there would be dead, so it is skipped here as it is in FindByFileKey.
+            If f.HasFileErrors Then Continue For
             Dim st = f.FindStanza(id)
             If st IsNot Nothing Then Return st
         Next

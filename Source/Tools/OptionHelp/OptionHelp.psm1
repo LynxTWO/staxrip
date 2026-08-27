@@ -190,7 +190,7 @@ function ConvertFrom-OptionHelpText {
         if ($line -match '^- (.*)$') {
             $item = $Matches[1].Trim()
             if ($currentField -ceq 'Values') {
-                $sep = $item.IndexOf(': ')
+                $sep = $item.IndexOf(': ', [System.StringComparison]::Ordinal)
                 if ($sep -lt 1) {
                     $errors.Add((New-OhError $lineNo 'STANZA' 'E3' 'Value bullet needs "<value>: <note>"'))
                 }
@@ -615,6 +615,20 @@ function Invoke-OptionHelpSelfTest {
     return 0
 }
 
+function Test-OhControlCharacter {
+    # True when the text carries a C0 control character other than tab. CR and LF are consumed by
+    # the line split, but a lone CR survives it, and U+0000 to U+0008 or U+000B to U+001F would
+    # otherwise reach the dialog and the help document as invisible or document-breaking bytes.
+    # Mirrors OptionHelpParser.HasControlCharacter in Source/General/OptionHelp.vb.
+    param([AllowNull()][AllowEmptyString()][string]$Text)
+    if ($null -eq $Text) { return $false }
+    foreach ($c in $Text.ToCharArray()) {
+        $code = [int][char]$c
+        if ($code -lt 32 -and $code -ne 9) { return $true }
+    }
+    return $false
+}
+
 function Test-OhInline {
     param([AllowEmptyString()][string]$Text)
     $ticks = @($Text.ToCharArray() | Where-Object { $_ -eq '`' }).Count
@@ -684,13 +698,14 @@ function Complete-OhValidation {
         elseif ($s.Status -cnotin @('draft', 'reviewed')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E3' "Status must be draft or reviewed, not '$($s.Status)'")) }
         if (-not $hasUse) {
             if (-not $f.Contains('Summary') -or $f['Summary'] -eq '') { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'Summary is required')) }
-            elseif (-not $f['Summary'].EndsWith('.')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'Summary must end with a period')) }
+            elseif (-not $f['Summary'].EndsWith('.', [System.StringComparison]::Ordinal)) { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'Summary must end with a period')) }
             if ($s.Status -ceq 'reviewed' -and -not $f.Contains('When to change')) { $errors.Add((New-OhError $s.Line 'STANZA' 'E2' 'When to change is required on a reviewed stanza')) }
         }
         foreach ($k in $f.Keys) {
             if ($script:FieldLimits.ContainsKey($k) -and $f[$k].Length -gt $script:FieldLimits[$k]) {
                 $errors.Add((New-OhError $s.Line 'STANZA' 'E2' "$k exceeds $($script:FieldLimits[$k]) characters"))
             }
+            if (Test-OhControlCharacter -Text $f[$k]) { $errors.Add((New-OhError $s.FieldLines[$k] 'STANZA' 'E13' "Control character in $k")) }
             if ($k -cin @('Summary', 'Used when', 'When to change', 'Example', 'Encoder default', 'Label')) {
                 $m = Test-OhInline -Text $f[$k]
                 if ($m) { $errors.Add((New-OhError $s.FieldLines[$k] 'STANZA' 'E13' "$k`: $m")) }
@@ -698,6 +713,7 @@ function Complete-OhValidation {
         }
         foreach ($v in $s.Values) {
             if ($v.Note.Length -gt $script:NoteLimit) { $errors.Add((New-OhError $v.Line 'STANZA' 'E2' "Value note exceeds $($script:NoteLimit) characters")) }
+            if (Test-OhControlCharacter -Text $v.Note) { $errors.Add((New-OhError $v.Line 'STANZA' 'E13' 'Control character in Value note')) }
             $m = Test-OhInline -Text $v.Note
             if ($m) { $errors.Add((New-OhError $v.Line 'STANZA' 'E13' "Value note: $m")) }
         }
@@ -762,6 +778,14 @@ function Get-OhDescendants {
     return @($found.Keys)
 }
 
+function Test-OhFileErrors {
+    # True when the file carries a file-level error. The application's catalog refuses to load such
+    # a file at all, so a Related target found only there would resolve here and be dead at runtime.
+    param([Parameter(Mandatory)]$File)
+    foreach ($e in $File.Errors) { if ($e.Level -ceq 'FILE') { return $true } }
+    return $false
+}
+
 function Add-OhLinkErrors {
     # E6 for one file's stanzas. This runs for the shared files too; only E5 is exempt for them.
     param(
@@ -771,7 +795,9 @@ function Add-OhLinkErrors {
         if ($s.Fields.Contains('Related')) {
             foreach ($rel in ($s.Fields['Related'] -split ',\s*')) {
                 $target = $null
-                foreach ($other in $Files.Values) { $t = Find-OhStanza -File $other -Id $rel; if ($t) { $target = $t; break } }
+                # A file the loader refuses (file-level errors) cannot supply a link target, so the
+                # scan skips it exactly as OptionHelpCatalog.FindInAnyFile does.
+                foreach ($other in $Files.Values) { if (Test-OhFileErrors -File $other) { continue }; $t = Find-OhStanza -File $other -Id $rel; if ($t) { $target = $t; break } }
                 if (-not $target) { $Errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($File.Name)"; Line = $s.FieldLines['Related']; Code = 'E6'; Message = "Related target '$rel' does not exist" }) }
             }
         }

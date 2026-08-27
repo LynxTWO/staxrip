@@ -1,0 +1,20 @@
+FILE e13-control.md
+H Schema=1
+H Encoder=e13-control
+H Locale=en
+H Title=Control characters
+H Source=Source/Encoding/E13Control.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=0
+H Reviewed-Complete=false
+S e13-control.bell 10
+F Summary=A bell hides in this summary.
+F Status=draft
+S e13-control.note 14
+F Summary=Fine.
+F Values=
+V 0=A note with a bell in it.
+F Status=draft
+ERR 11 STANZA E13
+ERR 17 STANZA E13
+END
