@@ -92,6 +92,8 @@ Public Class HelpForm
             Catch
             End Try
         End If
+
+        MyBase.OnFormClosed(e)
     End Sub
 
     Sub Browser_DocumentCompleted(sender As Object, e As WebBrowserDocumentCompletedEventArgs) Handles Browser.DocumentCompleted

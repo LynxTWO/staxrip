@@ -445,6 +445,7 @@ Public Class CommandLineForm
             Dim op = TryCast(item.Param, OptionParam)
             Dim np = TryCast(item.Param, NumParam)
             Dim bp = TryCast(item.Param, BoolParam)
+            Dim validRange = ""
 
             If op IsNot Nothing Then
                 If op.Value >= 0 AndAlso op.Value < op.Options.Length Then facts.Add(Fact("Current value", op.Options(op.Value)))
@@ -454,23 +455,26 @@ Public Class CommandLineForm
                 facts.Add(Fact("StaxRip default", np.DefaultValue.ToString))
 
                 If np.Config IsNot Nothing AndAlso np.Config.Length >= 2 AndAlso np.Config(0) > Double.MinValue AndAlso np.Config(1) < Double.MaxValue Then
-                    Dim range = np.Config(0) & " to " & np.Config(1)
-                    If np.Config.Length > 2 AndAlso np.Config(2) <> 0 Then range += " in steps of " & np.Config(2)
-                    facts.Add(Fact("Valid range", range))
+                    validRange = np.Config(0) & " to " & np.Config(1)
+                    If np.Config.Length > 2 AndAlso np.Config(2) <> 0 Then validRange += " in steps of " & np.Config(2)
                 End If
             ElseIf bp IsNot Nothing Then
                 facts.Add(Fact("Current value", If(bp.Value, "On", "Off")))
                 facts.Add(Fact("StaxRip default", If(bp.DefaultValue, "On", "Off")))
             End If
 
+            'Fact order: current value, StaxRip default, encoder default, valid range, switches.
             If stanza.EncoderDefault <> "" Then facts.Add(New KeyValuePair(Of String, IEnumerable(Of OptionHelpNode))("Encoder default", OptionHelpParser.ParseInline(stanza.EncoderDefault)))
+            If validRange <> "" Then facts.Add(Fact("Valid range", validRange))
             Dim switches = item.Param.GetSwitches.OrderBy(Function(s) s, StringComparer.Ordinal).ToArray
             If switches.Length > 0 Then facts.Add(Fact("Switches", String.Join(", ", switches)))
             If facts.Count > 0 Then doc.WriteNodesTable(facts)
         End If
 
-        doc.WriteH2("What it does")
-        doc.WriteNodes("p", OptionHelpParser.ParseInline(stanza.Summary))
+        If stanza.Summary <> "" Then
+            doc.WriteH2("What it does")
+            doc.WriteNodes("p", OptionHelpParser.ParseInline(stanza.Summary))
+        End If
 
         If stanza.UsedWhen <> "" Then
             doc.WriteH2("Used when")
@@ -525,23 +529,28 @@ Public Class CommandLineForm
         End If
 
         form.RouteAction = Sub(route As OptionHelpRoute)
-                               If route.Kind = "ConsoleHelp" Then
-                                   If item IsNot Nothing Then Params.ShowHelp(item.Param.GetSwitches)
-                               ElseIf route.Kind = "Option" Then
-                                   Dim other = FindItemByIdentity(route.Id)
+                               'RouteAction runs inside the browser's navigation callback, so the
+                               'close and the next window are deferred until that callback returned,
+                               'closing here would dispose the browser while the call still unwinds.
+                               form.BeginInvoke(Sub()
+                                                    If route.Kind = "ConsoleHelp" Then
+                                                        If item IsNot Nothing Then Params.ShowHelp(item.Param.GetSwitches)
+                                                    ElseIf route.Kind = "Option" Then
+                                                        Dim other = FindItemByIdentity(route.Id)
 
-                                   If other IsNot Nothing AndAlso other.Stanza IsNot Nothing Then
-                                       form.Close()
-                                       ShowOptionHelp(other)
-                                   Else
-                                       Dim target = Catalog.Lookup(route.Id)
+                                                        If other IsNot Nothing AndAlso other.Stanza IsNot Nothing Then
+                                                            form.Close()
+                                                            ShowOptionHelp(other)
+                                                        Else
+                                                            Dim target = Catalog.Lookup(route.Id)
 
-                                       If target IsNot Nothing Then
-                                           form.Close()
-                                           ShowStanza(target, Nothing)
-                                       End If
-                                   End If
-                               End If
+                                                            If target IsNot Nothing Then
+                                                                form.Close()
+                                                                ShowStanza(target, Nothing)
+                                                            End If
+                                                        End If
+                                                    End If
+                                                End Sub)
                            End Sub
 
         form.Show()
