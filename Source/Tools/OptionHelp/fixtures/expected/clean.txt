@@ -1,0 +1,40 @@
+FILE clean.md
+H Schema=1
+H Encoder=fake
+H Locale=en
+H Title=Fake Encoder
+H Source=Source/Encoding/FakeEnc.vb
+H Allowed-Missing=0
+H Minimum-Reviewed=2
+H Reviewed-Complete=false
+H Verified-Encoder-Version=FakeEnc 1.0
+H Verified-Encoder-Build=v1.0
+H Verified-Date=2026-08-26
+H Documentation=https://example.invalid/fake/v1.0/Parameters.md
+S fake.alpha 18
+F Label=Alpha
+F Summary=Controls the first thing. Higher values make the file smaller but slower to produce.
+F Used when=Rate control is Quality.
+F When to change=Raise it when the file is too large; lower it when the picture looks soft.
+F Encoder default=3
+F Example=Try 2, 3, and 4 on a short clip and compare `--alpha` results.
+F Values=
+V 2=A little sharper and larger.
+V 4=Smaller with some loss.
+F Related=fake.beta, concept.size
+F References=
+R https://example.invalid/fake/v1.0/Parameters.md#alpha
+F Status=reviewed
+S fake.beta 34
+F Label=Beta
+F Summary=Turns the second thing on. See [the guide](https://example.invalid/guide).
+F When to change=Leave it on unless the encoder warns about it.
+F Status=reviewed
+S fake.gamma 40
+F Summary=A draft with only a summary.
+F Status=draft
+S fake.delta 44
+F Label=Delta
+F Use=shared.delta
+F Status=reviewed
+END
