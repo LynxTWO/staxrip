@@ -1,0 +1,16 @@
+<Project>
+  <ItemGroup>
+    <EmbeddedResource Include="..\Docs\OptionHelp\fake.md">
+      <Link>OptionHelp\fake.md</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\staxrip.md">
+      <Link>OptionHelp\staxrip.md</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\concepts.md">
+      <Link>OptionHelp\concepts.md</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\ghost.md">
+      <Link>OptionHelp\ghost.md</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

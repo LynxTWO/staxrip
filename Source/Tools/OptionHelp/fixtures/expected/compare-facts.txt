@@ -1,0 +1,8 @@
+E11 fake.beta values differ: application '0,2' extractor '0,1'
+E11 fake.gamma missing from the application export
+E11 fake.delta missing from the application export
+E11 fake.pass missing from the application export
+E11 fake.zeta missing from the application export
+E11 fake.eta missing from the application export
+E11 staxrip.chunks missing from the application export
+E11 fake.inline missing from the application export

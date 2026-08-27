@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "encoders": [
+    {
+      "encoder": "fake",
+      "parameters": [
+        { "identity": "fake.alpha", "excluded": false, "caption": "Alpha", "switches": ["--alpha"], "values": [] },
+        { "identity": "fake.beta", "excluded": false, "caption": "Beta", "switches": ["--beta"], "values": ["0", "2"] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+ENCODER badid total=1 excluded=0 reviewed=0 draft=0 missing=1 allowed-missing=1 minimum-reviewed=0 reviewed-complete=false result=PASS
+MISSING badid.alpha Alpha
+ENCODER fake total=10 excluded=1 reviewed=3 draft=2 missing=4 allowed-missing=2 minimum-reviewed=3 reviewed-complete=false result=FAIL
+MISSING fake.pass Passes
+MISSING fake.zeta Zeta
+MISSING fake.eta Eta
+MISSING fake.inline Inline
+E10 Source/Encoding/FakeEnc.vb:66 Parameter 'NoKey' (Custom) has no identity; set OptionHelpKey
+E11 Source/Encoding/FakeEnc.vb:81 Unrecognized parameter type 'WeirdParam'
+E11 Source/Encoding/FakeEnc.vb:82 Parameter of type 'NumParam' is not declared with 'With {'
+E12 Docs/OptionHelp/badid.md:1 No EmbeddedResource entry in Source/StaxRip.vbproj
+E12 Source/StaxRip.vbproj:1 EmbeddedResource 'ghost.md' has no file
+E4 Docs/OptionHelp/fake.md:14 Values on non-option parameter fake.alpha
+E4 Docs/OptionHelp/fake.md:28 Value '3' is not an emitted value of fake.beta
+E5 Docs/OptionHelp/fake.md:35 Orphan stanza 'fake.orphan'
+E6 Docs/OptionHelp/fake.md:20 Related target 'fake.nothing' does not exist
+E6 Docs/OptionHelp/fake.md:40 Use target 'shared.missing' does not exist or is not reviewed
+E7 Docs/OptionHelp/fake.md:1 missing 4 exceeds Allowed-Missing 2
+E9 Source/Encoding/BadIdEnc.vb:1 OptionHelpId is 'wrong', expected 'badid'
+W1 Source/Encoding/OtherEnc.vb no help file
+W3 fake Hidden excluded
+RESULT FAIL

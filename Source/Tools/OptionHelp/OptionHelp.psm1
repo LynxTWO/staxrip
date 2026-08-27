@@ -363,8 +363,8 @@ function Get-OhChain {
         $chain.Add($file)
         $current = if ($file.Header.Contains('Inherits')) { $file.Header['Inherits'] } else { $null }
     }
-    if ($Files.ContainsKey('staxrip')) { $chain.Add($Files['staxrip']) }
-    return $chain
+    if ($EncoderId -ne 'staxrip' -and $Files.ContainsKey('staxrip')) { $chain.Add($Files['staxrip']) }
+    return ,$chain
 }
 
 function Find-OhStanza {
@@ -439,7 +439,30 @@ function Invoke-OptionHelpSelfTest {
         if ($actual -ne $parts[1]) { $failures++; [Console]::Error.WriteLine("FAIL chain '$case' actual '$actual'") }
     }
 
-    # Task 4 appends the repo, ratchet, and facts self-tests here.
+    foreach ($repo in @('repo', 'repo-clean')) {
+        $count++
+        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot "expected\report-$repo.txt")).Replace("`r`n", "`n")
+        $actual = Format-OptionHelpReport -Report (Test-OptionHelpRepository -RepoRoot (Join-Path $FixturesRoot $repo))
+        if ($expected -ne $actual) { $failures++; [Console]::Error.WriteLine("FAIL report-$repo`n--- expected`n$expected`n--- actual`n$actual") }
+    }
+    # Ratchet: copy repo-clean to a temp dir, advance, compare the two counter lines.
+    $count++
+    $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("optionhelp-ratchet-" + [guid]::NewGuid().ToString('N'))
+    Copy-Item (Join-Path $FixturesRoot 'repo-clean') $tmp -Recurse
+    try {
+        $rep = Test-OptionHelpRepository -RepoRoot $tmp
+        Update-OptionHelpRatchet -RepoRoot $tmp -Report $rep
+        $after = [System.IO.File]::ReadAllText((Join-Path $tmp 'Docs\OptionHelp\clean.md')).Replace("`r`n", "`n")
+        $lines = @(($after -split "`n") | Where-Object { $_ -match '^(Allowed-Missing|Minimum-Reviewed): ' })
+        $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\ratchet-repo-clean.txt')).Replace("`r`n", "`n").TrimEnd("`n")
+        if (($lines -join "`n") -ne $expected) { $failures++; [Console]::Error.WriteLine("FAIL ratchet`n--- expected`n$expected`n--- actual`n$($lines -join "`n")") }
+    }
+    finally { Remove-Item $tmp -Recurse -Force }
+    # Facts comparison against the fake repository.
+    $count++
+    $diff = Compare-OptionHelpFacts -RepoRoot (Join-Path $FixturesRoot 'repo') -FactsPath (Join-Path $FixturesRoot 'facts\fake-export.json')
+    $expected = [System.IO.File]::ReadAllText((Join-Path $FixturesRoot 'expected\compare-facts.txt')).Replace("`r`n", "`n").TrimEnd("`n")
+    if (($diff -join "`n") -ne $expected) { $failures++; [Console]::Error.WriteLine("FAIL compare-facts`n--- expected`n$expected`n--- actual`n$($diff -join "`n")") }
     [Console]::Error.WriteLine("self-test: $count dump cases, $failures failures")
     if ($failures -gt 0) { return 1 }
     return 0
@@ -534,4 +557,199 @@ function Complete-OhValidation {
     }
 }
 
-Export-ModuleMember -Function Read-OptionHelpFile, ConvertFrom-OptionHelpText, ConvertTo-OptionHelpDump, Invoke-OptionHelpSelfTest, Test-OhInline, ConvertTo-OhPlainText, Get-VbParameters, Get-VbOptionHelpId, ConvertTo-OhVbDump, Get-OhChain, Resolve-OhId, Read-OhDirectory
+function Get-OhResourceEntries {
+    param([string]$ProjectPath)
+    $entries = [System.Collections.Generic.List[string]]::new()
+    if (-not (Test-Path $ProjectPath)) { return $entries }
+    $text = [System.IO.File]::ReadAllText($ProjectPath)
+    foreach ($m in [regex]::Matches($text, '<EmbeddedResource\s+Include="\.\.\\Docs\\OptionHelp\\([^"]+)"')) { $entries.Add($m.Groups[1].Value) }
+    return $entries
+}
+
+function Test-OhPathCase {
+    # True when every segment of the relative path exists with exactly this case on disk.
+    param([string]$RepoRoot, [string]$RelativePath)
+    $current = $RepoRoot
+    foreach ($segment in $RelativePath.Replace('\', '/').Split('/')) {
+        if ($segment -eq '') { continue }
+        $entry = Get-ChildItem -LiteralPath $current -Force | Where-Object { $_.Name -ceq $segment } | Select-Object -First 1
+        if ($null -eq $entry) { return $false }
+        $current = $entry.FullName
+    }
+    return $true
+}
+
+function Test-OptionHelpRepository {
+    param([Parameter(Mandatory)][string]$RepoRoot, [string]$Encoder)
+    $RepoRoot = (Resolve-Path $RepoRoot).Path
+    $docs = Join-Path $RepoRoot 'Docs\OptionHelp'
+    $files = Read-OhDirectory -Directory $docs
+    $errors = [System.Collections.Generic.List[object]]::new()
+    $warnings = [System.Collections.Generic.List[object]]::new()
+    $encoders = [System.Collections.Generic.List[object]]::new()
+    $resources = Get-OhResourceEntries -ProjectPath (Join-Path $RepoRoot 'Source\StaxRip.vbproj')
+
+    foreach ($f in $files.Values) {
+        foreach ($e in $f.Errors) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $e.Line; Code = $e.Code; Message = $e.Message }) }
+        if ($resources -notcontains $f.Name) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = 'No EmbeddedResource entry in Source/StaxRip.vbproj' }) }
+    }
+    foreach ($r in $resources) {
+        if (-not (Test-Path (Join-Path $docs $r))) { $errors.Add([pscustomobject]@{ File = 'Source/StaxRip.vbproj'; Line = 1; Code = 'E12'; Message = "EmbeddedResource '$r' has no file" }) }
+    }
+
+    # W1: encoder sources without a help file.
+    $sourcesWithFile = @($files.Values | Where-Object { $_.Header.Contains('Source') } | ForEach-Object { $_.Header['Source'].Replace('\', '/') })
+    foreach ($vb in Get-ChildItem (Join-Path $RepoRoot 'Source\Encoding') -Filter '*.vb' | Sort-Object Name) {
+        $rel = "Source/Encoding/$($vb.Name)"
+        if ($sourcesWithFile -notcontains $rel) {
+            $text = [System.IO.File]::ReadAllText($vb.FullName)
+            if ($text -match 'Inherits\s+CommandLineParams') { $warnings.Add([pscustomobject]@{ File = $rel; Line = 0; Code = 'W1'; Message = 'no help file' }) }
+        }
+    }
+
+    $allParams = @{}
+    foreach ($f in ($files.Values | Sort-Object Encoder)) {
+        if ($script:SharedIds -contains $f.Encoder) { continue }
+        if ($Encoder -and $f.Encoder -ne $Encoder) { continue }
+        $h = $f.Header
+        $sourceRel = if ($h.Contains('Source')) { $h['Source'] } else { $null }
+        if (-not $sourceRel) { continue }
+        if ($sourceRel -match '\.\.' -or -not (Test-OhPathCase -RepoRoot $RepoRoot -RelativePath $sourceRel)) {
+            $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E12'; Message = "Source path '$sourceRel' is outside the repository or its case does not match" })
+            continue
+        }
+        $extraction = Get-VbParameters -Path (Join-Path $RepoRoot $sourceRel) -EncoderId $f.Encoder
+        foreach ($e in $extraction.Errors) { $errors.Add([pscustomobject]@{ File = $sourceRel; Line = $e.Line; Code = $e.Code; Message = $e.Message }) }
+        if ($extraction.OptionHelpId -ne $f.Encoder) {
+            $shown = if ($extraction.OptionHelpId) { $extraction.OptionHelpId } else { 'missing' }
+            $errors.Add([pscustomobject]@{ File = $sourceRel; Line = 1; Code = 'E9'; Message = "OptionHelpId is '$shown', expected '$($f.Encoder)'" })
+        }
+        $allParams[$f.Encoder] = $extraction.Parameters
+    }
+
+    foreach ($f in ($files.Values | Sort-Object Encoder)) {
+        if ($script:SharedIds -contains $f.Encoder) { continue }
+        if ($Encoder -and $f.Encoder -ne $Encoder) { continue }
+        if (-not $allParams.ContainsKey($f.Encoder)) { continue }
+        try { $chain = Get-OhChain -Files $files -EncoderId $f.Encoder }
+        catch { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E1'; Message = $_.Exception.Message }); continue }
+        $params = $allParams[$f.Encoder]
+        $reviewed = 0; $draft = 0; $missingList = [System.Collections.Generic.List[object]]::new(); $excluded = 0
+        $covered = @{}
+        foreach ($p in $params) {
+            if ($p.Excluded) { $excluded++; $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W3'; Message = "$($p.Name) excluded" }); continue }
+            if (-not $p.Identity) { continue }
+            $r = Resolve-OhId -Chain $chain -Files $files -Id $p.Identity
+            switch ($r.Outcome) {
+                'reviewed' { $reviewed++; $covered[$p.Identity] = $true }
+                'alias' { $reviewed++; $covered[$p.Identity] = $true }
+                'draft' { $draft++; $covered[$p.Identity] = $true }
+                default { $missingList.Add([pscustomobject]@{ Id = $p.Identity; Caption = $p.Caption }) }
+            }
+            # E4: value notes must name emitted values.
+            if ($r.Stanza -and $p.Type -eq 'OptionParam') {
+                foreach ($v in $r.Stanza.Values) {
+                    if ($p.EmittedValues -notcontains $v.Value) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($r.File)"; Line = $v.Line; Code = 'E4'; Message = "Value '$($v.Value)' is not an emitted value of $($p.Identity)" }) }
+                }
+            }
+            elseif ($r.Stanza -and $r.Stanza.Values.Count -gt 0) {
+                $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($r.File)"; Line = $r.Stanza.Line; Code = 'E4'; Message = "Values on non-option parameter $($p.Identity)" })
+            }
+        }
+        $total = @($params | Where-Object { -not $_.Excluded }).Count
+        $identities = @($params | Where-Object { $_.Identity } | ForEach-Object { $_.Identity })
+        # E5 orphans and E6 links for stanzas in this encoder's own file.
+        $inheritors = @($files.Values | Where-Object { $_.Header.Contains('Inherits') -and $_.Header['Inherits'] -eq $f.Encoder } | ForEach-Object { $_.Encoder })
+        $allIds = [System.Collections.Generic.List[string]]::new([string[]]$identities)
+        foreach ($i in $inheritors) { if ($allParams.ContainsKey($i)) { foreach ($p in $allParams[$i]) { if ($p.Identity) { $allIds.Add($p.Identity) } } } }
+        foreach ($s in $f.Stanzas) {
+            if ($allIds -notcontains $s.Id) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = $s.Line; Code = 'E5'; Message = "Orphan stanza '$($s.Id)'" }) }
+            if ($s.Fields.Contains('Related')) {
+                foreach ($rel in ($s.Fields['Related'] -split ',\s*')) {
+                    $target = $null
+                    foreach ($other in $files.Values) { $t = Find-OhStanza -File $other -Id $rel; if ($t) { $target = $t; break } }
+                    if (-not $target) { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = ($s.Line + [array]::IndexOf(@($s.Fields.Keys), 'Related') + 1 + $s.Values.Count); Code = 'E6'; Message = "Related target '$rel' does not exist" }) }
+                }
+            }
+            if ($s.Fields.Contains('Use')) {
+                $r2 = Resolve-OhId -Chain @($f) -Files $files -Id $s.Id
+                if ($r2.Outcome -ne 'alias') { $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = ($s.Line + 1); Code = 'E6'; Message = "Use target '$($s.Fields['Use'])' does not exist or is not reviewed" }) }
+            }
+        }
+        $allowed = [int]$f.Header['Allowed-Missing']; $minimum = [int]$f.Header['Minimum-Reviewed']; $complete = $f.Header['Reviewed-Complete'] -eq 'true'
+        $pass = $true
+        if ($missingList.Count -gt $allowed) { $pass = $false; $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E7'; Message = "missing $($missingList.Count) exceeds Allowed-Missing $allowed" }) }
+        if ($reviewed -lt $minimum) { $pass = $false; $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E7'; Message = "reviewed $reviewed is below Minimum-Reviewed $minimum" }) }
+        if ($complete -and ($missingList.Count -gt 0 -or $draft -gt 0)) { $pass = $false; $errors.Add([pscustomobject]@{ File = "Docs/OptionHelp/$($f.Name)"; Line = 1; Code = 'E7'; Message = 'Reviewed-Complete is true but not every parameter is reviewed' }) }
+        $encoders.Add([pscustomobject]@{
+            Encoder = $f.Encoder; Total = $total; Excluded = $excluded; Reviewed = $reviewed; Draft = $draft; Missing = $missingList.Count
+            AllowedMissing = $allowed; MinimumReviewed = $minimum; ReviewedComplete = $complete; Pass = $pass; MissingIds = $missingList
+        })
+    }
+    $overall = ($errors.Count -eq 0)
+    return [pscustomobject]@{ Encoders = $encoders; Errors = $errors; Warnings = $warnings; Pass = $overall }
+}
+
+function Format-OptionHelpReport {
+    param([Parameter(Mandatory)]$Report)
+    $sb = [System.Text.StringBuilder]::new()
+    foreach ($e in ($Report.Encoders | Sort-Object Encoder)) {
+        $res = if ($e.Pass) { 'PASS' } else { 'FAIL' }
+        [void]$sb.Append("ENCODER $($e.Encoder) total=$($e.Total) excluded=$($e.Excluded) reviewed=$($e.Reviewed) draft=$($e.Draft) missing=$($e.Missing) allowed-missing=$($e.AllowedMissing) minimum-reviewed=$($e.MinimumReviewed) reviewed-complete=$($e.ReviewedComplete.ToString().ToLower()) result=$res`n")
+        $printed = @{}
+        foreach ($m in $e.MissingIds) {
+            if ($printed.ContainsKey($m.Id)) { continue }
+            $printed[$m.Id] = $true
+            [void]$sb.Append("MISSING $($m.Id) $($m.Caption)`n")
+        }
+    }
+    foreach ($e in ($Report.Errors | Sort-Object Code, File, Line, Message)) { [void]$sb.Append("$($e.Code) $($e.File):$($e.Line) $($e.Message)`n") }
+    foreach ($w in ($Report.Warnings | Sort-Object Code, File, Message)) { [void]$sb.Append("$($w.Code) $($w.File) $($w.Message)`n") }
+    [void]$sb.Append("RESULT $(if ($Report.Pass) { 'PASS' } else { 'FAIL' })`n")
+    return $sb.ToString()
+}
+
+function Update-OptionHelpRatchet {
+    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)]$Report)
+    if (-not $Report.Pass) { throw 'Refusing to advance the ratchet after a failed validation' }
+    foreach ($e in $Report.Encoders) {
+        $path = Join-Path $RepoRoot "Docs\OptionHelp\$($e.Encoder).md"
+        $text = [System.IO.File]::ReadAllText($path)
+        $newAllowed = [Math]::Min($e.AllowedMissing, $e.Missing)
+        $newMinimum = [Math]::Max($e.MinimumReviewed, $e.Reviewed)
+        $updated = [regex]::Replace($text, '(?m)^Allowed-Missing: \d+$', "Allowed-Missing: $newAllowed")
+        $updated = [regex]::Replace($updated, '(?m)^Minimum-Reviewed: \d+$', "Minimum-Reviewed: $newMinimum")
+        if ($updated -ne $text) {
+            $tmp = "$path.tmp"
+            [System.IO.File]::WriteAllText($tmp, $updated, [System.Text.UTF8Encoding]::new($false))
+            [System.IO.File]::Move($tmp, $path, $true)
+        }
+    }
+}
+
+function Compare-OptionHelpFacts {
+    param([Parameter(Mandatory)][string]$RepoRoot, [Parameter(Mandatory)][string]$FactsPath)
+    $facts = Get-Content -Raw $FactsPath | ConvertFrom-Json
+    $files = Read-OhDirectory -Directory (Join-Path $RepoRoot 'Docs\OptionHelp')
+    $out = [System.Collections.Generic.List[string]]::new()
+    foreach ($enc in $facts.encoders) {
+        if (-not $files.ContainsKey($enc.encoder)) { $out.Add("E11 $($enc.encoder) has no help file"); continue }
+        $f = $files[$enc.encoder]
+        $extraction = Get-VbParameters -Path (Join-Path $RepoRoot $f.Header['Source']) -EncoderId $enc.encoder
+        $app = @{}
+        foreach ($p in $enc.parameters) { if (-not $p.excluded) { $app[$p.identity] = $p } }
+        foreach ($p in $extraction.Parameters) {
+            if ($p.Excluded -or -not $p.Identity) { continue }
+            if (-not $app.ContainsKey($p.Identity)) { $out.Add("E11 $($p.Identity) missing from the application export"); continue }
+            $a = $app[$p.Identity]
+            if (($a.switches -join ',') -ne ($p.Switches -join ',')) { $out.Add("E11 $($p.Identity) switches differ: application '$($a.switches -join ',')' extractor '$($p.Switches -join ',')'") }
+            if (($a.values -join ',') -ne ($p.EmittedValues -join ',')) { $out.Add("E11 $($p.Identity) values differ: application '$($a.values -join ',')' extractor '$($p.EmittedValues -join ',')'") }
+            if ($a.caption -ne $p.Caption) { $out.Add("E11 $($p.Identity) caption differs: application '$($a.caption)' extractor '$($p.Caption)'") }
+            $app.Remove($p.Identity)
+        }
+        foreach ($k in $app.Keys) { $out.Add("E11 $k missing from the extractor") }
+    }
+    return $out
+}
+
+Export-ModuleMember -Function Read-OptionHelpFile, ConvertFrom-OptionHelpText, ConvertTo-OptionHelpDump, Invoke-OptionHelpSelfTest, Test-OhInline, ConvertTo-OhPlainText, Get-VbParameters, Get-VbOptionHelpId, ConvertTo-OhVbDump, Get-OhChain, Resolve-OhId, Read-OhDirectory, Test-OptionHelpRepository, Format-OptionHelpReport, Update-OptionHelpRatchet, Compare-OptionHelpFacts

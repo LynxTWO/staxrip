@@ -29,6 +29,25 @@ if ($SelfTest) {
     exit (Invoke-OptionHelpSelfTest -FixturesRoot (Join-Path $PSScriptRoot 'fixtures'))
 }
 
-# Tasks 3 and 4 add the repository check, ratchet, JSON, and facts comparison here.
-[Console]::Error.WriteLine('Repository check is not implemented yet.')
+if ($CompareFacts) {
+    $diff = @(Compare-OptionHelpFacts -RepoRoot $RepoRoot -FactsPath $CompareFacts)
+    foreach ($d in $diff) { [Console]::Error.WriteLine($d) }
+    if ($diff.Count -gt 0) { exit 1 }
+    [Console]::Error.WriteLine('facts: no differences')
+    exit 0
+}
+
+$report = Test-OptionHelpRepository -RepoRoot $RepoRoot -Encoder $Encoder
+if ($Json) {
+    [Console]::Out.Write(($report | ConvertTo-Json -Depth 6))
+}
+else {
+    [Console]::Out.Write((Format-OptionHelpReport -Report $report))
+}
+if ($AdvanceRatchet) {
+    if (-not $report.Pass) { [Console]::Error.WriteLine('Ratchet not advanced: validation failed'); exit 1 }
+    Update-OptionHelpRatchet -RepoRoot $RepoRoot -Report $report
+    [Console]::Error.WriteLine('Ratchet advanced')
+}
+if ($report.Pass) { exit 0 }
 exit 1
