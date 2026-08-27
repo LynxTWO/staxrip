@@ -43,10 +43,10 @@ Security, privacy, and logging: nothing new. The validator reads text; the help 
 
 ### What plan 3 changed besides the text
 
-- Validator (`Source/Tools/OptionHelp`): W2 (a `Label` must equal the caption, or the first line of a wrapped caption, of at least one control that resolves to the stanza); a scoped `-Encoder` run now applies the stanza rules to the encoder's inheritance chain and the shared files; W4 keys on the encoder id rather than the file name; `Split-OhId` uses the char overload; `Resolve-OhId` skips a `Use` target file with file-level errors as the VB `FindByFileKey` does. Self-test 35 cases (new: `-Encoder fakevar`).
+- Validator (`Source/Tools/OptionHelp`): W2 (a `Label` must equal the caption, or the first line of a wrapped caption, of at least one control that resolves to the stanza); a scoped `-Encoder` run now applies the stanza rules to the encoder's inheritance chain and the shared files; W4 keys on the encoder id rather than the file name; `Split-OhId` uses the char overload; `Resolve-OhId` skips a `Use` target file with file-level errors as the VB `FindByFileKey` does. Self-test 35 cases (new: `-Encoder fakevar`; the `repo` fixture holds a two-line-caption pair that pins W2's first-line rule from both sides).
 - `HelpForm`: the temp document is deleted with `IO.File.Delete` at shutdown (no `UIOption` dialog during teardown); the comment names WinForms' thread teardown rather than `MainForm`.
 - Probe: the negative case names `svt-av1.no-such-option` (it named `svt-av1.crf` before that stanza existed).
-- Documentation: spec 4.6, 5.3, 5.6, 6.3 (W4), 6.5; the validator README's `-Encoder`, E4, E6, and W2 text; the authoring README's inheritance section.
+- Documentation: spec 4.3 (`Label`), 4.6, 5.3, 5.6, 6.3 (W2, W4), 6.5; the validator README's `-Encoder`, E4, E6, W2, and W4 text; the authoring README's inheritance section.
 
 ## 2. Maintainer's tone review (rule 10)
 
@@ -133,8 +133,7 @@ Against the bundled help and the upstream documents at the v4.2.0 tag.
 2. Super-resolution mode 3 never scaled a frame on the test clip at any q-threshold (even 0), at CRF 35 and 60 and at preset 12; the gating condition is in no source. `svt-av1.superres-mode`, `svt-av1.superres-qthres`, and `svt-av1.superres-kf-qthres` report the observation without explaining it.
 3. `--fast-decode 1` and `2` changed nothing at preset 8 on the test clip (byte-identical output, mini-GOP still 32) although upstream says fast decode defaults to a 5-layer structure; `svt-av1.fast-decode` attributes the claim to upstream.
 4. `--pin` is documented only in Parameters.md prose (Appendix A) and the build rejects it; `--ss` and `--enable-tpl-la` appear in no source at all (a4).
-5. Our own spec: `Docs/Planning/OPTION-HELP.md` 4.3 (the `Label` row) and 6.3 (the W2 row) still describe W2 as "differs from the VB `.Text`"; the implementation accepts the caption or its first line for shared stanzas, as the validator README states. Task 9 edited only the sentences it was given.
-6. Final-review pointer: `svt-av1.recode-loop` says changing it "altered a Variable Bitrate encode" on single runs (1.3 to 2%) against the 0.4% run-to-run spread above; probably real, unproven by repeats. Soften it or repeat the test if the review cannot confirm it.
+5. Final-review pointer: `svt-av1.recode-loop` says changing it "altered a Variable Bitrate encode" on single runs (1.3 to 2%) against the 0.4% run-to-run spread above; probably real, unproven by repeats. Soften it or repeat the test if the review cannot confirm it.
 
 ## 4. Follow-up
 

@@ -36,7 +36,7 @@ pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1 -Dump Docs/Op
 | W1 | source | Encoder file with no help file |
 | W2 | stanza | Label matches neither the caption nor the first line of the caption of any control that resolves to the stanza; the dialog wraps a long caption at a line break, which is how the four Custom boxes share one stanza |
 | W3 | source | Excluded parameters |
-| W4 | source | Own-namespace identity that resolves in `staxrip.md` because its local part collides with a StaxRip-owned key |
+| W4 | source | Own-namespace identity that resolves in the `staxrip` file because its local part collides with a StaxRip-owned key; the message names the file it resolved in |
 
 ## Known blind spots
 

@@ -117,7 +117,7 @@ Stanza fields, in this order:
 
 | Field | Required | Limit | Purpose |
 | --- | --- | --- | --- |
-| `Label` | no | 60 chars | The control's caption, for readers of the raw file; validator warns when it differs from the VB `.Text` |
+| `Label` | no | 60 chars | The control's caption, for readers of the raw file; the validator warns (W2) when it matches neither the caption nor the caption's first line of any control that resolves to the stanza |
 | `Use` | no | one stable ID | Alias stanza: the body is taken from the named stanza, which must be reviewed. A stanza with `Use` carries only `Label`, `Use`, and `Status` |
 | `Summary` | yes unless `Use` | 1 to 200 chars, one or two sentences, ends with `.` | Tooltip, strip, and details |
 | `Used when` | no | 200 chars | The mode or setting under which the option has any effect, for example "Rate Control Mode is Variable Bitrate or Constant Bitrate" |
@@ -335,7 +335,7 @@ Known blind spots, recorded in the script's README: parameters declared but neve
 | E12 | error | Resource pairing: a help file without exactly one matching `EmbeddedResource` entry, a resource without a file, a `Source` path outside the repository or whose case differs from Git's |
 | E13 | error | A URL that is not `http` or `https`, a malformed inline link, an unmatched backtick, or a C0 control character other than tab in a text field or value note |
 | W1 | warning | An encoder VB file under `Source/Encoding/` with no help file; reported as fully missing, never fails |
-| W2 | warning | `Label` differs from the VB `.Text` |
+| W2 | warning | `Label` matches neither the VB `.Text` caption nor its first line for any control that resolves to the stanza; the first line is where the dialog wraps a long caption, which is how the four `Custom` boxes share one `Label` |
 | W3 | warning | Parameters excluded with `none`, listed by name |
 | W4 | warning | An own-namespace identity that resolves in the `staxrip` file because its local part collides with a StaxRip-owned key; it fires whatever the outcome (reviewed, draft, or alias) and the parameter is counted by that outcome, but the text found is about StaxRip's setting, not the encoder's switch |
 
@@ -353,7 +353,7 @@ The skeleton `svt-av1.md` created in step 1 starts at `Allowed-Missing: 100`, `M
 
 ### 6.5 Self-test fixtures
 
-`Source/Tools/OptionHelp/fixtures/` holds a small fake VB file exercising every extraction pattern (property declarations, inline `New ... With {` inside `Add(...)`, nested braces in `.Config`, quoted braces, commented-out declarations, shared switches, switch-less controls with explicit keys, an excluded control, and an unrecognized construction for E11), one Markdown file per rule E1 to E13, a clean pair, and security fixtures: HTML characters in every field, fake and nested links, unmatched backticks, `javascript:` and `file:` schemes, protocol-relative links, duplicate headers, locale collisions, and own-namespace shadowing: a variant file's stanza in its own namespace (`shadow-variant.alpha`) hides the inherited `shadow-base.alpha` for that variant, even as a draft. The chain fixtures still shadow by repeating the base id verbatim in the variant file, a shape the resolver also honours because a foreign namespace is probed verbatim; they keep it until Tier 2 reshapes them to the own-namespace form. Per-fixture canonical dumps and report expectations under `fixtures/expected/*.txt` record the result for each; `-SelfTest` compares and prints the first difference as a bounded failure packet.
+`Source/Tools/OptionHelp/fixtures/` holds a small fake VB file exercising every extraction pattern (property declarations, inline `New ... With {` inside `Add(...)`, nested braces in `.Config`, quoted braces, commented-out declarations, shared switches, switch-less controls with explicit keys, an excluded control, and an unrecognized construction for E11), one Markdown file per rule E1 to E13, a clean pair, and security fixtures: HTML characters in every field, fake and nested links, unmatched backticks, `javascript:` and `file:` schemes, protocol-relative links, duplicate headers, locale collisions, and a variant draft that shadows an inherited base stanza. The rule is own-namespace shadowing: a variant's own `shadow-variant.alpha` hides the inherited `shadow-base.alpha` for that variant, even as a draft. The chain fixtures do not yet hold that shape: `shadow-variant.md` repeats the base id verbatim (`## shadow-base.alpha`), which the resolver honours because a foreign namespace is probed verbatim, while a probe for `shadow-variant.alpha` still reaches the base text; Tier 2 reshapes them to the own-namespace form. Per-fixture canonical dumps and report expectations under `fixtures/expected/*.txt` record the result for each; `-SelfTest` compares and prints the first difference as a bounded failure packet.
 
 ### 6.6 Not in this slice
 

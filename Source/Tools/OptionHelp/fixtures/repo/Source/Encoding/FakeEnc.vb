@@ -118,4 +118,13 @@ Public Class FakeEncParams
         .Text = "Collide",
         .Config = {1, 8},
         .Init = 1}
+
+    'A two-line caption, declared as the real Custom boxes are. The stanza's Label 'Wrap' matches
+    'neither 'Wrapped Caption' nor its first line 'Wrapped', so W2 fires; CustomSecond above, whose
+    'stanza Label 'Custom' equals the first line of 'Custom Second Pass', is the passing twin.
+    'Declared last so that no line number in the expectations moves.
+    Property Wrapped As New NumParam With {
+        .Switch = "--wrapped",
+        .Text = "Wrapped" + BR + "Caption",
+        .Config = {0, 5}}
 End Class

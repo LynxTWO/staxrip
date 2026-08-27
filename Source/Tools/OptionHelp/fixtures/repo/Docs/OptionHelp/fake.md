@@ -44,3 +44,9 @@ Status: reviewed
 ## fake.sigma
 Summary: Only a grandchild variant declares this switch.
 Status: draft
+
+## fake.wrapped
+Label: Wrap
+Summary: A two-line caption whose Label matches neither line.
+When to change: Rarely.
+Status: reviewed

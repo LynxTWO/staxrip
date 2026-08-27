@@ -978,7 +978,7 @@ function Test-OptionHelpRepository {
             # is what makes the collision visible. Keyed on the probe file's encoder id rather than
             # its name, so that a staxrip.en.md is caught as well.
             if ($r.ProbeEncoder -ceq 'staxrip' -and (Split-OhId -Id $p.Identity).Namespace -ceq $f.Encoder) {
-                $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W4'; Message = "$($p.Identity) resolves in staxrip.md" })
+                $warnings.Add([pscustomobject]@{ File = $f.Encoder; Line = 0; Code = 'W4'; Message = "$($p.Identity) resolves in $($r.ProbeFile)" })
             }
             switch ($r.Outcome) {
                 'reviewed' { $reviewed++ }
