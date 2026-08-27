@@ -815,8 +815,8 @@ Status: reviewed
 ## svt-av1.superres-mode
 Label: Super-Resolution Mode
 Summary: Codes each frame at a reduced width and leaves the player to stretch it back to full width, an AV1 tool for very low bitrates. Off by default; in tests it cost more quality than it saved.
-Used when: Not with Low Delay, so not with Constant Bitrate, and not with 2-pass Variable Bitrate: the bundled build stops before encoding on either (tested).
-When to change: Leave it at 0. Upstream says the gain comes only at very low bitrates, and the bundled build switches off its temporal dependency model whenever it scales. In a CRF test, mode 1 at half width halved the file but dropped PSNR from 43 to 32 dB, while CRF 45 without it gave a smaller file at 38.5 dB. Modes 3 and 4 never scaled a frame on the test clip; the bundled build calls 2 a testing mode.
+Used when: Not with Low Delay, so not with Constant Bitrate, and not with 2-pass Variable Bitrate: the bundled build stops before encoding in each case (tested).
+When to change: Leave it at 0. Upstream says any coding gain comes only at very low bitrates, and only in the automatic mode; the bundled build switches off its temporal dependency model whenever it scales. In a CRF test, mode 1 at half width halved the file but dropped PSNR from 43 to 32 dB, while CRF 45 without it gave a smaller file at 38.5 dB. Modes 3 and 4 never scaled a frame in tests.
 Example: Test: 640x480 testsrc2 clip, 24 frames, preset 8, CRF 35; PSNR by ffmpeg against the source. Plain: 105036 bytes, 43.1 dB. Mode 1, denominator 16: 50461 bytes, 32.1 dB. Plain at CRF 45: 44312 bytes, 38.5 dB. On a noisy 160x120 clip, mode 1 at 16 made the file 43% larger.
 Values:
 - 0: Off. The encoder default and StaxRip's.
@@ -864,7 +864,8 @@ Status: reviewed
 Label: SuperRes q-threshold
 Summary: The quantizer a frame must exceed before Super-Resolution Mode 3 codes it at reduced width, on the 0 to 63 scale; 63 means never. In tests it never triggered.
 Used when: Super-Resolution Mode 3 only; the control is hidden and nothing is sent otherwise. Keyframes use SuperRes q-threshold for KeyFrames instead.
-When to change: Leave it at 43, the encoder default. In tests with the bundled build (640x480 clip, preset 8, CRF 35 and 60), mode 3 scaled nothing at 0, 43 or 63 here: the file stayed within 2 bytes of the plain encode, and only 63 in both thresholds gave the identical file. Upstream says only that the frame's QP is compared with the threshold and that 63 means no scaling.
+When to change: Leave it at 43, the encoder default. In tests with the bundled build, mode 3 scaled nothing at 0, 43 or 63 here: the file stayed within 2 bytes of the plain encode, and only 63 in both thresholds gave the identical file. Upstream says only that the frame's QP is compared with the threshold and that 63 means no scaling.
+Example: Test: 640x480 testsrc2 clip, 24 frames, preset 8, mode 3. At CRF 35, 0, 43 and 63 here all gave 105037 bytes against 105036 plain, and 63 in both thresholds gave the plain file; at CRF 60, 9994 bytes against 9992 plain.
 Related: svt-av1.superres-mode, svt-av1.superres-kf-qthres, svt-av1.crf, concept.quality-level, concept.super-resolution
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#super-resolution
@@ -875,7 +876,8 @@ Status: reviewed
 Label: SuperRes q-threshold for KeyFrames
 Summary: The quantizer a keyframe must exceed before Super-Resolution Mode 3 codes it at reduced width, on the 0 to 63 scale; 63 means never. The frames between keyframes use SuperRes q-threshold.
 Used when: Super-Resolution Mode 3 only; the control is hidden and nothing is sent otherwise.
-When to change: Leave it at 43, the encoder default. In tests with the bundled build (640x480 clip, preset 8, CRF 35 and 60), mode 3 scaled no keyframe at 0, 43 or 63 here; the file stayed within 2 bytes of the plain encode whatever the two thresholds, and only 63 in both gave the identical file. Upstream says only that the QP is compared with the threshold and that 63 means no scaling.
+When to change: Leave it at 43, the encoder default. In tests with the bundled build, mode 3 scaled no keyframe at 0, 43 or 63 here; the file stayed within 2 bytes of the plain encode whatever the two thresholds, and only 63 in both gave the identical file. Upstream says only that the QP is compared with the threshold and that 63 means no scaling.
+Example: Test: 640x480 testsrc2 clip, 24 frames, preset 8, mode 3, CRF 35. 0 or 63 here with SuperRes q-threshold at 43: 105037 bytes, as at 43, against 105036 plain; 63 in both thresholds gave the plain file.
 Related: svt-av1.superres-mode, svt-av1.superres-qthres, svt-av1.crf, concept.quality-level, concept.keyframe, concept.super-resolution
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#super-resolution
@@ -896,7 +898,8 @@ Status: reviewed
 Label: S-Frame Insertion Mode
 Summary: Chooses which frame becomes the S-frame when S-Frame Interval comes due: the frame at the interval, but only if it is an alternate reference frame (1), or the next such frame (2).
 Used when: Only with S-Frame Interval above 0; at 0 the bundled build ignored the mode (tested: byte-identical output).
-When to change: Leave it at 2, the encoder default. On the test clip 1 and 2 gave the same file with Level Of Parallelism at 1, so the choice made no difference there, and the help says no more. The bundled build also takes modes 3 and 4, which put S-frames at frame numbers given with `--sframe-posi`; StaxRip does not offer them, so they belong in the Custom box.
+When to change: Leave it at 2, the encoder default. In a test 1 and 2 gave the same file with Level Of Parallelism at 1, so the choice made no difference there, and the help says no more. The bundled build also takes modes 3 and 4, which upstream documents as taking frame numbers from `--sframe-posi` (the bundled help names mode 3 only); StaxRip does not offer them, so they belong in the Custom box.
+Example: Test: 640x480 testsrc2 clip, 24 frames, preset 8, CRF 35, S-Frame Interval 8, Level Of Parallelism 1. Modes 1 and 2 gave the same 110661-byte file; either mode alone with the interval at 0 gave the plain 105036-byte file.
 Values:
 - 1: The frame at the interval, and only if it is an alternate reference frame. Same file as 2 in a test.
 - 2: The next alternate reference frame after the interval. The encoder default and StaxRip's; nothing is sent for it.
@@ -909,7 +912,7 @@ Status: reviewed
 Label: Resize Mode
 Summary: Codes frames at a reduced width and height and the player shows them that size: reference scaling, an AV1 tool for low-bitrate streaming. Off by default; it crashed the bundled build in most tests.
 Used when: Mode 3 works only in 1-pass Constant Bitrate with Low Delay; anywhere else the bundled build warns and encodes plainly (tested). The other modes ran, or crashed, whatever the rate control.
-When to change: Leave it at 0. Unlike super-resolution the player does not scale the picture back, so the video plays smaller or changes size at a keyframe or event, and the encoder drops its temporal dependency model. Every mode that scaled the frames between keyframes crashed the bundled build in 31 of 43 test runs, and when it ran the output differed from run to run. Scaling keyframes alone ran every time.
+When to change: Leave it at 0. Unlike super-resolution the player does not scale the picture back, so the video plays smaller or changes size at a keyframe or event, and the encoder drops its temporal dependency model. In tests, 31 of 43 runs that scaled the frames between keyframes crashed the bundled build, and the runs that finished gave different files. Scaling keyframes alone ran every time.
 Example: 640x480 testsrc2 clip, 24 frames, preset 8, CRF 35. Mode 1 with both denominators at 16 ran once, 56110 bytes against 105036 plain, every frame decoded at 320x240; the same setting crashed at presets 4 and 12 and with a bitrate target. Dynamic mode in Constant Bitrate never scaled a frame.
 Values:
 - 0: Off. The encoder default and StaxRip's.
@@ -941,7 +944,7 @@ Status: reviewed
 Label: Resize Denominator for KeyFrames
 Summary: Sets the size keyframes are coded at in Resize Mode 1, as 8 over this number in width and height alike: 8 is full size, 16 is half width and half height. The other frames follow Resize Denominator.
 Used when: Resize Mode 1 only; the control is hidden and nothing is sent otherwise.
-When to change: Leave it at 8. Scaling keyframes alone was the one resize setting that finished every test run, four of four, but the decoded video then changes size after each keyframe, which StaxRip's muxing was never tested with, and the file did not shrink: 16 gave 106699 to 108088 bytes against 105036 plain, a different file each run. With Resize Denominator also away from 8 it crashed in most runs.
+When to change: Leave it at 8. Scaling keyframes alone was the one resize setting that finished every test run, four of four, but the decoded video then changes size after each keyframe, and the file did not shrink: 16 gave 106699 to 108088 bytes against 105036 plain, a different file each run. With Resize Denominator also away from 8 it crashed in most runs.
 Example: Test: 640x480 testsrc2 clip, 24 frames, preset 8, CRF 35. 16 here with Resize Denominator at 8: the first frame decoded at 320x240 and the 23 after it at 640x480, read back with ffprobe.
 Values:
 - 8: Full size, no scaling. The encoder default and StaxRip's.
@@ -978,6 +981,7 @@ Label: Resize Denominator for KeyFrames In Event
 Summary: Lists, one per entry in Resize Events, the size keyframes are coded at from that event on, as 8 over the number in width and height alike: 8 is full size, 16 half of each.
 Used when: Resize Mode 4 only; the control is hidden and nothing is sent otherwise. Needs Resize Events and Resize Denominator In Event with the same number of entries.
 When to change: Leave it empty. The list must match Resize Events in length or the bundled build stops before encoding, and without Resize Denominator In Event the events did nothing (tested: byte-identical to mode 4 alone). Upstream's appendix suggests milder scaling for keyframes, 8/9 or 8/10, than for the frames between them, 8/13 to 8/16, where bandwidth forces scaling at all.
+Example: Test: 640x480 testsrc2 clip, 24 frames, preset 8, CRF 35, Resize Mode 4, events `5,10,15`, this list `16,15,14`, Resize Denominator In Event empty: 107694 bytes, the same file as Resize Mode 4 with no lists at all.
 Related: svt-av1.resize-mode, svt-av1.frame-resz-events, svt-av1.frame-resz-denoms, svt-av1.resize-kf-denom, concept.keyframe
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#reference-scaling
@@ -986,20 +990,20 @@ Status: reviewed
 
 ## svt-av1.lossless
 Label: Lossless
-Summary: Reproduces every pixel of your script exactly, at a huge cost in size: 59 and 4 times the CRF 35 file on two test clips. A PMod addition to the encoder; off by default.
-Used when: Quality mode only. With Variable or Constant Bitrate the bundled build switches to CQP and then refuses the Target Bitrate StaxRip sends, so the encode stops (tested).
-When to change: For an archive or intermediate where nothing may change, and only with Preset at 10 or below: at 11 to 13 the bundled build wrote a stream that decoded to garbage or not at all (tested). It forces Adaptive Quantization 0 and takes over the quantizer, Maximum Bitrate, quantization matrices and the loop filters; Film Grain Level and super-resolution still alter the output, so leave them off.
-Example: Noisy 160x120 and 640x480 testsrc2 clips, 24 frames, preset 8; ffmpeg's PSNR against the source read inf from CRF 1 to 60. Sizes 266853 and 462585 bytes, against 4526 and 105036 at CRF 35. Presets 2 to 10 decoded exactly, 11 to 13 did not. Tune, Sharpness, AC Bias and Max TX Size changed nothing.
-Related: svt-av1.crf, svt-av1.aq-mode, svt-av1.preset, svt-av1.rc, svt-av1.tbr, svt-av1.enable-qm, svt-av1.mbr, svt-av1.enable-dlf, svt-av1.enable-cdef, svt-av1.enable-restoration, svt-av1.film-grain, svt-av1.superres-mode, svt-av1.resize-mode, svt-av1.tune, concept.lossless, concept.quality-level
+Summary: Reproduces every pixel of your script exactly, at a huge cost in size: 59 and 4 times the CRF 35 file on two test clips. Added by the Patman build of the encoder StaxRip bundles; off by default.
+Used when: Quality mode only. With Variable or Constant Bitrate the bundled build switches to a fixed quantizer and then refuses the Target Bitrate StaxRip sends, so the encode stops (tested).
+When to change: For an archive or intermediate that must not change, at a Preset that decoded exactly in tests, 2, 4, 6, 8, 9 or 10: at 11 to 13 the bundled build's output decoded to garbage or not at all (tested). It forces Adaptive Quantization 0 and overrides the quantizer, Maximum Bitrate, quantization matrices and loop filters; Film Grain Level and super-resolution still alter the output; leave them off.
+Example: Noisy 160x120 and 640x480 testsrc2 clips, 24 frames, preset 8; ffmpeg's PSNR against the source read inf from CRF 1 to 60. Sizes 266853 and 462585 bytes, against 4526 and 105036 at CRF 35. Presets 2, 4, 6, 8, 9 and 10 decoded exactly; 11 to 13 did not. Tune, Sharpness and AC Bias changed nothing.
+Related: svt-av1.crf, svt-av1.cqp, svt-av1.aq-mode, svt-av1.preset, svt-av1.rc, svt-av1.tbr, svt-av1.enable-qm, svt-av1.mbr, svt-av1.enable-dlf, svt-av1.enable-cdef, svt-av1.enable-restoration, svt-av1.film-grain, svt-av1.superres-mode, svt-av1.resize-mode, svt-av1.tune, concept.lossless, concept.quality-level
 References:
 - https://github.com/Patman86/SVT-AV1-Mod-by-Patman/releases
 Status: reviewed
 
 ## svt-av1.avif
 Label: Avif (Still-Picture Coding)
-Summary: Switches the encoder to still-picture coding for AVIF images and cuts the output to 3 frames: on a video it keeps the first 3, prints an error and still reports success (tested). Leave it off.
+Summary: Switches the encoder to still-picture coding for AVIF images and cuts the output to 3 frames: on a video it prints an error and still reports success (tested). Leave it off.
 Used when: Quality mode only: with Variable Bitrate the bundled build hung and never finished (tested with a 20-second limit, and once for 10 minutes), and with Constant Bitrate it stops with an error.
-When to change: Leave it off for video. Turn it on only to code one frame as an image, with Frames To Be Encoded at 1: every frame is then a keyframe, and Tune 3 (IQ, still-image quality), which the bundled build otherwise refuses, becomes usable. On a video it stops after 3 frames with "AVIF flag is specified, but more than 3 frames were sent" and exit code 0, so StaxRip would mux a 3-frame file.
+When to change: Leave it off for video. Turn it on only to code one frame as an image, with Frames To Be Encoded at 1: every frame is then a keyframe, and Tune 3 (IQ), which the bundled build refuses in the default Random Access structure, becomes usable. On a video it stops after 3 frames with "AVIF flag is specified, but more than 3 frames were sent" and exit code 0, so StaxRip would mux a 3-frame file.
 Example: Test: 640x480 testsrc2 clip, preset 8, CRF 35. One frame: 6770 bytes with it on, 8053 off, quality not compared. The 24-frame clip with it on: 3 frames, 20726 bytes, exit code 0. Upstream describes it as still-picture optimizations for efficiency and lower memory use.
 Related: svt-av1.frames, svt-av1.tune, svt-av1.rc, svt-av1.lossless, concept.keyframe
 References:
