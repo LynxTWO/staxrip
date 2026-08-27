@@ -447,12 +447,20 @@ Public Class SvtAv1EncParams
         End Get
     End Property
 
+    Public Overrides ReadOnly Property OptionHelpId As String
+        Get
+            Return "svt-av1"
+        End Get
+    End Property
+
 
     Property OverrideTargetFileName As New BoolParam() With {
+        .OptionHelpKey = "staxrip.override-target-file-name",
         .Text = "Override Target File Name",
         .Init = False}
 
     Property TargetFileName As New StringParam With {
+        .OptionHelpKey = "staxrip.target-file-name",
         .Text = "Target File Name",
         .Quotes = QuotesMode.Never,
         .TextChangedAction = Sub(text) TargetFileNamePreview.Value = Macro.ExpandParamValues(text, Items),
@@ -463,6 +471,7 @@ Public Class SvtAv1EncParams
                       End Sub}
 
     Property TargetFileNamePreview As New StringParam With {
+        .OptionHelpKey = "staxrip.target-file-name-preview",
         .Text = "Preview",
         .Quotes = QuotesMode.Never,
         .InitAction = Sub(tb)
@@ -475,12 +484,14 @@ Public Class SvtAv1EncParams
                       End Sub}
 
     Property Decoder As New OptionParam With {
+        .OptionHelpKey = "staxrip.decoder",
         .Text = "Decoder",
         .Expanded = True,
         .Options = {"AviSynth/VapourSynth", "QSVEnc (Intel)", "ffmpeg (Intel)", "ffmpeg (DXVA2)"},
         .Values = {"script", "qs", "ffqsv", "ffdxva"}}
 
     Property PipingToolAVS As New OptionParam With {
+        .OptionHelpKey = "staxrip.pipe",
         .Name = "PipingToolAVS",
         .Text = "Pipe",
         .Expanded = True,
@@ -488,6 +499,7 @@ Public Class SvtAv1EncParams
         .Options = {"Automatic", "avs2pipemod", "ffmpeg"}}
 
     Property PipingToolVS As New OptionParam With {
+        .OptionHelpKey = "staxrip.pipe",
         .Name = "PipingToolVS",
         .Text = "Pipe",
         .Expanded = True,
@@ -495,6 +507,7 @@ Public Class SvtAv1EncParams
         .Options = {"Automatic", "vspipe", "ffmpeg"}}
 
     Property CompCheck As New NumParam With {
+        .OptionHelpKey = "staxrip.comp-check",
         .Name = "CompCheckQuant",
         .Text = "Comp. Check",
         .Value = 18,
@@ -502,6 +515,7 @@ Public Class SvtAv1EncParams
         .Config = {1, 50}}
 
     Property CompCheckAimedQuality As New NumParam With {
+        .OptionHelpKey = "staxrip.aimed-quality",
         .Name = "CompCheckAimedQuality",
         .Text = "Aimed Quality",
         .Value = 50,
@@ -509,6 +523,7 @@ Public Class SvtAv1EncParams
         .Config = {1, 100}}
 
     Property Chunks As New NumParam With {
+        .OptionHelpKey = "staxrip.chunks",
         .Text = "Chunks",
         .Config = {1, 128},
         .Init = 1}
@@ -1209,6 +1224,7 @@ Public Class SvtAv1EncParams
                       End Sub}
 
     Property ContentLightLevel As New StringParam With {
+        .OptionHelpKey = "none",
         .Switch = "--content-light",
         .Text = "Content Light Level",
         .ArgsFunc = Function() If(MaxCLL.Value <> 0 OrElse MaxFALL.Value <> 0, """" & MaxCLL.Value & "," & MaxFALL.Value & """", ""),
@@ -1222,6 +1238,7 @@ Public Class SvtAv1EncParams
         .Init = ""}
 
     Property MaxCLL As New NumParam With {
+        .OptionHelpKey = "svt-av1.content-light.max-cll",
         .Text = "Maximum CLL",
         .Switch = "--content-light",
         .Config = {0, 65535, 50},
@@ -1236,6 +1253,7 @@ Public Class SvtAv1EncParams
         .Init = 0}
 
     Property MaxFALL As New NumParam With {
+        .OptionHelpKey = "svt-av1.content-light.max-fall",
         .Switches = {"--content-light"},
         .Text = "Maximum FALL",
         .Config = {0, 65535, 50},
@@ -1245,6 +1263,7 @@ Public Class SvtAv1EncParams
     '   --------------------------------------------------------
 
     Property Custom As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom",
         .Quotes = QuotesMode.Never,
         .AlwaysOn = True,
@@ -1254,6 +1273,7 @@ Public Class SvtAv1EncParams
                       End Sub}
 
     Property CustomFirstPass As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom" + BR + "First Pass",
         .Quotes = QuotesMode.Never,
         .VisibleFunc = Function() Passes > 1,
@@ -1263,6 +1283,7 @@ Public Class SvtAv1EncParams
                       End Sub}
 
     Property CustomSecondPass As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom" + BR + "Second Pass",
         .Quotes = QuotesMode.Never,
         .VisibleFunc = Function() Passes > 1,
@@ -1272,6 +1293,7 @@ Public Class SvtAv1EncParams
                       End Sub}
 
     Property CustomThirdPass As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom" + BR + "Third Pass",
         .Quotes = QuotesMode.Never,
         .VisibleFunc = Function() Passes > 2,

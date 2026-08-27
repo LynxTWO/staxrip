@@ -19,6 +19,54 @@ Namespace VideoEncoderCommandLine
 
         MustOverride ReadOnly Property Package As Package
 
+        ''' <summary>The Docs/OptionHelp file id for this encoder, or Nothing when it has no help file.</summary>
+        Overridable ReadOnly Property OptionHelpId As String
+            Get
+                Return Nothing
+            End Get
+        End Property
+
+        ''' <summary>JSON facts for Check-OptionHelp.ps1 -CompareFacts: one object per parameter in Items order.</summary>
+        Function ExportOptionHelpFacts() As String
+            Dim names As New Dictionary(Of CommandLineParam, String)
+
+            For Each prop In Me.GetType.GetProperties()
+                If GetType(CommandLineParam).IsAssignableFrom(prop.PropertyType) AndAlso prop.GetIndexParameters().Length = 0 Then
+                    Dim value = TryCast(prop.GetValue(Me), CommandLineParam)
+                    If value IsNot Nothing AndAlso Not names.ContainsKey(value) Then names(value) = prop.Name
+                End If
+            Next
+
+            Dim sb As New StringBuilder
+            sb.Append("{""encoder"":" + OptionHelpJson.Quote(OptionHelpId) + ",""parameters"":[")
+            Dim first = True
+
+            For Each param In Items
+                If TypeOf param Is LineParam Then Continue For
+                If Not first Then sb.Append(",")
+                first = False
+                Dim identity = param.OptionHelpIdentity(OptionHelpId)
+                Dim excluded = identity = "none"
+                Dim values As String() = {}
+                Dim op = TryCast(param, OptionParam)
+
+                If op IsNot Nothing AndAlso op.Options IsNot Nothing Then
+                    values = Enumerable.Range(0, op.Options.Length).Select(Function(i) op.GetEmittedValue(i)).ToArray
+                End If
+
+                sb.Append("{""name"":" + OptionHelpJson.Quote(If(names.ContainsKey(param), names(param), "-")))
+                sb.Append(",""type"":" + OptionHelpJson.Quote(param.GetType.Name))
+                sb.Append(",""identity"":" + OptionHelpJson.Quote(If(excluded, Nothing, identity)))
+                sb.Append(",""excluded"":" + If(excluded, "true", "false"))
+                sb.Append(",""caption"":" + OptionHelpJson.Quote(param.Text))
+                sb.Append(",""switches"":" + OptionHelpJson.Array(param.GetSwitches))
+                sb.Append(",""values"":" + OptionHelpJson.Array(values) + "}")
+            Next
+
+            sb.Append("]}")
+            Return sb.ToString
+        End Function
+
         Overridable Function GetCommandLinePreview() As String
             Return GetCommandLine(True, True)
         End Function
@@ -37,11 +85,7 @@ Namespace VideoEncoderCommandLine
                 i.Path = path
 
                 If i.HelpSwitch = "" Then
-                    Dim switches = i.GetSwitches
-
-                    If Not switches.NothingOrEmpty Then
-                        i.HelpSwitch = switches(0)
-                    End If
+                    i.HelpSwitch = i.PrimaryHelpSwitch()
                 End If
 
                 ItemsValue.Add(i)
@@ -211,6 +255,31 @@ Namespace VideoEncoderCommandLine
         Property URLs As List(Of String)
         Property VisibleFunc As Func(Of Boolean)
         Property Weight As Integer
+
+        Property OptionHelpKey As String
+
+        ''' <summary>The one switch help is keyed on: explicit HelpSwitch, else Switch, else NoSwitch, else the first Switches entry.</summary>
+        Function PrimaryHelpSwitch() As String
+            If HelpSwitch <> "" Then Return HelpSwitch
+            If Switch <> "" Then Return Switch
+            If NoSwitch <> "" Then Return NoSwitch
+
+            If Not Switches.NothingOrEmpty Then
+                For Each i In Switches
+                    If i <> "" Then Return i
+                Next
+            End If
+
+            Return Nothing
+        End Function
+
+        ''' <summary>Stable option-help identity: the explicit key, "none" when excluded, else encoderId.switch, else Nothing.</summary>
+        Function OptionHelpIdentity(encoderId As String) As String
+            If OptionHelpKey <> "" Then Return OptionHelpKey
+            Dim sw = PrimaryHelpSwitch()
+            If encoderId = "" OrElse sw Is Nothing Then Return Nothing
+            Return encoderId + "." + sw.TrimStart("-"c)
+        End Function
 
         Friend Store As PrimitiveStore
         Friend Params As CommandLineParams
@@ -603,6 +672,13 @@ Namespace VideoEncoderCommandLine
             End Get
         End Property
 
+        ''' <summary>The value string GetArgs emits for a dropdown index, without the switch.</summary>
+        Function GetEmittedValue(index As Integer) As String
+            If Values IsNot Nothing Then Return Values(index)
+            If IntegerValue Then Return index.ToString
+            Return Options(index).ToLowerInvariant.Replace(" ", "")
+        End Function
+
         Sub ValueChangedUser(obj As Object)
             Value = CInt(obj)
             Params.RaiseValueChanged(Me)
@@ -661,20 +737,12 @@ Namespace VideoEncoderCommandLine
 
             If ArgsFunc Is Nothing Then
                 If Value <> DefaultValue OrElse AlwaysOn Then
-                    If Not Values Is Nothing Then
-                        If Values(Value).StartsWith("--") Then
-                            Return Values(Value)
-                        ElseIf Switch <> "" Then
-                            Dim v = Values(Value)
-                            Return Switch + If(String.IsNullOrWhiteSpace(v), "", Params.Separator & v)
-                        End If
+                    Dim v = GetEmittedValue(Value)
+
+                    If Values IsNot Nothing AndAlso v.StartsWith("--") Then
+                        Return v
                     ElseIf Switch <> "" Then
-                        If IntegerValue Then
-                            Return Switch + Params.Separator & Value
-                        Else
-                            Dim v = Options(Value).ToLowerInvariant.Replace(" ", "")
-                            Return Switch + If(String.IsNullOrWhiteSpace(v), "", Params.Separator & v)
-                        End If
+                        Return Switch + If(String.IsNullOrWhiteSpace(v), "", Params.Separator & v)
                     End If
                 End If
             Else
@@ -824,6 +892,32 @@ Namespace VideoEncoderCommandLine
 
         Public Overrides Function GetControl() As Control
             Return TextEdit
+        End Function
+    End Class
+
+    Public Class OptionHelpJson
+        Shared Function Quote(value As String) As String
+            If value Is Nothing Then Return "null"
+            Dim sb As New StringBuilder("""")
+
+            For Each c In value
+                Select Case c
+                    Case """"c : sb.Append("\""")
+                    Case "\"c : sb.Append("\\")
+                    Case Microsoft.VisualBasic.ControlChars.Lf : sb.Append("\n")
+                    Case Microsoft.VisualBasic.ControlChars.Cr : sb.Append("\r")
+                    Case Microsoft.VisualBasic.ControlChars.Tab : sb.Append("\t")
+                    Case Else
+                        If Microsoft.VisualBasic.Strings.AscW(c) < 32 Then sb.Append("\u" + Microsoft.VisualBasic.Strings.AscW(c).ToString("x4")) Else sb.Append(c)
+                End Select
+            Next
+
+            Return sb.Append("""").ToString
+        End Function
+
+        Shared Function Array(values As IEnumerable(Of String)) As String
+            If values Is Nothing Then Return "[]"
+            Return "[" + String.Join(",", values.Select(Function(v) Quote(v))) + "]"
         End Function
     End Class
 End Namespace
