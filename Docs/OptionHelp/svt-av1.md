@@ -355,7 +355,7 @@ Status: reviewed
 Label: Passes
 Summary: Chooses whether the encoder first analyzes the whole video and then encodes it with that knowledge, so a bitrate target is met more accurately. 1-pass encodes in one go.
 Used when: Shown with Variable Bitrate (1 or 2 passes) or Constant Bitrate (1 to 3). Quality mode has no pass control, and the bundled build refuses a second pass in CRF mode anyway (tested).
-When to change: For Variable Bitrate pick 2-pass when the size matters; upstream says multi-pass is what lets VBR reach its target. For Constant Bitrate leave it at 1-pass: the bundled build refuses multi-pass with the Low Delay structure CBR needs, and `--pass 3` outright (tested), so 2-pass and 3-pass fail. StaxRip keeps the first-pass statistics in a file named after the output plus `_2pass.log`.
+When to change: For Variable Bitrate pick 2-pass when the size matters; upstream says multi-pass helps VBR reach its target. For Constant Bitrate leave it at 1-pass: the bundled build refuses multi-pass with the Low Delay structure CBR needs, and `--pass 3` outright (tested), so 2-pass and 3-pass fail. StaxRip keeps the first-pass statistics in a file named after the output plus `_2pass.log`.
 Values:
 - 1: One pass. The default, and the only choice that works for Constant Bitrate in the bundled build.
 - 2: First pass gathers statistics, second pass encodes with them. Works for Variable Bitrate (tested).
@@ -384,9 +384,9 @@ Status: reviewed
 Label: High Bit Depth Mode Decisions
 Summary: Chooses the bit depth the encoder uses for its mode decisions with 10-bit video: 8-bit, 10-bit, or a mix. -1 lets the preset decide, and in this dialog it is the only entry that works.
 Used when: 10-bit video only. Upstream says 10-bit decisions need 10-bit input, and the bundled build refuses 1 and 2 with 8-bit video (tested).
-When to change: Leave it at -1: Off. StaxRip sends each entry's position rather than the number in its label, so the list is off by one and every other entry either stops the encode or, with 10-bit video, crashed the bundled build in a test unless Level Of Parallelism was 1 to 4. The notes on each entry say what is sent.
+When to change: Leave it at -1: Off. StaxRip sends each entry's position rather than the number in its label, so the list is off by one and every other entry either stops the encode or, with 10-bit video, crashed the bundled build in a test unless Level Of Parallelism was 1 to 3. The notes on each entry say what is sent.
 Encoder default: -1
-Example: To try 10-bit mode decisions anyway, put `--hbd-mds 1` in the Custom box (StaxRip then drops its own copy) and set Level Of Parallelism to 1 to 4: in a test with the bundled build (640x480 10-bit clip, 16-core machine) 1 and 2 crashed at the automatic level 6 and ran at 1 to 4.
+Example: To try 10-bit mode decisions, put `--hbd-mds 1` in the Custom box (StaxRip then drops its own copy) and set Level Of Parallelism to 1 to 3, which slows the encode: in a test (640x480 10-bit clip, 16-core machine) 1 and 2 ran at 1 to 3, crashed intermittently at 4 and always at 5 and 6.
 Values:
 - 0: The -1: Off entry. Nothing is sent and the preset decides; the only entry that works in this dialog.
 - 1: The 0: Forces 8-bit entry sends `--hbd-mds 1` (10-bit): refused for 8-bit video, crashed with 10-bit in a test.
@@ -401,7 +401,7 @@ Status: reviewed
 ## svt-av1.qp-scale-compress-strength
 Label: QP Scale Compress Strength
 Summary: Narrows the spread of quantizers between the frame layers of each group of pictures, 0 (off) to 3, so quality is steadier from frame to frame at some cost in average quality, per upstream.
-When to change: Leave it at 0 unless quality pulses between frames. Upstream calls 1 nearly free at almost any quality level, 2 the choice for high-quality encodes, and 3 the limit for the highest fidelity or a very low CRF, where it can even improve fidelity. Reference frames then sit closer in quality to the frames built on them, so upstream expects a small drop in average quality; check a short scene.
+When to change: Leave it at 0 unless quality pulses between frames. Upstream calls 1 nearly free at almost any quality level, 2 the choice for high-quality encodes, and 3 the limit for the highest fidelity or a very low CRF, where it can even improve fidelity. Reference frames then sit closer in quality to the frames built on them, so upstream expects average quality to drop; check a short scene.
 Related: svt-av1.crf, svt-av1.aq-mode, concept.quality-level
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters

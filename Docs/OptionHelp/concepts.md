@@ -67,7 +67,7 @@ Status: reviewed
 
 ## concept.bitrate
 Label: Bitrate
-Summary: How many bits the video uses per second, in kbps here; bitrate times running time is the file size. A bitrate mode aims at a number, a quality mode lets it float with the content.
+Summary: How many bits the video uses per second, in kbps here; bitrate times running time is the size of the video. A bitrate mode aims at a number, a quality mode lets it float with the content.
 When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#bitrate-control-modes
