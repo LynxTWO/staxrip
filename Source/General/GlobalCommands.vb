@@ -485,8 +485,26 @@ Public Class GlobalCommands
         Dim sb As New StringBuilder("{""schemaVersion"":1,""encoders"":[")
         Dim first = True
         Dim problems As New List(Of String)
+        Dim types As IEnumerable(Of Type)
 
-        For Each t In GetType(CommandLineParams).Assembly.GetTypes().OrderBy(Function(x) x.FullName, StringComparer.Ordinal)
+        ' Enumerating the types is its own failure: one type that cannot load throws for the whole
+        ' assembly, which would abort the command and write no file at all. A partially loadable
+        ' assembly still hands back every type that did load, so keep those and report the rest
+        ' through errors, where the caller can see which encoders are missing and why.
+        Try
+            types = GetType(CommandLineParams).Assembly.GetTypes()
+        Catch ex As ReflectionTypeLoadException
+            types = ex.Types.Where(Function(loaded) loaded IsNot Nothing)
+
+            For Each loaderEx In ex.LoaderExceptions
+                problems.Add("type load: " & loaderEx.Message)
+            Next
+        Catch ex As Exception
+            problems.Add("type enumeration: " & ex.Message)
+            types = Enumerable.Empty(Of Type)()
+        End Try
+
+        For Each t In types.OrderBy(Function(x) x.FullName, StringComparer.Ordinal)
             If t.IsAbstract OrElse Not GetType(CommandLineParams).IsAssignableFrom(t) Then Continue For
             If t.GetConstructor(Type.EmptyTypes) Is Nothing Then Continue For
 

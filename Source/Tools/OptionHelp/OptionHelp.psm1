@@ -1062,7 +1062,7 @@ function Compare-OptionHelpFacts {
                 # not shown", and never reaching Items says exactly the same thing, so the two sides
                 # already agree and there is nothing to report. A parameter that is not excluded is
                 # still reported, and so is one the application exported but the extractor did not.
-                if ($p.Excluded) { continue }
+                if ([bool]$p.Excluded) { continue }
                 $out.Add("E11 $key missing from the application export"); continue
             }
             $a = $app[$key]
