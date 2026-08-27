@@ -70,6 +70,38 @@ Module Program
             End If
         Next
 
+        ' ParseInline and OptionHelpRoute have no counterpart in the PowerShell reference: it
+        ' validates authored text, it never renders it and it follows no links. These two blocks are
+        ' the only check on the node kinds the document writers switch on and on the route allowlist.
+        For Each line In File.ReadAllLines(Path.Combine(chainDir, "render-cases.txt"))
+            If line.Trim() = "" OrElse line.StartsWith("#", StringComparison.Ordinal) Then Continue For
+            count += 1
+            Dim parts = line.Split({" => "}, StringSplitOptions.None)
+            Dim actual = String.Join(",", OptionHelpParser.ParseInline(parts(0)).Select(Function(n) n.Kind))
+
+            If actual <> parts(1) Then
+                failures += 1
+                Console.Error.WriteLine("FAIL render '" & line & "' actual '" & actual & "'")
+            End If
+        Next
+
+        For Each line In File.ReadAllLines(Path.Combine(chainDir, "route-cases.txt"))
+            If line.Trim() = "" OrElse line.StartsWith("#", StringComparison.Ordinal) Then Continue For
+            count += 1
+            Dim parts = line.Split({" => "}, StringSplitOptions.None)
+            Dim route As OptionHelpRoute = Nothing
+            Dim actual = "reject"
+
+            If OptionHelpRoute.TryParse(New Uri(parts(0)), route) Then
+                actual = If(route.Kind = "ConsoleHelp", "console-help", "option:" & route.Id)
+            End If
+
+            If actual <> parts(1) Then
+                failures += 1
+                Console.Error.WriteLine("FAIL route '" & line & "' actual '" & actual & "'")
+            End If
+        Next
+
         Console.Error.WriteLine("harness: " & count & " cases, " & failures & " failures")
         Return If(failures > 0, 1, 0)
     End Function

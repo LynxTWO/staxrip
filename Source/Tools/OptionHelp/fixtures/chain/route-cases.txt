@@ -1,0 +1,13 @@
+# OptionHelpRoute.TryParse outcomes: <uri> => console-help | option:<id> | reject. Blank lines and
+# lines starting with # are ignored. This surface is VB only: the PowerShell reference follows no
+# links and parses no URIs, so it has no equivalent of these cases.
+staxrip://console-help => console-help
+staxrip://console-help/ => console-help
+staxrip://option/svt-av1.preset => option:svt-av1.preset
+staxrip://option/svt-av1.preset/ => option:svt-av1.preset
+staxrip://option/Bad.Id => reject
+staxrip://option/svt-av1.preset/extra => reject
+staxrip://option/ => reject
+staxrip://other => reject
+http://x => reject
+about:blank => reject

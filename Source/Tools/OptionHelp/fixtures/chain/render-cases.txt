@@ -1,0 +1,12 @@
+# ParseInline node kinds: <text> => <kind>[,<kind>...]. Blank lines and lines starting with #
+# are ignored. This surface is VB only: the PowerShell reference validates authored text, it never
+# renders it, so it has no equivalent of these cases and the harness is their only check.
+plain => text
+`code` => code
+a `code` b => text,code,text
+a `b` c `d` e => text,code,text,code,text
+[t](https://x) => link
+see [docs](https://example.com/a) now => text,link,text
+[a](https://x) and [b](http://y) => link,text,link
+[t](javascript:x) => text
+`unbalanced => text

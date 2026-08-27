@@ -93,7 +93,7 @@ Use short sentences, plain words, active voice, ASCII punctuation, and direct na
 
 ## Option help
 
-Encoder option help lives in `Docs/OptionHelp/*.md` under the grammar in `Docs/Planning/OPTION-HELP.md`; `Docs/OptionHelp/README.md` is the authoring guide. Run `pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1` before a pull request that touches `Source/Encoding/*.vb` or `Docs/OptionHelp/`; a new parameter needs at least a draft stanza. Draft the prose with whichever model or writer produces the warmest, clearest friend-to-friend English; a stanza becomes `reviewed` only after technical verification against the bundled encoder version and a human readability review in the real dialog.
+Encoder option help lives in `Docs/OptionHelp/*.md` under the grammar in `Docs/Planning/OPTION-HELP.md`; `Docs/OptionHelp/README.md` is the authoring guide. Run `pwsh -NoProfile -File Source/Tools/OptionHelp/Check-OptionHelp.ps1` before a pull request that touches `Source/Encoding/*.vb` or `Docs/OptionHelp/`; a new parameter needs at least a draft stanza. Draft the prose with whichever model or writer produces the warmest, clearest friend-to-friend English; a stanza becomes `reviewed` only after technical verification against the bundled encoder version and a human readability review in the real dialog. After a build, `pwsh -NoProfile -File Source/Tests/OptionHelp/Probe-Embedded.ps1` proves the built executable can load the help resources; run it before a pull request that touches the project file or `OptionHelp.vb`.
 
 ## Pull request close-out
 
