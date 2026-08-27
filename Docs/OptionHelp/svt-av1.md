@@ -5,8 +5,8 @@ Encoder: svt-av1
 Locale: en
 Title: SVT-AV1
 Source: Source/Encoding/SvtAv1Enc.vb
-Allowed-Missing: 38
-Minimum-Reviewed: 62
+Allowed-Missing: 23
+Minimum-Reviewed: 77
 Reviewed-Complete: false
 Verified-Encoder-Version: SVT-AV1 v4.2.0+71+88-17cd99550 [Mod by Patman] (release)
 Verified-Encoder-Build: 17cd99550
@@ -206,6 +206,7 @@ When to change: Leave it on. Turn it off only to compare against the fixed block
 Values:
 - 0: One fixed grain block size whatever the resolution.
 - 1: Block size follows the resolution. The encoder default.
+Related: svt-av1.film-grain
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
 Status: reviewed
@@ -254,7 +255,7 @@ Label: Constant Quantization Parameter
 Summary: Sets one fixed quantizer for the whole video on the same 1 to 70 scale as CRF, but with adaptive quantization off: lower is a better picture and a larger file.
 Used when: Quality mode with Adaptive Quantization at 0: Off. The help likens it to `--rc 0 --aq-mode 0 --qp x`; in a test, `--cqp 30` and `--crf 30` gave identical output with adaptive quantization off.
 When to change: Leave Adaptive Quantization at 2 and use Constant Rate Factor unless you want every frame quantized the same way, say for a comparison. With adaptive quantization off the bundled build also switches off its temporal dependency model (TPL) and ignores Maximum Bitrate; it prints a warning for each. StaxRip starts you at 35, the encoder default, in steps of 0.25.
-Related: svt-av1.crf, svt-av1.qp, svt-av1.aq-mode, svt-av1.rc, concept.quality-level
+Related: svt-av1.crf, svt-av1.qp, svt-av1.aq-mode, svt-av1.rc, svt-av1.enable-tpl-la, concept.quality-level
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
 Status: reviewed
@@ -321,7 +322,7 @@ Values:
 - 0: The weakest setting.
 - 3: The encoder default and StaxRip's.
 - 4: The strongest filtering.
-Related: svt-av1.tune, svt-av1.ac-bias
+Related: svt-av1.enable-tf, svt-av1.tune, svt-av1.ac-bias
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
@@ -374,7 +375,7 @@ Values:
 - 0: Off. One quantizer per frame, set as CQP. The bundled build also disables TPL and ignores Maximum Bitrate (tested).
 - 1: Variance based, using AV1 segments; set as QP. The bundled build warns it is at demo and experimentation level.
 - 2: Per-block deltas driven by prediction efficiency; set as CRF. The encoder default and StaxRip's.
-Related: svt-av1.crf, svt-av1.cqp, svt-av1.qp, svt-av1.mbr, svt-av1.rc
+Related: svt-av1.crf, svt-av1.cqp, svt-av1.qp, svt-av1.mbr, svt-av1.rc, svt-av1.enable-tpl-la
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
 Status: reviewed
@@ -411,7 +412,7 @@ Status: reviewed
 Label: AC Bias in Rate Distortion
 Summary: Tilts the encoder's rate-distortion choices toward keeping high-frequency detail such as texture and grain, from 0.0 (off) to 8.0. Upstream calls it an energy-preserving psychovisual metric.
 When to change: Leave it at 0.0 for a first encode. Upstream suggests 1.0 to 1.5 to keep textures and busy motion crisp, and 4.0 to 6.0 together with temporal filtering and CDEF (the Constrained Directional Enhancement Filter) turned off to retain film grain and noise. It costs bits: in a test on a small clip, 1.25 and 8 both grew the file. Compare a grainy scene at 0 and at 1.25 before using it everywhere.
-Related: svt-av1.sharpness, svt-av1.tf-strength, svt-av1.tune
+Related: svt-av1.sharpness, svt-av1.tf-strength, svt-av1.enable-cdef, svt-av1.tune
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
@@ -623,4 +624,186 @@ Values:
 Related: svt-av1.enable-variance-boost, svt-av1.variance-boost-strength
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
+Status: reviewed
+
+## svt-av1.tile-rows
+Label: Tile Rows
+Summary: Splits each frame into horizontal strips that are coded on their own, so a player with spare cores can decode them in parallel. Upstream says tiles cost quality; 0 leaves the frame whole.
+When to change: Leave it at 0 unless a player or delivery spec needs tiles. Upstream lists them among the tips for a stuttering decoder, with a gain only if the player decodes tiles in parallel, and warns that many tiles can show as artifacts. The value is a power of two: 1 is 2 rows, 2 is 4, 6 is 64; rows the picture cannot hold are cut (tested). Above 0 the bundled build suggests adding Fast Decode 1 or 2.
+Example: In CRF tests with the bundled build (testsrc2 clips, preset 8), 2 rows made a 3840x2160 clip 3% larger and a 640x480 clip 1% smaller; at 640x480, 3 to 6 gave the same file. Without the switch the encoder chose 0 from 160x120 to 3840x2160, though its help says the default changes per resolution.
+Related: svt-av1.tile-columns, svt-av1.fast-decode, svt-av1.lp, concept.tiles
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#improving-decoding-performance
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#threading-and-efficiency
+Status: reviewed
+
+## svt-av1.tile-columns
+Label: Tile Columns
+Summary: Splits each frame into vertical strips that are coded on their own, so a player with spare cores can decode them in parallel. Upstream says tiles cost quality; 0 leaves the frame whole.
+When to change: Leave it at 0 unless a player or a delivery spec needs tiles. Upstream's decoding tips give 2 (4 columns) as the example, with a gain only where the player decodes tiles in parallel, and warn that many tiles can show as artifacts. The value is a power of two: 1 is 2 columns, 2 is 4, 4 is 16. Anything above 0 makes the bundled build suggest adding Fast Decode 1 or 2.
+Example: In CRF tests with the bundled build (testsrc2 clips, preset 8), 2 columns made a 3840x2160 clip 0.4% larger and a 1920x1080 clip 0.5% larger; at 640x480, 16 columns cost 4.6%. Without the switch the encoder chose 0 at every size from 160x120 to 3840x2160.
+Related: svt-av1.tile-rows, svt-av1.fast-decode, svt-av1.lp, concept.tiles
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#improving-decoding-performance
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#threading-and-efficiency
+Status: reviewed
+
+## svt-av1.enable-dlf
+Label: Deblocking Loop Filter
+Summary: Smooths the seams between coded blocks before a frame is shown or used as a reference, so heavy compression looks less like a grid. On by default; 2 is a slower, more accurate version.
+When to change: Leave it at 1: On; upstream keeps this filter on at every preset. Off leaves the block seams in the picture and in every frame predicted from it, and in CRF tests the file even grew a little. 2 is upstream's slower, more accurate filtering: it changed the output at every preset tried, with the size moving by up to 2% either way, so judge it on a short scene. Sharpness Bias steers this filter.
+Values:
+- 0: Off. Block seams stay; in CRF tests the file grew by 0.3% (640x480 clip) and 2% (noisy 160x120 clip).
+- 1: On. The encoder default and StaxRip's; on at every preset in upstream's table.
+- 2: Slower, more accurate filtering, per upstream. Changed the output at every preset tested; size moved by up to 2%.
+Related: svt-av1.enable-cdef, svt-av1.enable-restoration, svt-av1.sharpness, svt-av1.preset, concept.deblocking
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
+Status: reviewed
+
+## svt-av1.enable-cdef
+Label: Constrained Directional Enhancement Filter
+Summary: Cleans ringing and coding noise along edges inside the coding loop, following the direction of each edge so the edge itself stays sharp. On by default and at every preset in upstream's table.
+When to change: Leave it on; upstream's preset table keeps it on from preset 0 to 10, and off leaves the noise in the picture and in every frame predicted from it. Upstream names one reason to switch it off: together with ALT-REF Frames off and an AC Bias of 4 to 6, to hold on to film grain and noise. In CRF tests the file grew without it, by 0.3% on a 640x480 clip and 4% on a noisy 160x120 clip.
+Related: svt-av1.enable-dlf, svt-av1.enable-restoration, svt-av1.ac-bias, svt-av1.enable-tf, svt-av1.film-grain, concept.deblocking
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
+Status: reviewed
+
+## svt-av1.enable-restoration
+Label: Loop Restoration Filter
+Summary: Runs AV1's third in-loop filter, which repairs some of the detail that quantization blurred, after deblocking and CDEF. On by default, but faster presets already skip parts of it.
+Used when: Presets 8 and below. Upstream's table turns its self-guided part off from preset 4 and its Wiener part from preset 9; at presets 9, 10 and 13 the switch changed nothing in tests (byte-identical).
+When to change: Leave it on. At StaxRip's default preset 8 only the Wiener part still runs, and in CRF tests turning it off moved the file size by under 1% either way. Turn it off only for an experiment of your own, and keep Preset in mind: from 9 up the switch has nothing left to switch.
+Related: svt-av1.enable-dlf, svt-av1.enable-cdef, svt-av1.preset, concept.deblocking
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
+Status: reviewed
+
+## svt-av1.enable-tpl-la
+Label: Temporal Dependency Model
+Summary: The encoder that ships with StaxRip does not accept this switch. Its own temporal dependency model, which weighs how much later frames lean on each block when it hands out bits, stays on regardless.
+Used when: Quality mode only; the control is hidden with a bitrate target and nothing is sent then.
+When to change: Leave it on. Switching it off puts `--enable-tpl-la 0` on the command line, and the bundled build then stops before encoding with "Unprocessed tokens: --enable-tpl-la", so the encode does not start (checked on 2026-08-27). The model itself goes off with Adaptive Quantization 0, which the build reports as "TPL is disabled for aq_mode 0".
+Related: svt-av1.aq-mode, svt-av1.cqp, svt-av1.lookahead, svt-av1.rc
+Status: reviewed
+
+## svt-av1.enable-mfmv
+Label: Motion Field Motion Vector
+Summary: Lets the encoder reuse motion it already found in earlier frames as a starting guess for the current one, which saves bits on motion data. -1 leaves the choice to the preset.
+When to change: Leave it at -1. In CRF tests with the bundled build it was on at presets 8 to 10 and off from 11 up, in line with upstream's table for presets 0 to 10. Forcing 0 made the files 0.2% to 1.5% larger at presets 8 to 10; forcing 1 at presets 11 to 13 made them 0.3% smaller, at whatever time cost the preset was avoiding. Test a short scene before deciding either way.
+Related: svt-av1.preset, svt-av1.enable-tf
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
+Status: reviewed
+
+## svt-av1.enable-tf
+Label: ALT-REF Frames
+Summary: Adds alternate reference frames, built by averaging a frame with its neighbors to wash out noise, for other frames to predict from. On by default; 2 varies the filter strength by block.
+When to change: Leave it at 1: On; Temporal Filtering Strength sets how hard the filter works and does nothing with this off (tested). Turn it off only to keep grain and noise, which upstream pairs with CDEF off and a high AC Bias. Avoid 2 for anything you may need to reproduce: on a 640x480 test clip, identical runs gave different files at the automatic Level Of Parallelism and the same file at level 1.
+Values:
+- 0: Off. No filtered frames; Temporal Filtering Strength, MCTF for key frames and overlays then change nothing (tested).
+- 1: On. The encoder default and StaxRip's.
+- 2: Adaptive; upstream calls it experimental, strength by 64x64 block error. Output varied between identical runs (tested).
+Related: svt-av1.tf-strength, svt-av1.enable-kf-tf, svt-av1.enable-overlays, svt-av1.enable-cdef, svt-av1.ac-bias, svt-av1.lp, svt-av1.film-grain
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-b-psychovisual-parameters
+Status: reviewed
+
+## svt-av1.enable-kf-tf
+Label: Enable MCTF for key frames
+Summary: Applies the motion-compensated temporal filter that builds ALT-REF frames to keyframes as well, so the frame each group of pictures starts from is filtered too. On by default.
+Used when: Only with ALT-REF Frames on; with them off, on and off gave byte-identical output in a test.
+When to change: Leave it on. Turn it off if keyframes look softer than the frames around them in a test encode. In a CRF test on a 640x480 clip, off made the file 0.7% larger. The help says nothing more about it.
+Values:
+- 0: Off. Keyframes are coded unfiltered.
+- 1: On. The encoder default and StaxRip's.
+Related: svt-av1.enable-tf, svt-av1.tf-strength, concept.keyframe
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+Status: reviewed
+
+## svt-av1.enable-overlays
+Label: Insertion of Overlayer Pictures
+Summary: Inserts extra coded pictures, overlays, that the base-layer pictures can use as one more reference frame. Off by default; the help says only that much, and in tests the file grew.
+Used when: Only with ALT-REF Frames on; with them off, turning this on changed nothing in a test (byte-identical).
+When to change: Leave it off. Upstream documents no case where it helps, and in CRF tests with the bundled build it made the file 1% larger on a 640x480 clip and 4% larger on a 160x120 clip. Treat it as an experiment: encode a short scene both ways and compare the picture as well as the size.
+Related: svt-av1.enable-tf, svt-av1.hierarchical-levels
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+Status: reviewed
+
+## svt-av1.scm
+Label: Screen Content Detection Level
+Summary: Decides whether the encoder looks for screen content, flat colors, sharp edges and repeated shapes, and uses AV1's palette and block-copy tools on it. A flat-color test clip shrank by three quarters.
+Used when: Presets 8 and below. From preset 9 up the bundled build switches detection and the tools off with a warning, and 0, 1 and 2 gave byte-identical output in tests, with Random Access and with Low Delay.
+When to change: Leave it at 2, which detects per content; a flat-color test clip came out the same with 1 as with 2. Pick 1 to force the tools on when you know it is a screen recording and 2 misses it: on natural-looking test clips 1 changed the file where 2 left it alone. Mind the preset: the flat-color clip was almost five times larger at preset 9 than at 8, once the tools were off.
+Values:
+- 0: Off. Everything is coded as natural video.
+- 1: Turns the block copy and palette tools on without detecting anything.
+- 2: Content adaptive. The encoder default and StaxRip's; detected a flat-color test clip, left natural-looking ones alone.
+- 3: Content adaptive, anti-alias aware. The help says no more; it gave the same output as 2 on three test clips.
+Related: svt-av1.enable-intrabc, svt-av1.preset, svt-av1.pred-struct
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
+Status: reviewed
+
+## svt-av1.enable-intrabc
+Label: Enable Intra Block Copy
+Summary: Lets a block be predicted by copying an area already coded elsewhere in the same frame, which suits repeated text, icons and patterns. It applies only to frames coded as screen content.
+Used when: Only where the screen-content tools are active: Screen Content Detection Level 1, or 2 and 3 when they detect it, at presets 8 and below. Elsewhere 0 and 1 gave byte-identical output in tests.
+When to change: Leave it on; where it does not apply it changes nothing, and where it does it helped a little in CRF tests (a flat-color test clip was 0.3% smaller with it). Turn it off only as an experiment on a screen recording that shows a problem.
+Values:
+- 0: Off.
+- 1: On where screen content is detected or forced. The encoder default and StaxRip's.
+Related: svt-av1.scm, svt-av1.preset
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
+Status: reviewed
+
+## svt-av1.film-grain
+Label: Film Grain Level
+Summary: Turns on film grain synthesis: the encoder measures the grain or noise in the source and the player adds matching synthetic grain on playback, so the grain itself need not be compressed. 0 is off.
+When to change: Use it on grainy or noisy live action, where upstream says it can cut the file a lot at similar apparent quality: start near 8, 10 to 15 for noisier video, about 4 for hand-drawn animation, 0 for clean sources like 3D animation. Pair it with preset 6 or lower; from 7 up the bundled build warns of a heavy compute overhead. Too high a level smooths fine detail away or stacks noise, per upstream.
+Example: Encode a grainy 20-second scene at preset 6 at 0 and at 8, compare the sizes, then play both and look for pasted-on grain or lost fine detail. The player draws the grain, so upstream lists it among the things to avoid for a struggling decoder. Adaptive Film Grain does nothing at 0 (tested).
+Related: svt-av1.film-grain-denoise, svt-av1.fgs-table, svt-av1.adaptive-film-grain, svt-av1.preset, svt-av1.enable-cdef, svt-av1.ac-bias, svt-av1.fast-decode, concept.film-grain
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#practical-advice-on-grain-synthesis
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#tuning-for-animation
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#options-that-give-the-best-encoding-bang-for-buck
+Status: reviewed
+
+## svt-av1.film-grain-denoise
+Label: Film Grain Denoise
+Summary: Chooses whether the encoder also removes the grain from the source before coding it, leaving synthesis to put it back. 0 keeps the source as it is and only adds the grain description.
+Used when: Only with Film Grain Level above 0; the control is hidden at 0, and the bundled build ignores the switch then with a warning.
+When to change: Leave it at 0 unless the encoded grain looks doubled or the file stays large; upstream says 0 can give higher fidelity if the level is right, since too high a level then stacks noise. 1 smooths the source first, so the file shrinks: by 8% at level 8 and 26% at level 50 on a noisy 160x120 test clip, not at all on a clean one. Upstream warns the smoothing can take fine detail with it.
+Values:
+- 0: No denoising; the grain description still goes into the frame headers. The encoder default and StaxRip's.
+- 1: Denoises the source at the strength of Film Grain Level. Smaller file on grainy sources (tested); fine detail at risk.
+Related: svt-av1.film-grain, svt-av1.fgs-table, concept.film-grain
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#practical-advice-on-grain-synthesis
+Status: reviewed
+
+## svt-av1.fgs-table
+Label: FGS Table
+Summary: Points the encoder at a file holding a ready-made film grain description (FGS is film grain synthesis), which it uses instead of measuring the grain itself. Empty means no table.
+When to change: Leave it empty unless you have a grain table made for it. Upstream ties the option to the library interface, but the bundled build reads the file from the command line and stops if it cannot: a missing file gives "Invalid parameter '--fgs-table'", a file that is no grain table "invalid grain table magic" (tested). Set with a Film Grain Level too, it warns and drops the level for the table.
+Related: svt-av1.film-grain, svt-av1.film-grain-denoise, concept.film-grain
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#av1-specific-options
 Status: reviewed

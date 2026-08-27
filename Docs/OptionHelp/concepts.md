@@ -113,3 +113,29 @@ When to change: Not a setting. See the options that link here.
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#scene-change-detection
 Status: reviewed
+
+## concept.tiles
+Label: Tiles
+Summary: A frame cut into rectangles coded on their own, so a player or encoder can work on several at once. Each cut costs bits, as prediction starts afresh at its edge, and many tiles can show as artifacts.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#improving-decoding-performance
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#threading-and-efficiency
+Status: reviewed
+
+## concept.film-grain
+Label: Film grain synthesis
+Summary: Instead of compressing random grain, which is costly, the encoder describes it and the player draws matching grain on playback. Upstream says it can cut the file a lot at similar apparent quality.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#practical-advice-on-grain-synthesis
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#improving-decoding-performance
+Status: reviewed
+
+## concept.deblocking
+Label: Deblocking and the loop filters
+Summary: AV1 codes pictures in blocks; heavy compression shows seams. Three in-loop filters, deblocking, CDEF and restoration, clean the frame before later frames predict from it, in encoder and player alike.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#what-presets-do
+Status: reviewed
