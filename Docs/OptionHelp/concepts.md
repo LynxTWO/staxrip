@@ -10,3 +10,40 @@ Label: Compression efficiency
 Summary: How small a file the encoder can make for a given picture quality. Better efficiency means a smaller file that looks the same, usually at the cost of encoding time.
 When to change: Not a setting; a way to compare choices such as presets.
 Status: reviewed
+
+## concept.psnr
+Label: PSNR
+Summary: Peak signal-to-noise ratio, a decibel score for how far the encoded pixels stray from the source; higher is closer. Upstream notes a lower PSNR can still look good: a lab number, not a verdict.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#options-that-give-the-best-encoding-bang-for-buck
+Status: reviewed
+
+## concept.ssim
+Label: SSIM
+Summary: Structural similarity, a score comparing local patterns of brightness and contrast between encode and source rather than single pixels. The stat report prints it from 0 to 1; 1 means identical.
+When to change: Not a setting. See the options that link here.
+Status: reviewed
+
+## concept.vmaf
+Label: VMAF
+Summary: Video Multimethod Assessment Fusion, a quality score that combines several measurements to estimate how viewers would rate the picture. SVT-AV1 offers a tune for it, video only.
+When to change: Not a setting. See the options that link here.
+Status: reviewed
+
+## concept.vq
+Label: VQ (visual quality)
+Summary: Visual quality, the encoder's name for tuning toward what viewers see rather than a measured score. Upstream says it often gives a sharper picture, aimed at people's eyes rather than at PSNR.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#options-that-give-the-best-encoding-bang-for-buck
+Status: reviewed
+
+## concept.parallelism
+Label: Parallelism
+Summary: Doing several parts of the encode at once on different CPU cores: more threads and more pictures in flight. More of it means a faster encode on a many-core machine, at the cost of memory.
+When to change: Not a setting. See the options that link here.
+References:
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-a-encoder-parameters
+- https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#threading-and-efficiency
+Status: reviewed
