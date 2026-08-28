@@ -147,16 +147,17 @@ Status: reviewed
 Label: Content Light
 Summary: The brightest single pixel in the video, in nits (MaxCLL), recorded in the stream so a player can fit HDR to the screen it has. 0 records nothing.
 Used when: Only when this box or Maximum FALL is above 0. The two are sent together as one switch.
-When to change: Do not use these two boxes with this build. StaxRip writes the switch as `--content_light` with an underscore, and the bundled rav1e refuses that spelling outright, so any value above 0 in either box stops the encode before a frame is coded (tested). Leave both at 0 and put `--content-light "1000,400"` in the Custom box instead, with a hyphen.
-Related: rav1e.content-light.max-fall, rav1e.mastering-display, staxrip.custom, concept.hdr-metadata
+When to change: Fill it in for HDR10 video when the source's metadata gives you the number, and leave both boxes at 0 for SDR. Guessing is worse than leaving it out: a wrong number makes a player tone-map the picture wrongly. Content Light and Maximum FALL travel together as `--content-light "cll,fall"`, so a value in either box sends both.
+Example: For a master graded at 1000 nits whose brightest frame averages 400, put 1000 here and 400 in Maximum FALL. StaxRip then sends `--content-light "1000,400"`, which the bundled build accepts (tested).
+Related: rav1e.content-light.max-fall, rav1e.mastering-display, rav1e.transfer, concept.hdr-metadata
 Status: reviewed
 
 ## rav1e.content-light.max-fall
 Label: Maximum FALL
 Summary: The frame average light level of the brightest frame, in nits (MaxFALL), recorded in the stream beside MaxCLL. 0 records nothing.
 Used when: Only when this box or Content Light is above 0. The two are sent together as one switch.
-When to change: Leave it at 0 with this build, for the same reason as Content Light: StaxRip writes the pair as `--content_light "cll,fall"` with an underscore, which the bundled rav1e refuses, so a value above 0 in either box stops the encode (tested). Put `--content-light "1000,400"` in the Custom box instead.
-Related: rav1e.content-light.max-cll, rav1e.mastering-display, staxrip.custom, concept.hdr-metadata
+When to change: Fill it in beside Content Light for HDR10 video, taking the number from the source's metadata, and leave both boxes at 0 for SDR. This is the average over one frame rather than a single pixel, so it is normally well below the Content Light figure. The two boxes travel together as `--content-light "cll,fall"`, so a value in either one sends both.
+Related: rav1e.content-light.max-cll, rav1e.mastering-display, rav1e.transfer, concept.hdr-metadata
 Status: reviewed
 
 ## rav1e.primaries

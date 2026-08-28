@@ -267,13 +267,18 @@ Public Class Rav1eParams
         .Config = {0, 300},
         .Init = 12}
 
+    '   rav1e 0.8.0 spells this switch --content-light; the underscore StaxRip used until now was
+    '   refused with "unexpected argument found", so any non-zero value here stopped the encode.
+    '   GetKey falls back to Switch, so correcting it would move the store key and silently drop a
+    '   saved value; Name pins the key to what profiles already hold.
     Property Light As New NumParam With {
         .OptionHelpKey = "rav1e.content-light.max-cll",
+        .Name = "--content_light",
         .Text = "Content Light",
-        .Switch = "--content_light",
+        .Switch = "--content-light",
         .Path = "VUI",
         .Config = {0, Integer.MaxValue, 50},
-        .ArgsFunc = Function() If(Light.Value <> 0 OrElse MaxFALL.Value <> 0, "--content_light """ & Light.Value & "," & MaxFALL.Value & """", ""),
+        .ArgsFunc = Function() If(Light.Value <> 0 OrElse MaxFALL.Value <> 0, "--content-light """ & Light.Value & "," & MaxFALL.Value & """", ""),
         .ImportAction = Sub(param, arg)
                             If arg = "" Then
                                 Exit Sub
@@ -284,9 +289,12 @@ Public Class Rav1eParams
                             MaxFALL.Value = a(1).ToInt
                         End Sub}
 
+    '   Same switch correction. This one had no Switch and no Name, so GetKey returned
+    '   Text + HelpSwitch, the switch Add() copies in; Name pins that exact string.
     Property MaxFALL As New NumParam With {
         .OptionHelpKey = "rav1e.content-light.max-fall",
-        .Switches = {"--content_light"},
+        .Name = "Maximum FALL--content_light",
+        .Switches = {"--content-light"},
         .Text = "Maximum FALL",
         .Path = "VUI",
         .Config = {0, Integer.MaxValue, 50}}
