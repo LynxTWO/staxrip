@@ -103,7 +103,48 @@ Public Class SvtAv1Enc
     End Property
 
     Overrides Function BeforeEncoding() As Boolean
+        VerifyMasteringDisplay()
+
         Return True
+    End Function
+
+    'The bundled build reads --mastering-display with svt_aom_parse_mastering_display
+    '(Source/Lib/Globals/metadata_handle.c of SVT-AV1): it walks the value letter by letter and
+    'the default branch of its switch never advances the pointer, so the first character that is
+    'not one of G B R W L leaves it spinning at 100% of a core forever, before it opens the input
+    'and with nothing on screen (encoder defect b9). Refuse the value here instead of starting
+    'the encoder on it. BeforeEncoding runs before the first pass in both the ordinary and the
+    'chunked path, and RunCompCheck calls this too because it starts the encoder of its own.
+    Sub VerifyMasteringDisplay()
+        Dim value = Params.MasteringDisplay.Value
+
+        'An empty box sends no switch at all; a box holding only blanks does send one, and hangs.
+        If value = "" OrElse IsMasteringDisplayFormatValid(value) Then
+            Exit Sub
+        End If
+
+        Throw New ErrorAbortException(
+            Params.MasteringDisplay.Text + " Error",
+            $"StaxRip did not start the encoder because it cannot read this {Params.MasteringDisplay.Text} value:{BR2}{value}{BR2}" +
+            $"Write it as G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min) with nothing between the parts, for example{BR2}" +
+            $"G(0.17,0.797)B(0.131,0.046)R(0.708,0.292)WP(0.3127,0.329)L(1000,0.0001){BR2}" +
+            "or empty the box to encode without mastering display metadata. A space or a line break " +
+            "between the parts counts as unreadable, and the encoder does not refuse a value it " +
+            "cannot read: it runs forever without encoding anything.")
+    End Sub
+
+    'True for exactly the values svt_aom_parse_mastering_display consumes from end to end: G, B,
+    'R or L and then "(number,number)", or W and one further character (it never checks the P of
+    'WP) and then "(number,number)", in any order, any number of times, in either case. strtod
+    'skips blanks in front of a number, so those are allowed; a blank anywhere else is what hangs
+    'the parser. The hexadecimal, inf and nan literals strtod would also take are refused, no
+    'mastering display needs them, and so is a value the parser would abandon halfway, since it
+    'then writes zeros for the rest without a word.
+    Shared Function IsMasteringDisplayFormatValid(value As String) As Boolean
+        Const number = "[ \t\n\v\f\r]*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+        Dim pair = $"\({number},{number}\)"
+
+        Return Regex.IsMatch(value, $"\A(?:[GgBbRrLl]{pair}|[Ww][\s\S]{pair})+\z")
     End Function
 
     Overrides Sub Encode()
@@ -348,6 +389,7 @@ Public Class SvtAv1Enc
         Dim commandLine = enc.Params.GetArgs(0, 0, 0, Nothing, script, Path.Combine(p.TempDir, p.TargetFile.Base + "_CompCheck." + OutputExt), True, True)
 
         Try
+            VerifyMasteringDisplay()
             Encode("Compressibility Check", commandLine, s.EncoderProcessPriority)
         Catch ex As AbortException
             Exit Sub

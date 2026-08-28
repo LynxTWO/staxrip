@@ -1103,7 +1103,7 @@ Status: reviewed
 Label: Master Display
 Summary: Writes HDR10's mastering display metadata into the file: primaries, white point and luminance range of the display it was graded on. Players use it to fit HDR to their screen; no pixel changes.
 Used when: StaxRip fills it from the source you open (Import VUI metadata) when MediaInfo reports BT.2020, Display P3 or DCI P3 mastering primaries with a luminance range, and sets Color Range to Studio too.
-When to change: Rarely by hand: StaxRip writes the standard coordinates of the reported display and copies the source's luminance range, so leave a plain HDR encode alone. Clear it when your script tone-maps HDR to SDR. To type one, keep exactly to `G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)` with no spaces: a stray word or a space inside hung the bundled build in a test; one without its L part was dropped silently.
+When to change: Rarely by hand: StaxRip fills the standard coordinates of the reported display and the source's luminance range, so leave a plain HDR encode alone. Clear it when tone-mapping HDR to SDR. Type one exactly as `G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)`, nothing between the parts: StaxRip stops the job with a message rather than start an encoder that would spin forever. One without L is dropped silently.
 Example: For a BT.2020 display, 1000 nits peak, 0.005 black, StaxRip fills `G(0.17,0.797)B(0.131,0.046)R(0.708,0.292)WP(0.3127,0.329)L(1000,0.005)`. Tests (bundled build, 160x120 clip): ffprobe read them back, give or take AV1's rounding; `hello` or a space inside spun the encoder until killed at 20 s.
 Related: svt-av1.content-light.max-cll, svt-av1.content-light.max-fall, svt-av1.transfer-characteristics, svt-av1.color-primaries, svt-av1.color-range, concept.hdr-metadata
 References:
