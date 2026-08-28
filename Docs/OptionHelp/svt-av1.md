@@ -1086,13 +1086,13 @@ Status: reviewed
 ## svt-av1.chroma-sample-position
 Label: Chroma Sample Position
 Summary: Tells the player where the color samples of 4:2:0 video sit against the brightness samples, so it puts the color back in the right place. A label only; the pixels are the same (tested).
-Used when: StaxRip copies the position MediaInfo reports for the source you open (Import VUI metadata) when it is not 0; set it yourself when the source reports none or the copy is wrong, see below.
-When to change: Leave it at Unknown unless you know the position. MediaInfo counts as H.264 and HEVC do (0 left, 1 center, 2 top-left) and this list as AV1 does (1 left, 2 top-left): a top-left source comes across right, a left source stays Unknown (pick 1 for it yourself if you want the file to say so), and a center source is wrongly tagged left, so put it back to Unknown. Unknown writes no claim.
+Used when: StaxRip fills it from the source you open (Import VUI metadata): a left source becomes Vertical/Left, a top-left source Colocated/Topleft. Set it yourself when the source carries no position.
+When to change: Leave it at Unknown unless you know where the color samples sit. AV1 has no value for center, the position MPEG-1 and JPEG use, so a source MediaInfo reports as center is left at Unknown rather than tagged as something it is not; nothing in this list fits it. Nearly all H.264 and HEVC video is left, and Unknown writes no claim at all.
 Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: encodes tagged left (1) and top-left (2) decoded to the same frames as the plain encode (ffmpeg framemd5).
 Values:
 - 0: Unknown. The encoder default and StaxRip's; no claim is written.
-- 1: Vertical or left: level with the brightness samples across, halfway between two rows down. What H.264 and HEVC assume.
-- 2: Colocated or top-left: on the same spot as the top-left brightness sample; what StaxRip fills for a top-left source.
+- 1: Vertical or left: level with the brightness samples across, halfway between two rows down; what a left source gets.
+- 2: Colocated or top-left: on the same spot as the top-left brightness sample; what a top-left source gets.
 Related: svt-av1.color-format, svt-av1.matrix-coefficients, concept.color-description
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#color-description-options

@@ -184,12 +184,22 @@ Public Class SvtAv1Enc
                 cl += " --color-range 1"
         End Select
 
+        'MediaInfo reports ChromaSubsampling_Position as "Type N" on the H.264 and HEVC
+        'chroma_sample_loc_type scale (0 left, 1 centre, 2 top-left) whatever the source format
+        'is: its AV1 reader converts into that scale as well, filling "Type 0" for AV1's
+        'chroma_sample_position 1 and "Type 2" for 2 (MediaInfoLib File_Av1.cpp). AV1 numbers
+        'differently - 1 vertical/left, 2 colocated/top-left - and cannot express centre at all,
+        'so a centre source gets no switch rather than a wrong one. The first run of digits is
+        'taken because a source whose two fields differ is reported as "Type 0 / Type 1".
         Dim chromaSubsampling_Position = MediaInfo.GetVideo(sourceFile, "ChromaSubsampling_Position")
-        Dim chromaloc = New String(chromaSubsampling_Position.Where(Function(c) c.IsDigit()).ToArray())
+        Dim chromaLocType = Regex.Match("" & chromaSubsampling_Position, "\d+").Value
 
-        If Not String.IsNullOrEmpty(chromaloc) AndAlso chromaloc <> "0" Then
-            cl += $" --chroma-sample-position {chromaloc}"
-        End If
+        Select Case chromaLocType
+            Case "0"
+                cl += " --chroma-sample-position 1"
+            Case "2"
+                cl += " --chroma-sample-position 2"
+        End Select
 
         Dim masteringDisplay_ColorPrimaries = MediaInfo.GetVideo(sourceFile, "MasteringDisplay_ColorPrimaries")
         Dim masteringDisplay_Luminance = MediaInfo.GetVideo(sourceFile, "MasteringDisplay_Luminance")
