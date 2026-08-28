@@ -171,3 +171,9 @@ References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#2-av1-metadata
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/CommonQuestions.md#hdr-and-sdr-video
 Status: reviewed
+
+## concept.level
+Label: Profile, level and tier
+Summary: The compatibility labels a stream carries: the profile names the coding tools it uses, the level caps resolution, frame rate and bitrate, and the tier picks between two ceilings at a level.
+When to change: Not a setting. See the options that link here. A player refuses, or stumbles over, a stream whose profile or level is above what its decoder promises to handle.
+Status: reviewed

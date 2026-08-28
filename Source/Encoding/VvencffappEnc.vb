@@ -308,12 +308,20 @@ Public Class VvencffappParams
         End Get
     End Property
 
+    Public Overrides ReadOnly Property OptionHelpId As String
+        Get
+            Return "vvencffapp"
+        End Get
+    End Property
+
 
     Property OverrideTargetFileName As New BoolParam() With {
+        .OptionHelpKey = "staxrip.override-target-file-name",
         .Text = "Override Target File Name",
         .Init = False}
 
     Property TargetFileName As New StringParam With {
+        .OptionHelpKey = "staxrip.target-file-name",
         .Text = "Target File Name",
         .Quotes = QuotesMode.Never,
         .TextChangedAction = Sub(text) TargetFileNamePreview.Value = Macro.ExpandParamValues(text, Items),
@@ -324,6 +332,7 @@ Public Class VvencffappParams
                       End Sub}
 
     Property TargetFileNamePreview As New StringParam With {
+        .OptionHelpKey = "staxrip.target-file-name-preview",
         .Text = "Preview",
         .Quotes = QuotesMode.Never,
         .InitAction = Sub(tb)
@@ -336,23 +345,27 @@ Public Class VvencffappParams
                       End Sub}
 
     Property Decoder As New OptionParam With {
+        .OptionHelpKey = "staxrip.decoder",
         .Text = "Decoder",
         .Options = {"AviSynth/VapourSynth", "QSVEnc (Intel)", "ffmpeg (Intel)", "ffmpeg (DXVA2)"},
         .Values = {"script", "qs", "ffqsv", "ffdxva"}}
 
     Property PipingToolAVS As New OptionParam With {
+        .OptionHelpKey = "staxrip.pipe",
         .Name = "PipingToolAVS",
         .Text = "Pipe",
         .VisibleFunc = Function() p.Script.IsAviSynth AndAlso Decoder.Value = 0,
         .Options = {"Automatic", "avs2pipemod", "ffmpeg"}}
 
     Property PipingToolVS As New OptionParam With {
+        .OptionHelpKey = "staxrip.pipe",
         .Name = "PipingToolVS",
         .Text = "Pipe",
         .VisibleFunc = Function() p.Script.IsVapourSynth AndAlso Decoder.Value = 0,
         .Options = {"Automatic", "vspipe", "ffmpeg"}}
 
     Property CompCheck As New NumParam With {
+        .OptionHelpKey = "staxrip.comp-check",
         .Name = "CompCheckQuant",
         .Text = "Comp. Check",
         .Value = 18,
@@ -360,6 +373,7 @@ Public Class VvencffappParams
         .Config = {1, 50}}
 
     Property CompCheckAimedQuality As New NumParam With {
+        .OptionHelpKey = "staxrip.aimed-quality",
         .Name = "CompCheckAimedQuality",
         .Text = "Aimed Quality",
         .Value = 50,
@@ -367,11 +381,13 @@ Public Class VvencffappParams
         .Config = {1, 100}}
 
     Property Chunks As New NumParam With {
+        .OptionHelpKey = "staxrip.chunks",
         .Text = "Chunks",
         .Init = 1,
         .Config = {1, 32}}
 
     Property Mode As New OptionParam With {
+        .OptionHelpKey = "vvencffapp.mode",
         .Switches = {"--TargetBitrate", "--QP", "--Pass", "--NumPasses", "--RCStatsFile"},
         .Name = "Mode",
         .Text = "Mode",
@@ -379,6 +395,7 @@ Public Class VvencffappParams
         .Value = 1}
 
     Property Quant As New NumParam With {
+        .OptionHelpKey = "vvencffapp.qp",
         .Switches = {"--QP", "-q"},
         .Name = "Quant",
         .Text = "Quantizer",
@@ -388,6 +405,7 @@ Public Class VvencffappParams
         .Config = {0, 63, 1}}
 
     Property TargetBitrate As New NumParam With {
+        .OptionHelpKey = "vvencffapp.target-bitrate",
         .HelpSwitch = "--TargetBitrate",
         .Text = "Target Bitrate",
         .Init = 5000,
@@ -395,16 +413,19 @@ Public Class VvencffappParams
         .Config = {0, 1000000, 100}}
 
     Property Preset As New OptionParam With {
+        .OptionHelpKey = "vvencffapp.preset",
         .Switch = "--preset",
         .Text = "Preset",
         .Options = {"None", "Faster", "Fast", "Medium", "Slow", "Slower", "Medium_LowDecEnergy", "Firstpass", "ToolTest"},
         .Init = 3}
 
     Property FrameSkip As New NumParam With {
+        .OptionHelpKey = "vvencffapp.frame-skip",
         .HelpSwitch = "--FrameSkip",
         .Text = "Frames To Be Skipped"}
 
     Property FramesToBeEncoded As New NumParam With {
+        .OptionHelpKey = "vvencffapp.frames-to-be-encoded",
         .HelpSwitch = "--FramesToBeEncoded",
         .Text = "Frames To Be Encoded"}
 
@@ -412,6 +433,7 @@ Public Class VvencffappParams
 
 
     Property Custom As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom",
         .Quotes = QuotesMode.Never,
         .AlwaysOn = True,
@@ -421,6 +443,7 @@ Public Class VvencffappParams
                       End Sub}
 
     Property CustomFirstPass As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom" + BR + "First Pass",
         .Quotes = QuotesMode.Never,
         .VisibleFunc = Function() Mode.Value = VvencffappRateMode.TwoPass,
@@ -430,6 +453,7 @@ Public Class VvencffappParams
                       End Sub}
 
     Property CustomSecondPass As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom" + BR + "Second Pass",
         .Quotes = QuotesMode.Never,
         .VisibleFunc = Function() Mode.Value = VvencffappRateMode.TwoPass,
@@ -446,25 +470,25 @@ Public Class VvencffappParams
                 ItemsValue = New List(Of CommandLineParam)
 
                 Add("Basic", Decoder, PipingToolAVS, PipingToolVS, Mode, TargetBitrate, Quant, Preset,
-                    New OptionParam() With {.Switch = "--Profile", .Name = "Profile", .Text = "Profile", .Options = {"Automatic", "main_10", "main_10_still_picture"}},
-                    New OptionParam() With {.Switch = "--Level", .Name = "Level", .Text = "Level", .Options = {"Automatic", "1.0", "2.0", "2.1", "3.0", "3.1", "4.0", "4.1", "5.0", "5.1", "5.2", "6.0", "6.1", "6.2", "6.3", "15.5"}},
-                    New OptionParam() With {.Switch = "--Tier", .Name = "Tier", .Text = "Tier", .Options = {"Main", "High"}},
-                    New OptionParam() With {.Switch = "--Verbosity", .Name = "Verbosity", .Text = "Verbosity", .Options = {"0: Silent", "1: Error", "2: Warning", "3: Info", "4: Notice", "5: Verbose (Default)", "6: Debug"}, .Init = 5, .IntegerValue = True},
-                    New OptionParam() With {.Switch = "--SIMD", .Name = "SIMD", .Text = "SIMD", .Options = {"Automatic", "SCALAR", "SSE41", "SSE42", "AVX", "AVX2", "AVX512"}}
+                    New OptionParam() With {.OptionHelpKey = "vvencffapp.profile", .Switch = "--Profile", .Name = "Profile", .Text = "Profile", .Options = {"Automatic", "main_10", "main_10_still_picture"}},
+                    New OptionParam() With {.OptionHelpKey = "vvencffapp.level", .Switch = "--Level", .Name = "Level", .Text = "Level", .Options = {"Automatic", "1.0", "2.0", "2.1", "3.0", "3.1", "4.0", "4.1", "5.0", "5.1", "5.2", "6.0", "6.1", "6.2", "6.3", "15.5"}},
+                    New OptionParam() With {.OptionHelpKey = "vvencffapp.tier", .Switch = "--Tier", .Name = "Tier", .Text = "Tier", .Options = {"Main", "High"}},
+                    New OptionParam() With {.OptionHelpKey = "vvencffapp.verbosity", .Switch = "--Verbosity", .Name = "Verbosity", .Text = "Verbosity", .Options = {"0: Silent", "1: Error", "2: Warning", "3: Info", "4: Notice", "5: Verbose (Default)", "6: Debug"}, .Init = 5, .IntegerValue = True},
+                    New OptionParam() With {.OptionHelpKey = "vvencffapp.simd", .Switch = "--SIMD", .Name = "SIMD", .Text = "SIMD", .Options = {"Automatic", "SCALAR", "SSE41", "SSE42", "AVX", "AVX2", "AVX512"}}
                 )
                 Add("I/O",
-                    New OptionParam() With {.Switch = "--OutputBitDepth", .Name = "OutputBitDepth", .Text = "Output Bit-Depth", .Options = {"Automatic", "8", "10", "12"}},
+                    New OptionParam() With {.OptionHelpKey = "vvencffapp.output-bit-depth", .Switch = "--OutputBitDepth", .Name = "OutputBitDepth", .Text = "Output Bit-Depth", .Options = {"Automatic", "8", "10", "12"}},
                     FrameSkip, FramesToBeEncoded
                 )
                 Add("Threading",
-                    New NumParam() With {.Switch = "--Threads", .Name = "Threads", .Text = "Threads", .Config = {0, 128, 1, 0}},
-                    New NumParam() With {.Switch = "--MaxParallelFrames", .Name = "MaxParallelFrames", .Text = "Max Parallel Frames", .Config = {-1, 128, 1, 0}, .Init = -1}
+                    New NumParam() With {.OptionHelpKey = "vvencffapp.threads", .Switch = "--Threads", .Name = "Threads", .Text = "Threads", .Config = {0, 128, 1, 0}},
+                    New NumParam() With {.OptionHelpKey = "vvencffapp.max-parallel-frames", .Switch = "--MaxParallelFrames", .Name = "MaxParallelFrames", .Text = "Max Parallel Frames", .Config = {-1, 128, 1, 0}, .Init = -1}
                 )
                 'Add("Slice Decision", 
 
                 ')
                 Add("Rate Control",
-                    New NumParam() With {.Switch = "--LookAhead", .Name = "LookAhead", .Text = "LookAhead", .Config = {-1, 1, 1, 0}, .Init = -1}
+                    New NumParam() With {.OptionHelpKey = "vvencffapp.lookahead", .Switch = "--LookAhead", .Name = "LookAhead", .Text = "LookAhead", .Config = {-1, 1, 1, 0}, .Init = -1}
                 )
                 'Add("Quantization", 
 
