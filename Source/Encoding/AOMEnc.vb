@@ -227,12 +227,20 @@ Public Class AV1Params
         End Get
     End Property
 
+    Public Overrides ReadOnly Property OptionHelpId As String
+        Get
+            Return "aomenc"
+        End Get
+    End Property
+
 
     Property OverrideTargetFileName As New BoolParam() With {
+        .OptionHelpKey = "staxrip.override-target-file-name",
         .Text = "Override Target File Name",
         .Init = False}
 
     Property TargetFileName As New StringParam With {
+        .OptionHelpKey = "staxrip.target-file-name",
         .Text = "Target File Name",
         .Quotes = QuotesMode.Never,
         .TextChangedAction = Sub(text) TargetFileNamePreview.Value = Macro.ExpandParamValues(text, Items),
@@ -243,6 +251,7 @@ Public Class AV1Params
                       End Sub}
 
     Property TargetFileNamePreview As New StringParam With {
+        .OptionHelpKey = "staxrip.target-file-name-preview",
         .Text = "Preview",
         .Quotes = QuotesMode.Never,
         .InitAction = Sub(tb)
@@ -253,6 +262,7 @@ Public Class AV1Params
                       End Sub}
 
     Property Chunks As New NumParam With {
+        .OptionHelpKey = "staxrip.chunks",
         .Text = "Chunks",
         .Init = 1,
         .Config = {1, 128}}
@@ -265,6 +275,7 @@ Public Class AV1Params
         .Options = {"0 - Disabled", "1 - Deltaq Objective (default)", "2 - Deltaq placeholder", "3 - key frame visual quality", "4 - user rating based visual quality optimization"}}
 
     Property Decoder As New OptionParam With {
+        .OptionHelpKey = "staxrip.decoder",
         .Text = "Decoder",
         .Options = {"AviSynth/VapourSynth", "QSVEnc (Intel)", "ffmpeg (Intel)", "ffmpeg (DXVA2)"},
         .Values = {"script", "qs", "ffqsv", "ffdxva"}}
@@ -286,12 +297,14 @@ Public Class AV1Params
         .Init = 1}
 
     Property PipingToolAVS As New OptionParam With {
+        .OptionHelpKey = "staxrip.pipe",
         .Text = "Pipe",
         .Name = "PipingToolAVS",
         .VisibleFunc = Function() p.Script.IsAviSynth AndAlso Decoder.Value = 0,
         .Options = {"Automatic", "avs2pipemod", "ffmpeg"}}
 
     Property PipingToolVS As New OptionParam With {
+        .OptionHelpKey = "staxrip.pipe",
         .Text = "Pipe",
         .Name = "PipingToolVS",
         .VisibleFunc = Function() p.Script.IsVapourSynth AndAlso Decoder.Value = 0,
@@ -330,6 +343,7 @@ Public Class AV1Params
         .Text = "Stop after n frames"}
 
     Property CustomFirstPass As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom 1st pass",
         .Quotes = QuotesMode.Never,
         .InitAction = Sub(tb)
@@ -338,6 +352,7 @@ Public Class AV1Params
                       End Sub}
 
     Property CustomSecondPass As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom 2nd pass",
         .Quotes = QuotesMode.Never,
         .InitAction = Sub(tb)
@@ -416,8 +431,8 @@ Public Class AV1Params
                     New NumParam With {.Switch = "--height", .Text = "Height"})
 
                 Add("Encoder Global 2",
-                    New NumParam With {.Switch = "--forced_max_frame_width", .Text = "Force Width"},
-                    New NumParam With {.Switch = "--forced_max_frame_height", .Text = "Force Height"},
+                    New NumParam With {.OptionHelpKey = "aomenc.forced-max-frame-width", .Switch = "--forced_max_frame_width", .Text = "Force Width"},
+                    New NumParam With {.OptionHelpKey = "aomenc.forced-max-frame-height", .Switch = "--forced_max_frame_height", .Text = "Force Height"},
                     New OptionParam With {.Switch = "--stereo-mode", .Text = "Stereo Mode", .Options = {"Disabled", "Mono", "Left-Right", "Bottom-Top", "Top-Bottom", "Right-Left"}},
                     New StringParam With {.Switch = "--timebase", .Text = "Timebase precision"},
                     New StringParam With {.Switch = "--fps", .Text = "Frame Rate"},
