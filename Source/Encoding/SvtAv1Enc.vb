@@ -1600,6 +1600,25 @@ Public Class SvtAv1EncParams
             End If
         Next
 
+        'Constant Bitrate with Low Delay and Open GOP hangs the bundled build: it prints
+        '"Unexpected temporal_layer - RPS for LD CBR HL2", writes a 4096-byte stub and never
+        'exits (encoder defect b3). Before the block above it took two deliberate picks to
+        'reach; now that Constant Bitrate is always Low Delay it would take one, so hide Open
+        'GOP there. The store key is "--irefresh-type" -- .Switch with no .Name, and neither
+        'the switch nor the caption appears anywhere else in this file -- so nothing else
+        'shares the entry this reset writes.
+        For i = 0 To IntraRefreshRate.Values.Length - 1
+            If IntraRefreshRate.Values(i) = "1" Then
+                Dim allowed = RateControlMode.Value <> SvtAv1EncAppRateMode.CBR
+
+                IntraRefreshRate.ShowOption(i, allowed)
+
+                If Not allowed AndAlso IntraRefreshRate.Value = i Then
+                    IntraRefreshRate.Value = Array.IndexOf(IntraRefreshRate.Values, "2")
+                End If
+            End If
+        Next
+
         'VBR refuses --keyint 0 ("The intra period must be > 0 for RC mode 1") yet still
         'exits 0 without writing a file, so StaxRip would report success. Hide the entry
         'in VBR only; CBR ran with it.

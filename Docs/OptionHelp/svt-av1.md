@@ -492,10 +492,10 @@ Status: reviewed
 ## svt-av1.irefresh-type
 Label: Intra Refresh Type
 Summary: Chooses what opens each new group of pictures: a keyframe that closes the group, or a forward keyframe that leaves it open so frames just before it may predict from it. Closed is the default.
-Used when: In effect Quality mode only: Variable Bitrate kept closed groups with 1 selected, and Constant Bitrate with Low Delay hung the bundled build without finishing (tested).
-When to change: Leave it at 2: Key Frame. Closed groups are the safe choice for seeking and cutting. Try 1 only as an experiment in Quality mode: the bundled build then forces Hierarchical Levels to 4 with a warning, and the help says no more about it. Never pick 1 with Constant Bitrate: in a test the encoder printed "Unexpected temporal_layer" errors, wrote a 4 KB stub and never finished.
+Used when: In effect Quality mode only: Variable Bitrate kept closed groups with 1 selected, and Constant Bitrate no longer offers the open-GOP entry, which hung the bundled build there (tested).
+When to change: Leave it at 2: Key Frame. Closed groups are the safe choice for seeking and cutting. Try 1 only as an experiment in Quality mode: the bundled build then forces Hierarchical Levels to 4 with a warning, and the help says no more about it. In a test the same pick with Constant Bitrate printed "Unexpected temporal_layer" errors, wrote a 4 KB stub and never finished, so the entry is hidden there.
 Values:
-- 1: Forward keyframe (open GOP). Forces Hierarchical Levels 4; ignored in Variable Bitrate; hangs Constant Bitrate.
+- 1: Forward keyframe (open GOP). Forces Hierarchical Levels 4; ignored in Variable Bitrate; hidden in Constant Bitrate.
 - 2: Keyframe, closed GOP. The encoder default and StaxRip's.
 Related: svt-av1.keyint, svt-av1.hierarchical-levels, svt-av1.pred-struct, svt-av1.rc, concept.keyframe, concept.gop
 References:
