@@ -514,7 +514,6 @@ Public Class SvtAv1EncParams
         .Name = "CompCheckQuant",
         .Text = "Comp. Check",
         .Value = 18,
-        .Help = "QP value used as 100% for the compressibility check.",
         .Config = {1, 50}}
 
     Property CompCheckAimedQuality As New NumParam With {
@@ -522,7 +521,6 @@ Public Class SvtAv1EncParams
         .Name = "CompCheckAimedQuality",
         .Text = "Aimed Quality",
         .Value = 50,
-        .Help = "Percent value to adjusts the target file size or image size after the compressibility check accordingly.",
         .Config = {1, 100}}
 
     Property Chunks As New NumParam With {
