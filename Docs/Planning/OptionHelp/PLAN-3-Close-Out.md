@@ -82,7 +82,9 @@ Answered by the maintainer on 2026-08-27, on the dev build of this branch:
 
 One stanza was named in the same reading: `svt-av1.level` listed ten levels as "Refused by the bundled build as an undefined level", which reads as an encoder defect worth chasing. It is not. Annex A of the AV1 specification says "The missing entries in these tables (for example level 2.2 and 7.0) represent levels that are not yet defined", and those missing entries are exactly the ten. SvtAv1EncApp is right to refuse them; StaxRip was offering level numbers that do not exist. Fixed in both places (a5 below).
 
-**Rule 10's readability review is satisfied for this branch.** Every stanza is now `reviewed` in the full sense of `Docs/OptionHelp/README.md`: technically verified against the bundled build and read on the real interface by the maintainer. A later change to a stanza's facts, or a new encoder build, reopens the question for the stanzas it touches.
+**Rule 10's readability review is satisfied for the 100 SVT-AV1 stanzas**, which are `reviewed` in the full sense of `Docs/OptionHelp/README.md`: technically verified against the bundled build *and* read on the real interface by the maintainer. A later change to a stanza's facts, or a new encoder build, reopens the question for the stanzas it touches.
+
+**It is not satisfied for the branch.** Three more encoders were documented after that pass — rav1e (19 stanzas), vvencFFapp (27) and aomenc (175) — so **221 of the branch's 321 stanzas have been read by nobody on screen**. Their `Reviewed-Complete: true` is branch-legal: on a feature branch that flag means the technical verification is done and every parameter resolves to reviewed text, which is verifiably true. It does not mean anyone has read them. Run the six questions above against each of the three dialogs before merging further, and record the answers here as section 2 does for SVT-AV1. The aomenc file is the one that most needs it: 175 stanzas written in a single pass, where formulaic repetition is the likeliest defect and only a reader will see it.
 
 ## 3. Findings for the maintainer
 

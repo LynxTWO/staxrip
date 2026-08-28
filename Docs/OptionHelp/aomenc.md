@@ -94,14 +94,15 @@ Status: reviewed
 
 ## aomenc.psnr
 Label: Show PSNR in status line
-Summary: Prints a PSNR score for the finished encode. It measures the encode against the source and changes nothing in the picture.
-When to change: Leave it at 1, the dialog's default and the encoder's own, which sends nothing. Set 0 to drop the measurement, which saves a little work. Use 2 only when you are comparing streams of different bit depths and want the score taken at the stream's depth rather than the input's.
-Encoder default: 1
+Summary: Prints a PSNR score for the finished encode. It measures the encode against the source, costs a little time, and changes nothing in the picture.
+When to change: Only entry 2 turns the score on. The encoder prints no PSNR unless it is asked, and the box starts on 1, which is its own starting value and so is never sent; entry 0 sends `--psnr=0`, which the encoder treats exactly as saying nothing (tested). So 0 and 1 both give you no score, and 2 is the only entry that produces one. Leave it alone unless you want the number.
+Encoder default: none; the box shows 1, sends nothing
+Example: With StaxRip's Bit Depth at 10 and an 8-bit source, entry 2 is also the honest choice: it scores at the stream's depth. The encoder warns that 1 and 2 agree only when the two depths match (tested).
 Values:
-- 0: No PSNR line at all.
-- 1: Measured at the bit depth of the input. The default, so it is never sent.
-- 2: Measured at the bit depth of the stream, which matters when Bit Depth differs from the source.
-Related: aomenc.bit-depth, aomenc.tune, concept.psnr
+- 0: Sends `--psnr=0`, which prints nothing. The same as leaving the box at 1 (tested).
+- 1: The box's own starting value, so nothing is sent and no score is printed (tested).
+- 2: Scores at the bit depth of the stream. The only entry that prints a PSNR line (tested).
+Related: aomenc.bit-depth, aomenc.tune, staxrip.custom, concept.psnr
 Status: reviewed
 
 ## aomenc.q-hist
@@ -494,7 +495,7 @@ Status: reviewed
 Label: Datarate undershoot (min) target (%)
 Summary: How far below the target bitrate the rate control is allowed to drift, as a percentage. It gives the encoder room to spend less on easy material.
 Used when: In the bitrate modes.
-When to change: Leave it at 0. The box starts at 0, which is not the encoder's default of 25, and because 0 is the box's own starting value nothing is sent, so 25 applies; you cannot reach a real 0 from this box, only from the Custom box. Raise it when you would rather the file came in small than exactly on target.
+When to change: Leave it at 0. The box starts at 0, which is not the encoder's default of 25, and because 0 is the box's own starting value nothing is sent, so 25 applies; you cannot reach a real 0 from this box, only from the Custom boxes. Raise it when you would rather the file came in small than exactly on target.
 Encoder default: 25
 Related: aomenc.overshoot-pct, aomenc.end-usage, staxrip.custom, concept.rate-control
 Status: reviewed
@@ -539,7 +540,7 @@ Status: reviewed
 Label: CBR/VBR bias (0=CBR, 100=VBR)
 Summary: How freely the two-pass rate control may move bits from easy scenes to hard ones. 0 keeps the bitrate steady, 100 lets it vary as much as the content asks.
 Used when: In two-pass VBR encodes.
-When to change: Leave it at 0. The box starts at 0, which is not the encoder's default of 50, and because 0 is the box's own starting value nothing is sent, so 50 applies; a real 0 is only reachable from the Custom box. Raise it toward 100 when the file may vary in bitrate and you want the hard scenes to look better.
+When to change: Leave it at 0. The box starts at 0, which is not the encoder's default of 50, and because 0 is the box's own starting value nothing is sent, so 50 applies; a real 0 is only reachable from the Custom boxes. Raise it toward 100 when the file may vary in bitrate and you want the hard scenes to look better.
 Encoder default: 50
 Related: aomenc.end-usage, aomenc.passes, staxrip.custom, concept.rate-control, concept.two-pass
 Status: reviewed
@@ -703,7 +704,7 @@ Status: reviewed
 ## aomenc.tune
 Label: Tune
 Summary: Chooses which measure of distortion the encoder tries to make small when it weighs one coding choice against another.
-When to change: Leave it on psnr, the dialog's default, which sends nothing. Only psnr and ssim work in this build: the five VMAF and butteraugli entries all stop the encode with "Tried to set control 24", because the bundled binary was not built with those metric libraries (tested). The build does accept `--tune=iq` and `--tune=ssimulacra2`, which are not in the dialog; put either in the Custom box to try them.
+When to change: Leave it on psnr, the dialog's default, which sends nothing. Only psnr and ssim work here: the five VMAF and butteraugli entries all stop the encode with "Tried to set control 24", this build having no such metric libraries (tested). It does encode with `--tune=iq`, `--tune=ssimulacra2` and `--tune=vmaf_saliency_map`, none of them in the dialog; put one in both Custom boxes to try it.
 Encoder default: psnr in this dialog, and never sent
 Values:
 - psnr: Never sent, being the dialog's default. Weighs plain pixel error.
@@ -755,7 +756,7 @@ Status: reviewed
 ## aomenc.enable-cdef
 Label: CDEF
 Summary: Runs AV1's directional cleanup filter inside the encoder, removing the ringing that heavy compression leaves around edges before later frames predict from the frame.
-When to change: Leave it ticked, the encoder's own default, which sends nothing. Unticking sends `--enable-cdef=0` and gives you a slightly faster encode with visible ringing at low bitrates. The bundled build also accepts 2, which skips the filter on frames nothing predicts from, and 3, which decides per frame from its quantizer; neither is in this dialog, so use the Custom box (tested).
+When to change: Leave it ticked, the encoder's own default, which sends nothing. Unticking sends `--enable-cdef=0` and gives you a slightly faster encode with visible ringing at low bitrates. The bundled build also accepts 2, which skips the filter on frames nothing predicts from, and 3, which decides per frame from its quantizer; neither is in this dialog, so use the Custom boxes (tested).
 Encoder default: on
 Related: aomenc.enable-restoration, aomenc.sharpness, staxrip.custom, concept.deblocking
 Status: reviewed
@@ -763,7 +764,7 @@ Status: reviewed
 ## aomenc.enable-restoration
 Label: Restoration
 Summary: Runs AV1's loop restoration filter, which repairs compression damage across a whole frame before later frames predict from it. It costs time and saves bits.
-When to change: Leave it on, the dialog's default, which sends nothing so the encoder's own default applies: on in good quality, off in realtime. Note that the box cannot bring it back in realtime, because On is its own starting value and so is never sent; to force it there, put `--enable-restoration=1` in the Custom box. Turning it off is a small speed gain for a real loss at low bitrates.
+When to change: Leave it on, the dialog's default, which sends nothing so the encoder's own default applies: on in good quality, off in realtime. Note that the box cannot bring it back in realtime, because On is its own starting value and so is never sent; to force it there, put `--enable-restoration=1` in both Custom boxes. Turning it off is a small speed gain for a real loss at low bitrates.
 Encoder default: On in this dialog, and never sent
 Values:
 - 0: Off. The encoder's own default in realtime mode.
@@ -773,7 +774,7 @@ Status: reviewed
 
 ## aomenc.enable-rect-partitions
 Label: Rectangular partitions
-Summary: Lets the encoder split a block into two rectangles instead of only four squares, so a shape in the picture can be followed more closely.
+Summary: The encoder may split a block into two rectangles instead of only four squares, so a shape in the picture can be followed more closely.
 When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-rect-partitions=0` and buys a little speed for a real loss in compression, because every edge in the picture then has to be squared off. Use CPU Used for speed instead; it turns off tools like this one in a balanced way.
 Encoder default: on
 Related: aomenc.enable-ab-partitions, aomenc.enable-1to4-partitions, aomenc.cpu-used, concept.compression-efficiency
@@ -782,7 +783,7 @@ Status: reviewed
 ## aomenc.enable-ab-partitions
 Label: AB partitions
 Summary: Lets the encoder split a block into the T-shaped arrangements AV1 calls AB partitions, which fit some edges better than a straight cut.
-When to change: Leave it ticked, the encoder's own default. Unticking is a small speed gain for a small loss in compression. CPU Used is the better speed control; it manages tools like this one for you.
+When to change: Keep it ticked; the encoder turns it on by default too. Unticking is a small speed gain for a small loss in compression. CPU Used is the better speed control; it manages tools like this one for you.
 Encoder default: on
 Related: aomenc.enable-rect-partitions, aomenc.enable-1to4-partitions, aomenc.cpu-used, concept.compression-efficiency
 Status: reviewed
@@ -790,7 +791,7 @@ Status: reviewed
 ## aomenc.enable-1to4-partitions
 Label: 14 And 41 partitions
 Summary: Lets the encoder split a block into four thin strips, across or down, which suits fine horizontal or vertical structure such as text or railings.
-When to change: Leave it ticked, the encoder's own default. Unticking is a small speed gain and costs most on material with fine repeated structure. CPU Used is the better speed control.
+When to change: Leave it alone: the encoder switches this on by default. Unticking is a small speed gain and costs most on material with fine repeated structure. CPU Used is the better speed control.
 Encoder default: on
 Related: aomenc.enable-rect-partitions, aomenc.enable-ab-partitions, aomenc.tune-content, concept.compression-efficiency
 Status: reviewed
@@ -829,8 +830,8 @@ Status: reviewed
 
 ## aomenc.enable-dual-filter
 Label: Dual filter
-Summary: Lets the encoder pick a different smoothing filter for the horizontal and the vertical direction when it fetches a reference block, which fits motion more closely.
-When to change: Leave it ticked, the encoder's own default, which sends nothing. Unticking sends `--enable-dual-filter=0` and buys a little speed for a little compression. CPU Used is the better speed control; it manages tools like this one for you.
+Summary: The encoder may pick a different smoothing filter for the horizontal and the vertical direction when it fetches a reference block, which fits motion more closely.
+When to change: On is the encoder's own default, and the right answer here. Unticking sends `--enable-dual-filter=0` and buys a little speed for a little compression. CPU Used is the better speed control; it manages tools like this one for you.
 Encoder default: on
 Related: aomenc.cpu-used, concept.compression-efficiency
 Status: reviewed
@@ -846,7 +847,7 @@ Status: reviewed
 ## aomenc.enable-intra-edge-filter
 Label: Intra edge filtering
 Summary: Smooths the row of already-coded pixels a block predicts from, so a predicted flat area does not inherit the noise of its neighbours.
-When to change: Leave it ticked, the encoder's own default, which sends nothing. Unticking sends `--enable-intra-edge-filter=0` and costs compression on gradients and flat surfaces for a small speed gain.
+When to change: The encoder turns this on by default; leave it that way. Switching it off sends `--enable-intra-edge-filter=0` and costs compression on gradients and flat surfaces for a small speed gain.
 Encoder default: on
 Related: aomenc.enable-smooth-intra, aomenc.enable-filter-intra, concept.compression-efficiency
 Status: reviewed
@@ -854,15 +855,15 @@ Status: reviewed
 ## aomenc.enable-order-hint
 Label: Order hint
 Summary: Writes each frame's place in the display order into the stream, which several AV1 tools need in order to work out how far away a reference frame is.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-order-hint=0` and switches off everything that depends on it, including temporal motion vector prediction, distance-weighted compound and the reference-frame handling behind Auto Alt Ref. That is a large loss for a small speed gain.
+When to change: Ticked is the encoder's own default, and worth keeping. Unticking sends `--enable-order-hint=0` and switches off everything that depends on it, including temporal motion vector prediction, distance-weighted compound and the reference-frame handling behind Auto Alt Ref. That is a large loss for a small speed gain.
 Encoder default: on
 Related: aomenc.enable-ref-frame-mvs, aomenc.enable-dist-wtd-comp, aomenc.auto-alt-ref, concept.compression-efficiency
 Status: reviewed
 
 ## aomenc.enable-tx64
 Label: 64-pt transform
-Summary: Lets the encoder transform a whole 64 by 64 block at once, which suits large flat or gently shaded areas such as skies.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-tx64=0` and forces large areas to be coded in smaller pieces, which costs bits on wide gradients. It is a small speed gain and it matters most on high-resolution material.
+Summary: The encoder may transform a whole 64 by 64 block at once, which suits large flat or gently shaded areas such as skies.
+When to change: Leave it ticked, the encoder's own default. Turning it off sends `--enable-tx64=0` and forces large areas to be coded in smaller pieces, which costs bits on wide gradients. It is a small speed gain and it matters most on high-resolution material.
 Encoder default: on
 Related: aomenc.enable-rect-tx, aomenc.max-partition-size, concept.compression-efficiency
 Status: reviewed
@@ -870,7 +871,7 @@ Status: reviewed
 ## aomenc.enable-flip-idtx
 Label: Extended transform type
 Summary: Adds the flipped and identity transforms to the set the encoder may choose from, which suit blocks whose detail runs mostly one way.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-flip-idtx=0` and removes twelve transform types the encoder's own help lists, among them the flipped variants and the pure horizontal and vertical ones. It is a speed gain that costs most on graphics and text.
+When to change: Keep it ticked; the encoder turns it on by default too. Clearing the box sends `--enable-flip-idtx=0` and removes twelve transform types the encoder's own help lists, among them the flipped variants and the pure horizontal and vertical ones. It is a speed gain that costs most on graphics and text.
 Encoder default: on
 Related: aomenc.enable-rect-tx, aomenc.reduced-tx-type-set, aomenc.tune-content, concept.compression-efficiency
 Status: reviewed
@@ -878,7 +879,7 @@ Status: reviewed
 ## aomenc.enable-rect-tx
 Label: Rectangular transform
 Summary: Lets the encoder transform a non-square block in one piece instead of splitting it into squares first.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-rect-tx=0`, which mostly undoes the benefit of Rectangular partitions, since a rectangle then has to be transformed in squares anyway. Small speed gain, real loss.
+When to change: Leave it alone: the encoder switches this on by default. Unticking sends `--enable-rect-tx=0`, which mostly undoes the benefit of Rectangular partitions, since a rectangle then has to be transformed in squares anyway. Small speed gain, real loss.
 Encoder default: on
 Related: aomenc.enable-rect-partitions, aomenc.enable-tx64, concept.compression-efficiency
 Status: reviewed
@@ -886,7 +887,7 @@ Status: reviewed
 ## aomenc.enable-dist-wtd-comp
 Label: Distance-weighted compound
 Summary: When a block is predicted from two reference frames, lets the encoder weigh the nearer one more heavily instead of averaging them equally.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-dist-wtd-comp=0` and costs compression on ordinary motion. It does nothing anyway once Order hint is off, since the encoder then cannot tell how far away a reference is.
+When to change: On is the encoder's own default, and the right answer here. Switching it off sends `--enable-dist-wtd-comp=0` and costs compression on ordinary motion. It does nothing anyway once Order hint is off, since the encoder then cannot tell how far away a reference is.
 Encoder default: on
 Related: aomenc.enable-order-hint, aomenc.enable-masked-comp, concept.compression-efficiency
 Status: reviewed
@@ -894,15 +895,15 @@ Status: reviewed
 ## aomenc.enable-masked-comp
 Label: Masked (wedge/diff-wtd) compound
 Summary: Lets the encoder blend two reference blocks along a shaped boundary rather than over the whole block, which follows a moving object's edge.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-masked-comp=0` and switches off both the wedge and the difference-weighted forms at once, which costs compression wherever something moves in front of something else.
+When to change: The encoder turns this on by default; leave it that way. Unticking sends `--enable-masked-comp=0` and switches off both the wedge and the difference-weighted forms at once, which costs compression wherever something moves in front of something else.
 Encoder default: on
 Related: aomenc.enable-interinter-wedge, aomenc.enable-diff-wtd-comp, concept.compression-efficiency
 Status: reviewed
 
 ## aomenc.enable-onesided-comp
 Label: One sided compound
-Summary: Lets the encoder predict a block from two reference frames that lie on the same side of it in time, rather than one before and one after.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-onesided-comp=0` and costs compression at the ends of a group of pictures, where there is no later frame to pair with.
+Summary: The encoder may predict a block from two reference frames that lie on the same side of it in time, rather than one before and one after.
+When to change: Ticked is the encoder's own default, and worth keeping. Turning it off sends `--enable-onesided-comp=0` and costs compression at the ends of a group of pictures, where there is no later frame to pair with.
 Encoder default: on
 Related: aomenc.enable-dist-wtd-comp, aomenc.gf-max-pyr-height, concept.gop
 Status: reviewed
@@ -910,7 +911,7 @@ Status: reviewed
 ## aomenc.enable-interintra-comp
 Label: Interintra compound
 Summary: Lets the encoder blend a prediction from another frame with one built from this frame's own neighbours, which helps where something new comes into view.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-interintra-comp=0` and costs compression at the edges of moving objects and where a shot uncovers new background.
+When to change: Leave it ticked, the encoder's own default. Clearing the box sends `--enable-interintra-comp=0` and costs compression at the edges of moving objects and where a shot uncovers new background.
 Encoder default: on
 Related: aomenc.enable-smooth-interintra, aomenc.enable-interintra-wedge, concept.compression-efficiency
 Status: reviewed
@@ -918,7 +919,7 @@ Status: reviewed
 ## aomenc.enable-smooth-interintra
 Label: Smooth interintra mode
 Summary: Adds the smooth blend to the interintra tool, so the mix between the two predictions fades gradually across the block instead of switching abruptly.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-smooth-interintra=0`. It does nothing at all once Interintra compound is off.
+When to change: Keep it ticked; the encoder turns it on by default too. Unticking sends `--enable-smooth-interintra=0`. It does nothing at all once Interintra compound is off.
 Encoder default: on
 Related: aomenc.enable-interintra-comp, aomenc.enable-interintra-wedge
 Status: reviewed
@@ -926,7 +927,7 @@ Status: reviewed
 ## aomenc.enable-diff-wtd-comp
 Label: Difference-weighted compound
 Summary: When blending two reference blocks, lets the encoder weigh each pixel by how much the two disagree, so the more reliable one wins where they differ.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-diff-wtd-comp=0` and costs compression on moving edges. It is one half of what Masked compound switches off together.
+When to change: Leave it alone: the encoder switches this on by default. Switching it off sends `--enable-diff-wtd-comp=0` and costs compression on moving edges. It is one half of what Masked compound switches off together.
 Encoder default: on
 Related: aomenc.enable-masked-comp, aomenc.enable-interinter-wedge
 Status: reviewed
@@ -934,7 +935,7 @@ Status: reviewed
 ## aomenc.enable-interinter-wedge
 Label: Interinter wedge compound
 Summary: Lets the encoder split a block along a slanted line and take each side from a different reference frame, which follows a moving edge closely.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-interinter-wedge=0` and costs compression where an object moves across a different background. It does nothing once Masked compound is off.
+When to change: On is the encoder's own default, and the right answer here. Unticking sends `--enable-interinter-wedge=0` and costs compression where an object moves across a different background. It does nothing once Masked compound is off.
 Encoder default: on
 Related: aomenc.enable-masked-comp, aomenc.enable-interintra-wedge
 Status: reviewed
@@ -942,22 +943,22 @@ Status: reviewed
 ## aomenc.enable-interintra-wedge
 Label: Interintra wedge compound
 Summary: The wedge split again, but between a prediction from another frame and one built from this frame's own neighbours.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-interintra-wedge=0`. It does nothing once Interintra compound is off.
+When to change: The encoder turns this on by default; leave it that way. Turning it off sends `--enable-interintra-wedge=0`. It does nothing once Interintra compound is off.
 Encoder default: on
 Related: aomenc.enable-interintra-comp, aomenc.enable-interinter-wedge
 Status: reviewed
 
 ## aomenc.enable-global-motion
 Label: Global motion
-Summary: Lets the encoder describe a pan, zoom or rotation once for the whole frame, so every block does not have to carry its own copy of that motion.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-global-motion=0`, which is a speed gain and costs most on camera moves: a slow pan is exactly what this tool is for.
+Summary: The encoder may describe a pan, zoom or rotation once for the whole frame, so every block does not have to carry its own copy of that motion.
+When to change: Ticked is the encoder's own default, and worth keeping. Clearing the box sends `--enable-global-motion=0`, which is a speed gain and costs most on camera moves: a slow pan is exactly what this tool is for.
 Encoder default: on
 Related: aomenc.enable-warped-motion, aomenc.cpu-used, concept.compression-efficiency
 Status: reviewed
 
 ## aomenc.enable-warped-motion
 Label: Local warped motion
-Summary: Lets a block's motion be a small warp rather than a straight shift, which follows rotation and perspective inside the frame.
+Summary: A block's motion may be a small warp rather than a straight shift, which follows rotation and perspective inside the frame.
 When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-warped-motion=0`, a speed gain that costs most on handheld footage and on anything turning toward or away from the camera.
 Encoder default: on
 Related: aomenc.enable-global-motion, aomenc.cpu-used, concept.compression-efficiency
@@ -966,7 +967,7 @@ Status: reviewed
 ## aomenc.enable-filter-intra
 Label: Filter intra prediction mode
 Summary: Adds a predictor that builds a block from its neighbours through a small recursive filter, which suits soft texture better than a straight-line guess.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-filter-intra=0`, a small speed gain that costs most on keyframes, where nearly everything is predicted from within the frame.
+When to change: Keep it ticked; the encoder turns it on by default too. Switching it off sends `--enable-filter-intra=0`, a small speed gain that costs most on keyframes, where nearly everything is predicted from within the frame.
 Encoder default: on
 Related: aomenc.enable-smooth-intra, aomenc.enable-intra-edge-filter, concept.keyframe
 Status: reviewed
@@ -974,7 +975,7 @@ Status: reviewed
 ## aomenc.enable-smooth-intra
 Label: Smooth intra prediction modes
 Summary: Adds the predictors that fill a block with a smooth ramp between its edges, which suit skies, walls and other gentle gradients.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-smooth-intra=0` and costs bits on exactly the flat areas where banding is easiest to see.
+When to change: Leave it alone: the encoder switches this on by default. Unticking sends `--enable-smooth-intra=0` and costs bits on exactly the flat areas where banding is easiest to see.
 Encoder default: on
 Related: aomenc.enable-filter-intra, aomenc.enable-paeth-intra, aomenc.enable-intra-edge-filter
 Status: reviewed
@@ -982,7 +983,7 @@ Status: reviewed
 ## aomenc.enable-paeth-intra
 Label: Paeth intra prediction mode
 Summary: Adds the Paeth predictor, which picks for each pixel whichever neighbour above, to the left, or diagonally above-left is closest to the expected value.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-paeth-intra=0`, a small speed gain that costs a little on keyframes and on graphics.
+When to change: On is the encoder's own default, and the right answer here. Turning it off sends `--enable-paeth-intra=0`, a small speed gain that costs a little on keyframes and on graphics.
 Encoder default: on
 Related: aomenc.enable-smooth-intra, aomenc.enable-angle-delta, concept.keyframe
 Status: reviewed
@@ -990,7 +991,7 @@ Status: reviewed
 ## aomenc.enable-cfl-intra
 Label: Chroma from luma intra prediction mode
 Summary: Lets the encoder predict a block's color from the brightness it has just coded for the same block, which is cheap and accurate where the two move together.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-cfl-intra=0` and costs bits in the color channels, most visibly on saturated edges and graphics.
+When to change: The encoder turns this on by default; leave it that way. Clearing the box sends `--enable-cfl-intra=0` and costs bits in the color channels, most visibly on saturated edges and graphics.
 Encoder default: on
 Related: aomenc.enable-chroma-deltaq, aomenc.enable-smooth-intra
 Status: reviewed
@@ -998,7 +999,7 @@ Status: reviewed
 ## aomenc.force-video-mode
 Label: Force video mode
 Summary: Makes the encoder write a video stream even when it is given a single frame, instead of the still-picture form.
-When to change: Nothing to do here, and the box cannot do what it says. It starts ticked, and because ticked is also its own starting value StaxRip sends nothing, so the encoder's default of off applies; unticking sends `--force-video-mode=0`, which is off as well (tested). To really force it, put `--force-video-mode=1` in the Custom box.
+When to change: Nothing to do here, and the box cannot do what it says. It starts ticked, and because ticked is also its own starting value StaxRip sends nothing, so the encoder's default of off applies; unticking sends `--force-video-mode=0`, which is off as well (tested). To really force it, put `--force-video-mode=1` in both Custom boxes.
 Encoder default: off, whatever this box shows
 Related: aomenc.full-still-picture-hdr, aomenc.limit, staxrip.custom
 Status: reviewed
@@ -1006,7 +1007,7 @@ Status: reviewed
 ## aomenc.enable-obmc
 Label: OBMC
 Summary: Blends a block's prediction with those of its neighbours along the shared edges, so the seams between blocks in a moving picture are less visible.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-obmc=0`, a noticeable speed gain that costs compression and can leave faint block edges in motion.
+When to change: Ticked is the encoder's own default, and worth keeping. Unticking sends `--enable-obmc=0`, a noticeable speed gain that costs compression and can leave faint block edges in motion.
 Encoder default: on
 Related: aomenc.enable-warped-motion, aomenc.cpu-used, concept.deblocking
 Status: reviewed
@@ -1014,15 +1015,15 @@ Status: reviewed
 ## aomenc.enable-overlay
 Label: Coding overlay frames
 Summary: Lets the encoder add a cheap correction frame on top of a hidden alt-ref frame, so the alt-ref can be shown as a real frame without visible error.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-overlay=0`, which costs compression wherever alt-ref frames are used and does nothing at all once Auto Alt Ref is 0.
+When to change: Leave it ticked, the encoder's own default. Switching it off sends `--enable-overlay=0`, which costs compression wherever alt-ref frames are used and does nothing at all once Auto Alt Ref is 0.
 Encoder default: on
 Related: aomenc.auto-alt-ref, aomenc.enable-keyframe-filtering, aomenc.arnr-maxframes
 Status: reviewed
 
 ## aomenc.enable-palette
 Label: Palette prediction mode
-Summary: Lets the encoder store a block as a short list of colors plus an index per pixel, which is how screen recordings and graphics compress well.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-palette=0` and costs a great deal on screen content, and almost nothing on camera footage. If you are encoding a screen recording, leave this alone and set Tune Content to Screen instead.
+Summary: The encoder may store a block as a short list of colors plus an index per pixel, which is how screen recordings and graphics compress well.
+When to change: Keep it ticked; the encoder turns it on by default too. Unticking sends `--enable-palette=0` and costs a great deal on screen content, and almost nothing on camera footage. If you are encoding a screen recording, leave this alone and set Tune Content to Screen instead.
 Encoder default: on
 Related: aomenc.tune-content, aomenc.enable-intrabc, concept.compression-efficiency
 Status: reviewed
@@ -1030,7 +1031,7 @@ Status: reviewed
 ## aomenc.enable-intrabc
 Label: Intra block copy prediction mode
 Summary: Lets a block be copied from somewhere else in the same frame, which is how repeated text, icons and window borders cost almost nothing.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-intrabc=0`. Like Palette prediction it earns its keep on screen content and does little on camera footage, so the honest answer for both is to leave them alone.
+When to change: Leave it alone: the encoder switches this on by default. Turning it off sends `--enable-intrabc=0`. Like Palette prediction it earns its keep on screen content and does little on camera footage, so the honest answer for both is to leave them alone.
 Encoder default: on
 Related: aomenc.enable-palette, aomenc.tune-content, concept.compression-efficiency
 Status: reviewed
@@ -1038,7 +1039,7 @@ Status: reviewed
 ## aomenc.enable-angle-delta
 Label: Intra angle delta
 Summary: Lets a directional intra prediction be nudged a few degrees off the nearest of AV1's fixed angles, so a slanted edge is followed more exactly.
-When to change: Leave it ticked, the encoder's own default. Unticking sends `--enable-angle-delta=0`, a speed gain that costs most on keyframes and on pictures full of diagonal lines.
+When to change: On is the encoder's own default, and the right answer here. Clearing the box sends `--enable-angle-delta=0`, a speed gain that costs most on keyframes and on pictures full of diagonal lines.
 Encoder default: on
 Related: aomenc.enable-paeth-intra, aomenc.enable-filter-intra, concept.keyframe
 Status: reviewed
@@ -1068,24 +1069,24 @@ Status: reviewed
 Label: Min QM Flatness
 Summary: The flattest quantization matrix the encoder may use, from 0 to 15. A flatter matrix treats all frequencies more alike; a steeper one throws fine detail away first.
 Used when: Only with Enable QM ticked. Without it no matrix is used at all.
-When to change: Leave it at 8, the value the box starts on, which StaxRip does not send; the encoder's own default is 5, so 5 is what you actually get until you move the box. Lower numbers mean steeper matrices and a softer, cleaner picture at low bitrates. It must not exceed Max QM Flatness.
-Encoder default: 5, but the box shows 8 and sends nothing
-Related: aomenc.enable-qm, aomenc.qm-max
+When to change: Leave it at 8, the value the box starts on, which StaxRip does not send; the encoder's own default is 5, or 4 in all-intra mode, so that is what you actually get until you move the box. Lower numbers mean steeper matrices and a softer, cleaner picture at low bitrates. It must not exceed Max QM Flatness.
+Encoder default: 5, or 4 in all-intra mode
+Related: aomenc.enable-qm, aomenc.qm-max, aomenc.usage
 Status: reviewed
 
 ## aomenc.qm-max
 Label: Max QM Flatness
 Summary: The flattest matrix the encoder may reach at high quality, from 0 to 15. At the flat end the matrices stop making a difference.
 Used when: Only with Enable QM ticked.
-When to change: Leave it at 15, the value the box starts on, which StaxRip does not send; the encoder's own default is 9, so 9 is what you actually get until you move the box. It must be at least Min QM Flatness.
-Encoder default: 9; the box shows 15 and sends nothing
-Related: aomenc.enable-qm, aomenc.qm-min
+When to change: Leave it at 15, the value the box starts on, which StaxRip does not send; the encoder's own default is 9, or 10 in all-intra mode, so that is what you actually get until you move the box. It must be at least Min QM Flatness.
+Encoder default: 9, or 10 in all-intra mode
+Related: aomenc.enable-qm, aomenc.qm-min, aomenc.usage
 Status: reviewed
 
 ## aomenc.reduced-tx-type-set
 Label: Reduced set of transform types
 Summary: Cuts the list of transforms the encoder may try, which is faster and slightly larger.
-When to change: Leave it off; ticking it stops the encode. StaxRip sends the bare switch `--reduced-tx-type-set`, and the bundled build answers "option reduced-tx-type-set requires argument" before it reads a frame (tested). Put `--reduced-tx-type-set=1` in the Custom box instead; that spelling is accepted (tested).
+When to change: Leave it off; ticking it stops the encode. StaxRip sends the bare switch `--reduced-tx-type-set`, and the bundled build answers "option reduced-tx-type-set requires argument" before it reads a frame (tested). Put `--reduced-tx-type-set=1` in both Custom boxes instead; that spelling is accepted (tested).
 Encoder default: off
 Related: aomenc.enable-flip-idtx, aomenc.use-intra-dct-only, staxrip.custom
 Status: reviewed
@@ -1093,7 +1094,7 @@ Status: reviewed
 ## aomenc.use-intra-dct-only
 Label: DCT only for INTRA modes
 Summary: Restricts blocks predicted from within the frame to the plain DCT, dropping the other transforms. Faster, and larger on detailed keyframes.
-When to change: Leave it off; ticking it stops the encode. StaxRip sends the bare switch, and the bundled build answers "option use-intra-dct-only requires argument" (tested). Put `--use-intra-dct-only=1` in the Custom box instead; that spelling is accepted (tested).
+When to change: Leave it off; ticking it stops the encode. StaxRip sends the bare switch, and the bundled build answers "option use-intra-dct-only requires argument" (tested). Put `--use-intra-dct-only=1` in both Custom boxes instead; that spelling is accepted (tested).
 Encoder default: off
 Related: aomenc.use-inter-dct-only, aomenc.use-intra-default-tx-only, staxrip.custom
 Status: reviewed
@@ -1101,7 +1102,7 @@ Status: reviewed
 ## aomenc.use-inter-dct-only
 Label: DCT only for INTER modes
 Summary: Restricts blocks predicted from other frames to the plain DCT. Faster, and larger wherever there is motion.
-When to change: Leave it off; ticking it stops the encode with "option use-inter-dct-only requires argument", because StaxRip sends the bare switch without a value (tested). Put `--use-inter-dct-only=1` in the Custom box if you really want it.
+When to change: Leave it off; ticking it stops the encode with "option use-inter-dct-only requires argument", because StaxRip sends the bare switch without a value (tested). Put `--use-inter-dct-only=1` in both Custom boxes if you really want it.
 Encoder default: off
 Related: aomenc.use-intra-dct-only, aomenc.reduced-tx-type-set, staxrip.custom
 Status: reviewed
@@ -1109,7 +1110,7 @@ Status: reviewed
 ## aomenc.use-intra-default-tx-only
 Label: Default-transform only for INTRA modes
 Summary: Restricts blocks predicted from within the frame to each mode's default transform, skipping the search entirely.
-When to change: Leave it off; ticking it stops the encode with "option use-intra-default-tx-only requires argument", because StaxRip sends the bare switch without a value (tested). Put `--use-intra-default-tx-only=1` in the Custom box if you really want it.
+When to change: Leave it off; ticking it stops the encode with "option use-intra-default-tx-only requires argument", because StaxRip sends the bare switch without a value (tested). Put `--use-intra-default-tx-only=1` in both Custom boxes if you really want it.
 Encoder default: off
 Related: aomenc.use-intra-dct-only, aomenc.reduced-tx-type-set, staxrip.custom
 Status: reviewed
@@ -1199,7 +1200,7 @@ Status: reviewed
 ## aomenc.deltaq-mode
 Label: Delta QIndex Mode (req. enable-tpl-model)
 Summary: Lets the encoder shift the quantizer per superblock according to a chosen rule, so bits go where that rule says they matter.
-When to change: Leave it at 1, the dialog's default and the encoder's own, which sends nothing; it needs TPL model on, which StaxRip also sends on every encode. Try 3 or 4 only if you are chasing how a picture looks rather than how it measures. The bundled build also accepts 5, for HDR video, and 6, Variance Boost, which are not in this dialog; put `--deltaq-mode=5` or `=6` in the Custom box (tested).
+When to change: Leave it at 1, the dialog's default and the encoder's own, which sends nothing; it needs TPL model on, which StaxRip also sends on every encode. Try 3 or 4 only if you are chasing how a picture looks rather than how it measures. The bundled build also accepts 5, for HDR video, and 6, Variance Boost, which are not in this dialog; put `--deltaq-mode=5` or `=6` in both Custom boxes (tested).
 Encoder default: 1
 Values:
 - 0: Off. One quantizer for the whole frame, before AQ Mode.

@@ -33,9 +33,9 @@ Status: reviewed
 ## staxrip.custom
 Label: Custom
 Summary: Adds your own switches to the encoder command line, as typed. Use it for options this dialog does not offer.
-Used when: The all-passes box is always available. First Pass and Second Pass appear for 2-pass and 3-pass encodes, Third Pass for 3-pass; each applies to that pass only.
-When to change: Only for a switch that has no control here; Ctrl+F1 in this dialog lists them all. Type it as on a command line, one switch per line if you like. If you name a switch the dialog already sets, StaxRip leaves its own copy out and yours wins. A misspelled switch or a bad value stops the encode with the encoder's own error message. StaxRip macros such as `%source_name%` are expanded.
-Example: In a CRF encode, put `--force-key-frames 1500f,3000f` in the all-passes box to force keyframes at frames 1500 and 3000. The encoder documents it for CRF mode only; Ctrl+F1 shows the format.
+Used when: Which boxes you get depends on the encoder. Most have an all-passes box and add one per pass for a multi-pass encode, each applying to that pass alone. AOMEnc has only its two per-pass boxes.
+When to change: Only for a switch that has no control here; Ctrl+F1 lists them all. Type it as on a command line, one switch per line if you like. Put it in the box for the pass that must see it, remembering that the last pass writes the file you keep. Name a switch the dialog already sets and StaxRip drops its own copy there, so yours wins. A bad value stops the encode. `%source_name%` is expanded.
+Example: In a two-pass AOMEnc encode, a switch typed only into Custom 1st pass never reaches the run that writes the file, so it looks as if it did nothing. Put it in both boxes unless you mean it for the analysis pass alone.
 Related: concept.two-pass
 Status: reviewed
 
@@ -65,8 +65,8 @@ Status: reviewed
 ## staxrip.chunks
 Label: Chunks
 Summary: Splits the video into this many pieces, encodes them as separate encoder processes at the same time, and joins them when muxing. 1 encodes the whole video in one run.
-Used when: Needs the AviSynth/VapourSynth decoder with avs2pipemod or vspipe, and an mkvmerge or mp4box muxer. With anything else StaxRip encodes in one piece and writes the reason in the log.
-When to change: Leave it at 1 unless the encoder leaves cores idle; SVT-AV1 already uses many threads for one encode. Pieces run in parallel, sharing the parallel-processes limit in the settings (3 by default) with audio encoding. The cost: every piece starts with its own keyframe, and with a bitrate target each piece is held to that bitrate by itself, so bits cannot move from easy pieces to hard ones.
+Used when: Cutting into pieces needs the AviSynth/VapourSynth decoder with avs2pipemod or vspipe, and an mkvmerge or mp4box muxer. Only SVT-AV1 checks: it encodes in one piece instead and logs the reason.
+When to change: Leave it at 1 unless the encoder leaves cores idle; SVT-AV1 already uses many threads for one encode. Pieces run in parallel, sharing the settings' parallel-processes limit (3 by default) with audio. Each starts with its own keyframe, and a bitrate target is held per piece. AOMEnc and vvencFFapp do not check the conditions above, so the wrong decoder or pipe there spoils the output silently.
 Example: Set 2 with the parallel-processes limit at 2 or more and compare the total time with a plain encode of the same clip before using it for a real job.
 Related: staxrip.decoder, staxrip.pipe, concept.rate-control, concept.keyframe
 Status: reviewed
