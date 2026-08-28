@@ -1440,11 +1440,21 @@ Public Class SvtAv1EncParams
         'VBR refuses --keyint 0 ("The intra period must be > 0 for RC mode 1") yet still
         'exits 0 without writing a file, so StaxRip would report success. Hide the entry
         'in VBR only; CBR ran with it.
+        'KeyInt and KeyIntCrf both declare .Switch = "--keyint", so GetKey returns "--keyint"
+        'for both and they are one stored setting -- deliberately, which is also why they
+        'mirror each other through ValueChangedAction. Index 1 means "infinite" in both
+        'lists, so the reset below clears the Quality list's "-1: infinite" too; that entry
+        'is the one that cannot work in VBR, so clearing it is the point. Write through both
+        'controls because the Value setter refreshes only its own MenuButton caption.
         For i = 0 To KeyInt.Values.Length - 1
             If KeyInt.Values(i) = "0" Then
                 Dim allowed = RateControlMode.Value <> SvtAv1EncAppRateMode.VBR
                 KeyInt.ShowOption(i, allowed)
-                If Not allowed AndAlso KeyInt.Value = i Then KeyInt.Value = 0
+
+                If Not allowed AndAlso KeyInt.Value = i Then
+                    KeyInt.Value = 0
+                    KeyIntCrf.Value = 0
+                End If
             End If
         Next
 
