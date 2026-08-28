@@ -461,19 +461,29 @@ body {
     background-color:#323232;
 }
 
+/* Headings used to carry a negative bottom margin to tighten the gap before a paragraph.
+   That works until the next element is a table, which it then pulls up over the heading's
+   own text -- the Values heading sat on top of its table. Zero the heading's bottom margin
+   and the paragraph's top margin instead: the gap stays tight and nothing can overlap. */
 h1 {
     font-size: 150%;
-    margin-bottom: -4pt;
+    margin-bottom: 0;
 }
 
 h2 {
     font-size: 120%;
-    margin-bottom: -8pt;
+    margin-bottom: 0;
+    margin-top: 14pt;
 }
 
 h3 {
     font-size: 100%;
-    margin-bottom: -8pt;
+    margin-bottom: 0;
+    margin-top: 12pt;
+}
+
+p {
+    margin-top: 4pt;
 }
 
 a {
@@ -485,8 +495,25 @@ td {
     vertical-align: top;
 }
 
+th {
+    text-align: left;
+}
+
 table {
     table-layout: fixed;
+    border-collapse: collapse;
+    margin-top: 8pt;
+    margin-bottom: 4pt;
+}
+
+/* The writer sets border, bordercolordark and bordercolorlight, which render as the raised
+   3D grid of a much older Windows. A single flat rule reads as part of the dark dialog. */
+table, td, th {
+    border: 1px solid #4C4C4C;
+}
+
+td, th {
+    padding: 4px 7px;
 }
 </style>"
 

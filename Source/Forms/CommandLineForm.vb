@@ -15,6 +15,10 @@ Public Class CommandLineForm
     Private GoToComboBoxCts As CancellationTokenSource
     Private OptionHelpTips As ToolTip
     Private Catalog As OptionHelpCatalog
+    Private HoveredItem As Item
+
+    Private Const DefaultDescription As String =
+        "Point at an option, or move focus to it, to see what it does. Press F1 for details."
 
     Property HTMLHelpFunc As Func(Of String)
 
@@ -48,7 +52,7 @@ Public Class CommandLineForm
         lblDescription.Height = FontHeight * 3 + 6
         'LabelEx turns compatible text rendering on, which disables AutoEllipsis.
         lblDescription.UseCompatibleTextRendering = False
-        lblDescription.Text = "Point at an option, or move focus to it, to see what it does. Press F1 for details."
+        lblDescription.Text = DefaultDescription
 
         InitUI()
         'Row 1 auto-sizes to zero when the strip is hidden, so an encoder without reviewed help
@@ -394,7 +398,8 @@ Public Class CommandLineForm
                 End If
 
                 OptionHelpTips.SetToolTip(ctrl, tip)
-                AddHandler ctrl.MouseEnter, Sub() SetDescription(item)
+                AddHandler ctrl.MouseEnter, Sub() SetHoveredItem(item)
+                AddHandler ctrl.MouseLeave, Sub() ClearHoveredItem(item)
                 AddHandler ctrl.Enter, Sub() SetDescription(item)
 
                 If Not TypeOf ctrl Is Label Then
@@ -413,8 +418,34 @@ Public Class CommandLineForm
         Return Items.FirstOrDefault(Function(i) i.Identity = id)
     End Function
 
+    'The strip and F1 both follow the pointer first and the focus second, because that is the
+    'order the user's attention is in: pointing at a control is what makes its text appear, so
+    'pointing at it is what F1 should open. Hovering does not move focus, so keying F1 off the
+    'focused control alone opened the dialog's own help while the strip showed something else.
+    Private Sub SetHoveredItem(item As Item)
+        HoveredItem = item
+        SetDescription(item)
+    End Sub
+
+    Private Sub ClearHoveredItem(item As Item)
+        If HoveredItem IsNot item Then Exit Sub
+        HoveredItem = Nothing
+        Dim focused = FindFocusedItem()
+
+        If focused Is Nothing Then
+            lblDescription.Text = DefaultDescription
+        Else
+            SetDescription(focused)
+        End If
+    End Sub
+
     Private Sub SetDescription(item As Item)
-        If item.Stanza Is Nothing Then Exit Sub
+        'A control with no help of its own must not leave the previous control's text standing.
+        If item.Stanza Is Nothing Then
+            lblDescription.Text = DefaultDescription
+            Exit Sub
+        End If
+
         Dim caption = If(item.Param.Text, "").TrimEnd(":"c).Trim()
         Dim text = caption + ": " + OptionHelpParser.PlainText(item.Stanza.Summary)
         Dim whenToChange = item.Stanza.WhenToChange
@@ -583,7 +614,7 @@ Public Class CommandLineForm
 
     Sub CommandLineForm_HelpRequested(sender As Object, hlpevent As HelpEventArgs) Handles Me.HelpRequested
         If ModifierKeys = Keys.None Then
-            Dim item = FindFocusedItem()
+            Dim item = If(HoveredItem, FindFocusedItem())
 
             If item IsNot Nothing AndAlso item.Stanza IsNot Nothing Then
                 hlpevent.Handled = True

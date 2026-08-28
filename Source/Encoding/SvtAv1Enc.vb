@@ -192,6 +192,16 @@ Public Class SvtAv1Enc
         End Using
     End Sub
 
+    'MediaInfo hands these back as display text, in more than one shape. A source carrying the
+    'metadata in both the bitstream and the container joins the two readings as "1000 / 1000",
+    'and MediaInfo groups thousands with a space, so ten thousand arrives as "10 000 cd/m2".
+    'Integer.TryParse fails on both, which is why they used to be dropped; taking the first run
+    'of digits alone reads "10 000" as 10. Remove the spaces first, then take the first number.
+    'A value with no digits still yields 0, which means "not signalled".
+    Shared Function ParseLightLevel(value As String) As Integer
+        Return Regex.Match(Regex.Replace("" & value, "\s", ""), "\d+").Value.ToInt()
+    End Function
+
     Overrides Sub SetMetaData(sourceFile As String)
         If Not p.ImportVUIMetadata Then Exit Sub
 
@@ -290,11 +300,8 @@ Public Class SvtAv1Enc
         '    cl += $" {Params.SpecificDolbyVisionRpu.Switch} ""{p.HdrDolbyVisionMetadataFile.Path}"""
         'End If
 
-        'A source carrying the metadata in both bitstream and container makes MediaInfo
-        'join the two readings as "1000 / 1000", which ToInt cannot parse, so take the
-        'first number; a value with no digits still yields 0.
-        Dim MaxCLL = Regex.Match("" & MediaInfo.GetVideo(sourceFile, "MaxCLL"), "\d+").Value.ToInt()
-        Dim MaxFALL = Regex.Match("" & MediaInfo.GetVideo(sourceFile, "MaxFALL"), "\d+").Value.ToInt()
+        Dim MaxCLL = ParseLightLevel(MediaInfo.GetVideo(sourceFile, "MaxCLL"))
+        Dim MaxFALL = ParseLightLevel(MediaInfo.GetVideo(sourceFile, "MaxFALL"))
 
         If MaxCLL <> 0 OrElse MaxFALL <> 0 Then
             cl += $" --content-light ""{MaxCLL},{MaxFALL}"""
