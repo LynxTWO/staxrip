@@ -880,6 +880,7 @@ Public Class SvtAv1EncParams
 
     Property PassesCBR As New OptionParam With {
         .Switches = {"--pass", "--passes", "--stats"},
+        .Name = "PassesCBR",
         .Text = "Passes",
         .Expanded = True,
         .Options = {"1-pass encode", "2-pass encode", "3-pass encode"},
@@ -1428,6 +1429,9 @@ Public Class SvtAv1EncParams
         'Low Delay structure CBR needs, refuses CBR itself with Random Access, and --pass 3
         'is outside its range. Hide the entries instead of removing them: OptionParam stores
         'the dropdown index, so a shorter list would silently re-map saved profiles.
+        'This reset is only safe because PassesCBR now carries .Name: without it GetKey falls
+        'through to Text + HelpSwitch ("Passes--pass") for both Passes controls, and resetting
+        'one silently downgraded a saved Variable Bitrate 2-pass to 1-pass.
         For i = 1 To PassesCBR.Options.Length - 1
             PassesCBR.ShowOption(i, False)
             If PassesCBR.Value = i Then PassesCBR.Value = 0
