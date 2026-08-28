@@ -53,9 +53,9 @@ Public Class SvtAv1Enc
 
     Public Overrides ReadOnly Property OverridingTargetFileName As String
         Get
-            Dim value = Macro.ExpandParamValues(Params.TargetFileName.Value, Params.Items)
-            value = value.Replace(Environment.NewLine, "")
-            Return value
+            'Macro.ExpandParamValues already turns every character a file name cannot
+            'hold, line breaks included, into "-".
+            Return Macro.ExpandParamValues(Params.TargetFileName.Value, Params.Items)
         End Get
     End Property
 
@@ -113,7 +113,7 @@ Public Class SvtAv1Enc
             Encode("Video encoding second pass", GetArgs(2, 0, 0, Nothing, p.Script), s.EncoderProcessPriority)
         End If
         If Params.Passes > 2 Then
-            Encode("Video encoding second pass", GetArgs(3, 0, 0, Nothing, p.Script), s.EncoderProcessPriority)
+            Encode("Video encoding third pass", GetArgs(3, 0, 0, Nothing, p.Script), s.EncoderProcessPriority)
         End If
     End Sub
 
@@ -227,8 +227,11 @@ Public Class SvtAv1Enc
         '    cl += $" {Params.SpecificDolbyVisionRpu.Switch} ""{p.HdrDolbyVisionMetadataFile.Path}"""
         'End If
 
-        Dim MaxCLL = MediaInfo.GetVideo(sourceFile, "MaxCLL").ToInt()
-        Dim MaxFALL = MediaInfo.GetVideo(sourceFile, "MaxFALL").ToInt()
+        'A source carrying the metadata in both bitstream and container makes MediaInfo
+        'join the two readings as "1000 / 1000", which ToInt cannot parse, so take the
+        'first number; a value with no digits still yields 0.
+        Dim MaxCLL = Regex.Match("" & MediaInfo.GetVideo(sourceFile, "MaxCLL"), "\d+").Value.ToInt()
+        Dim MaxFALL = Regex.Match("" & MediaInfo.GetVideo(sourceFile, "MaxFALL"), "\d+").Value.ToInt()
 
         If MaxCLL <> 0 OrElse MaxFALL <> 0 Then
             cl += $" --content-light ""{MaxCLL},{MaxFALL}"""
@@ -1030,7 +1033,7 @@ Public Class SvtAv1EncParams
         .Text = "ALT-REF Frames",
         .Expanded = True,
         .IntegerValue = True,
-        .Options = {"0: Off", "1: On (default)", "2: Aadaptive"},
+        .Options = {"0: Off", "1: On (default)", "2: Adaptive"},
         .Init = 1}
 
     Property EnableTfKey As New OptionParam With {
@@ -1580,7 +1583,7 @@ Public Class SvtAv1EncParams
                 End If
             ElseIf ConstantQuantizationParameter.Visible Then
                 If Not IsCustom(pass, "--cqp") AndAlso Not ConstantQuantizationParameter.IsDefaultValue Then
-                    sb.Append(" --cqp " + ConstantQuantizationParameter.Value.ToString("0.##"))
+                    sb.Append(" --cqp " + ConstantQuantizationParameter.Value.ToString("0.##", CultureInfo.InvariantCulture))
                 End If
             ElseIf QuantizationParameter.Visible Then
                 If Not IsCustom(pass, "--qp") AndAlso Not QuantizationParameter.IsDefaultValue Then

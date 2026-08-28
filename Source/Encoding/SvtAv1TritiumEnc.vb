@@ -1068,7 +1068,7 @@ Public Class SvtAv1TritiumEncParams
         .Text = "ALT-REF Frames",
         .Expanded = True,
         .IntegerValue = True,
-        .Options = {"0: Off", "1: On (default)", "2: Aadaptive", "3: Full"},
+        .Options = {"0: Off", "1: On (default)", "2: Adaptive", "3: Full"},
         .Init = 1}
 
     Property EnableTfKey As New OptionParam With {
