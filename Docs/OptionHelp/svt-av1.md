@@ -492,7 +492,7 @@ Status: reviewed
 ## svt-av1.irefresh-type
 Label: Intra Refresh Type
 Summary: Chooses what opens each new group of pictures: a keyframe that closes the group, or a forward keyframe that leaves it open so frames just before it may predict from it. Closed is the default.
-Used when: In effect Quality mode only: Variable Bitrate kept closed groups with 1 selected, and Constant Bitrate no longer offers the open-GOP entry, which hung the bundled build there (tested).
+Used when: In effect Quality mode only: Variable Bitrate kept closed groups with 1 selected, and Constant Bitrate clears and hides the open-GOP entry, which hung the bundled build there (tested).
 When to change: Leave it at 2: Key Frame. Closed groups are the safe choice for seeking and cutting. Try 1 only as an experiment in Quality mode: the bundled build then forces Hierarchical Levels to 4 with a warning, and the help says no more about it. In a test the same pick with Constant Bitrate printed "Unexpected temporal_layer" errors, wrote a 4 KB stub and never finished, so the entry is hidden there.
 Values:
 - 1: Forward keyframe (open GOP). Forces Hierarchical Levels 4; ignored in Variable Bitrate; hidden in Constant Bitrate.
@@ -547,7 +547,7 @@ Status: reviewed
 Label: Prediction Structure
 Summary: Chooses how frames may borrow from each other: Random Access lets a frame predict from pictures before and after it; Low Delay only from earlier ones, for live use, at a cost in compression.
 Used when: Variable Bitrate needs Random Access and Constant Bitrate needs Low Delay; the bundled build stops on either other pairing, so each offers only its own. Quality mode offers both (tested).
-When to change: Leave it alone. With a bitrate target the dialog sets it: Low Delay for Constant Bitrate, Random Access for Variable Bitrate, the only pairings the bundled build accepts. Quality mode offers both; Low Delay costs compression, about 70% larger in a CRF test on a synthetic clip, and rules out multi-pass, but Tune 3 (still-image quality) needs it. Leaving Constant Bitrate leaves Low Delay selected.
+When to change: Leave it alone. With a bitrate target the dialog sets it: Low Delay for Constant Bitrate, Random Access for Variable Bitrate, the only pairings the bundled build accepts. Quality mode offers both; Low Delay costs compression, about 70% larger in a CRF test, and rules out multi-pass, but Tune 3 (still-image quality) needs it. Going back to Quality from Constant Bitrate leaves Low Delay selected.
 Values:
 - 1: Low Delay. Required for Constant Bitrate; no multi-pass with it, and about 70% larger in a CRF test.
 - 2: Random Access. The encoder default and StaxRip's; required for Variable Bitrate (tested).

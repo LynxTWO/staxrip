@@ -65,7 +65,7 @@ Status: reviewed
 ## staxrip.chunks
 Label: Chunks
 Summary: Splits the video into this many pieces, encodes them as separate encoder processes at the same time, and joins them when muxing. 1 encodes the whole video in one run.
-Used when: Needs the AviSynth/VapourSynth decoder with avs2pipemod or vspipe, and the MKV, WebM, or MP4 muxer. With anything else StaxRip encodes in one piece and writes the reason in the log.
+Used when: Needs the AviSynth/VapourSynth decoder with avs2pipemod or vspipe, and an mkvmerge or mp4box muxer. With anything else StaxRip encodes in one piece and writes the reason in the log.
 When to change: Leave it at 1 unless the encoder leaves cores idle; SVT-AV1 already uses many threads for one encode. Pieces run in parallel, sharing the parallel-processes limit in the settings (3 by default) with audio encoding. The cost: every piece starts with its own keyframe, and with a bitrate target each piece is held to that bitrate by itself, so bits cannot move from easy pieces to hard ones.
 Example: Set 2 with the parallel-processes limit at 2 or more and compare the total time with a plain encode of the same clip before using it for a real job.
 Related: staxrip.decoder, staxrip.pipe, concept.rate-control, concept.keyframe

@@ -141,6 +141,15 @@ Against the bundled help and the upstream documents at the v4.2.0 tag.
 4. `--pin` is documented only in Parameters.md prose (Appendix A) and the build rejects it; `--ss` and `--enable-tpl-la` appear in no source at all (a4).
 5. `svt-av1.recode-loop` once said changing it "altered a Variable Bitrate encode" on single runs (1.3 to 2%) against the 0.4% run-to-run spread above; the final review judged that below the plan's evidence bar, and the stanza now rests on upstream's recode table and the byte-identical CRF half of the test. The VBR observation stays in the task 4 report, probably real and unproven by repeats; repeat it with several runs per level if a VBR sentence is wanted.
 
+### (d) The four SVT-AV1 variants still carry what was just fixed here
+
+`SvtAv1EssentialEnc`, `SvtAv1HdrEnc`, `SvtAv1PsyexEnc` and `SvtAv1TritiumEnc` are independent classes (`Inherits BasicVideoEncoder`), not subclasses of `SvtAv1Enc`, so every fix above landed in one file of five. All four are selectable in the UI and all four still hold a1, a2, a10, a15, a16, a18, a19 and the b3 exposure. They were left alone deliberately, because a fix is only reliable where the evidence is:
+
+- **Copy-safe** (StaxRip-side correctness, no encoder behaviour involved): a3 dead code, a8 invariant culture, a15 chroma mapping, a16 the Master Display check, a18 the forced Studio range, a19 the MaxCLL parse, a20 the pass label. These can be ported by reading, without a single encoder run.
+- **Not copy-safe** (each depends on what that binary does): a4, a5, a6, a10, a11, a12, a13 and the b3 guard. A `--help` survey of all five builds (2026-08-28, no encoding) shows why: switch counts are 133 main, 56 Essential, 141 HDR, 134 PSYEX, 149 Tritium — and **PSYEX accepts `--enable-tpl-la`, `--pin` and `--ss`**, the three switches a4 hides in the main build, all three of which `SvtAv1PsyexEnc` duly declares. Hiding them there would remove working controls. Essential is missing 92 of the main build's switches and is closer to a different encoder than a variant.
+
+The captured help, versions and per-variant switch diffs are in the session scratchpad under `svtav1-variants/`; regenerating them costs one `--help` run per build.
+
 ## 4. Follow-up
 
 - Tier 2: the four SVT-AV1 variants (`SvtAv1EssentialEnc`, `SvtAv1HdrEnc`, `SvtAv1PsyexEnc`, `SvtAv1TritiumEnc`) as files with `Inherits: svt-av1` holding only their differences; then x264 and x265 (GPL documentation, so original wording only, rule 9); then the remaining W1 encoders.
