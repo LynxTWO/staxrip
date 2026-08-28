@@ -1071,7 +1071,7 @@ Status: reviewed
 ## svt-av1.color-range
 Label: Color Range
 Summary: Tells the player if your video's levels use the studio range (16 to 235 in 8-bit, the norm for video) or the full 0 to 255, so it scales them right. A label only; the pixels are the same (tested).
-Used when: StaxRip fills it from the source you open (Import VUI metadata) when that source reports Limited or Full, and sets Studio along with Master Display; change it when that is wrong or there is no tag.
+Used when: StaxRip fills it from the source you open (Import VUI metadata) when that source reports Limited or Full; change it when that is wrong or there is no tag.
 When to change: Leave it at Studio unless the source really is full range, say a screen recording or an RGB capture, and your script keeps it that way. A wrong tag shows on playback: studio-range video tagged Full looks flat and washed out, full-range video tagged Studio loses the darkest and brightest detail. Check a bright and a dark frame in the player after a test encode.
 Example: Test: 160x120 synthetic clip, 24 frames, preset 8, CRF 35, Level Of Parallelism 1: the encode tagged Full decoded to the same frames as the plain encode (ffmpeg framemd5); only the flag in the file differs.
 Values:
@@ -1102,7 +1102,7 @@ Status: reviewed
 ## svt-av1.mastering-display
 Label: Master Display
 Summary: Writes HDR10's mastering display metadata into the file: primaries, white point and luminance range of the display it was graded on. Players use it to fit HDR to their screen; no pixel changes.
-Used when: StaxRip fills it from the source you open (Import VUI metadata) when MediaInfo reports BT.2020, Display P3 or DCI P3 mastering primaries with a luminance range, and sets Color Range to Studio too.
+Used when: StaxRip fills it from the source you open (Import VUI metadata) when MediaInfo reports BT.2020, Display P3 or DCI P3 mastering primaries with a luminance range.
 When to change: Rarely by hand: StaxRip fills the standard coordinates of the reported display and the source's luminance range, so leave a plain HDR encode alone. Clear it when tone-mapping HDR to SDR. Type one exactly as `G(x,y)B(x,y)R(x,y)WP(x,y)L(max,min)`, nothing between the parts: StaxRip stops the job with a message rather than start an encoder that would spin forever. One without L is dropped silently.
 Example: For a BT.2020 display, 1000 nits peak, 0.005 black, StaxRip fills `G(0.17,0.797)B(0.131,0.046)R(0.708,0.292)WP(0.3127,0.329)L(1000,0.005)`. Tests (bundled build, 160x120 clip): ffprobe read them back, give or take AV1's rounding; `hello` or a space inside spun the encoder until killed at 20 s.
 Related: svt-av1.content-light.max-cll, svt-av1.content-light.max-fall, svt-av1.transfer-characteristics, svt-av1.color-primaries, svt-av1.color-range, concept.hdr-metadata

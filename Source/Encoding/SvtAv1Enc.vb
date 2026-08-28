@@ -252,19 +252,22 @@ Public Class SvtAv1Enc
                 Dim luminanceMin = luminanceMatch.Groups(1).Value.ToDouble().ToInvariantString()
                 Dim luminanceMax = luminanceMatch.Groups(2).Value.ToDouble().ToInvariantString()
 
+                'No --color-range is added with a mastering display: the primaries of the display
+                'a video was graded on say nothing about whether the video itself is full or
+                'limited range, and the appended " --color-range 0" overrode the range read from
+                'the source a few lines above, because ImportCommandLine parses the whole string
+                'and the later switch wins. It came from the x265 HDR10 block this was copied
+                'from, where it is one of several flags set together.
                 If masteringDisplay_ColorPrimaries.Contains("Display P3") Then
                     cl += $" --mastering-display ""G(0.265,0.690)B(0.15,0.06)R(0.68,0.32)WP(0.3127,0.329)L({luminanceMax},{luminanceMin})"""
-                    cl += " --color-range 0"
                 End If
 
                 If masteringDisplay_ColorPrimaries.Contains("DCI P3") Then
                     cl += $" --mastering-display ""G(0.265,0.690)B(0.15,0.06)R(0.68,0.32)WP(0.314,0.351)L({luminanceMax},{luminanceMin})"""
-                    cl += " --color-range 0"
                 End If
 
                 If masteringDisplay_ColorPrimaries.Contains("BT.2020") Then
                     cl += $" --mastering-display ""G(0.17,0.797)B(0.131,0.046)R(0.708,0.292)WP(0.3127,0.329)L({luminanceMax},{luminanceMin})"""
-                    cl += " --color-range 0"
                 End If
 
                 'If Not String.IsNullOrWhiteSpace(p.Hdr10PlusMetadataFile) AndAlso p.Hdr10PlusMetadataFile.FileExists() Then
