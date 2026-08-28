@@ -1397,6 +1397,18 @@ Public Class SvtAv1EncParams
 
         If item IsNot TargetFileName AndAlso item IsNot TargetFileNamePreview Then TargetFileName.TextChangedAction?.Invoke(TargetFileName.Value)
 
+        'The AV1 specification has not defined ten of the level numbers the format can express
+        '(Annex A: "The missing entries in these tables (for example level 2.2 and 7.0) represent
+        'levels that are not yet defined"), so no encoder can produce them and SvtAv1EncApp stops
+        'with "Invalid or undefined level". Hide them instead of removing them: OptionParam stores
+        'the dropdown index, so a shorter list would silently re-map every level a profile holds.
+        For i = 0 To Level.Values.Length - 1
+            If Level.Values(i).EqualsAny("2.2", "2.3", "3.2", "3.3", "4.2", "4.3", "7.0", "7.1", "7.2", "7.3") Then
+                Level.ShowOption(i, False)
+                If Level.Value = i Then Level.Value = 0
+            End If
+        Next
+
         MyBase.OnValueChanged(item)
     End Sub
 
