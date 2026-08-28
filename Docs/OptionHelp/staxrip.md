@@ -21,12 +21,12 @@ Status: reviewed
 Label: Pipe
 Summary: Picks the tool that runs your script and pipes its frames to the encoder. Automatic uses avs2pipemod for AviSynth scripts and vspipe for VapourSynth scripts.
 Used when: Only with the AviSynth/VapourSynth decoder. You see the AviSynth list with an .avs script and the VapourSynth list with a .vpy script; each keeps its own choice.
-When to change: Leave it on Automatic. Switch to ffmpeg only to get around a script that avs2pipemod or vspipe cannot open. StaxRip cannot cut the video into chunks through ffmpeg: Chunks above 1 then silently repeats the opening frames, so keep it at 1.
+When to change: Leave it on Automatic. Switch to ffmpeg only to get around a script that avs2pipemod or vspipe cannot open. StaxRip cannot cut the video into chunks through ffmpeg, so with ffmpeg selected it ignores Chunks, encodes the video in one piece, and writes the reason in the log.
 Values:
 - automatic: avs2pipemod for AviSynth, vspipe for VapourSynth. The default.
 - avs2pipemod: The AviSynth pipe tool. Supports the cutting Chunks needs.
 - vspipe: VapourSynth's own pipe tool. Supports the cutting Chunks needs.
-- ffmpeg: Reads the script through ffmpeg. Chunks above 1 silently repeats the opening frames; keep it at 1.
+- ffmpeg: Reads the script through ffmpeg. It has no cutting, so Chunks is ignored and the video is encoded in one piece.
 Related: staxrip.decoder, staxrip.chunks
 Status: reviewed
 
@@ -65,7 +65,7 @@ Status: reviewed
 ## staxrip.chunks
 Label: Chunks
 Summary: Splits the video into this many pieces, encodes them as separate encoder processes at the same time, and joins them when muxing. 1 encodes the whole video in one run.
-Used when: Needs the AviSynth/VapourSynth decoder with avs2pipemod or vspipe and the mkvmerge or MP4Box muxer. Other setups are not blocked but silently wrong: repeated opening frames, or pieces never joined.
+Used when: Needs the AviSynth/VapourSynth decoder with avs2pipemod or vspipe, and the MKV, WebM, or MP4 muxer. With anything else StaxRip encodes in one piece and writes the reason in the log.
 When to change: Leave it at 1 unless the encoder leaves cores idle; SVT-AV1 already uses many threads for one encode. Pieces run in parallel, sharing the parallel-processes limit in the settings (3 by default) with audio encoding. The cost: every piece starts with its own keyframe, and with a bitrate target each piece is held to that bitrate by itself, so bits cannot move from easy pieces to hard ones.
 Example: Set 2 with the parallel-processes limit at 2 or more and compare the total time with a plain encode of the same clip before using it for a real job.
 Related: staxrip.decoder, staxrip.pipe, concept.rate-control, concept.keyframe

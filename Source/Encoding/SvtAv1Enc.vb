@@ -104,6 +104,7 @@ Public Class SvtAv1Enc
 
     Overrides Function BeforeEncoding() As Boolean
         VerifyMasteringDisplay()
+        LogChunkEncodeRefusal()
 
         Return True
     End Function
@@ -311,12 +312,68 @@ Public Class SvtAv1Enc
         End Set
     End Property
 
+    'Chunked encoding is offered only where both halves of it hold, because neither half fails
+    'loudly on its own: the pieces have to be cut apart, and they have to be joined again.
+    '
+    'Cut: GetArgs cuts with avs2pipemod's -trim and with vspipe's --start/--end, and it emits
+    'no --skip in chunk mode, so through the ffmpeg pipe or any of the three hardware decoders
+    'every piece would encode from frame 0 -- N copies of the opening frames, with nothing on
+    'screen to say so. Seeking for those inputs would be a new feature; refusing them is the fix.
+    '
+    'Join: MkvMuxer (and WebMMuxer through it) and MP4Muxer walk _chunk1.._chunkN. ffmpegMuxer
+    'opens OutputPath, which a chunked encode never writes, and falls back to the source file
+    'without a word; NullMuxer and BatchMuxer have no chunk code at all.
+    '
+    'False degrades to an ordinary single encode rather than an error: GlobalClass.vb then
+    'calls Encode() instead of GetChunkEncodeActions(), which writes OutputPath and honours the
+    'dialog's own --skip and --frames, and AfterEncoding, MainForm and MkvMuxer read this same
+    'flag for the path they expect. GetChunks() returns 1 with it, because MP4Muxer decides on
+    'the count alone.
     Overrides Function CanChunkEncode() As Boolean
-        Return CInt(Params.Chunks.Value) > 1
+        Return CInt(Params.Chunks.Value) > 1 AndAlso GetChunkEncodeRefusal() = ""
     End Function
 
+    ''' <summary>Why the pieces of a chunked encode would not survive, or "" when they would.</summary>
+    Function GetChunkEncodeRefusal() As String
+        If Params.Decoder.Value <> 0 Then
+            Return "the " + Params.Decoder.OptionText + " decoder feeds the encoder the whole source without cutting it"
+        End If
+
+        'The Pipe list holds Automatic, the script's own tool, and ffmpeg; only ffmpeg has no
+        'cut. Automatic becomes avs2pipemod or vspipe in GetArgs, and so does an explicit ffmpeg
+        'in the ANSI fallback there, which this deliberately does not follow: refusing to chunk
+        'a run that would have been cut costs one process, the other way round costs the file.
+        If If(p.Script.IsAviSynth, Params.PipingToolAVS, Params.PipingToolVS).ValueText.ToLowerInvariant() = "ffmpeg" Then
+            Return "the ffmpeg pipe cannot cut the script into pieces"
+        End If
+
+        If Muxer Is Nothing Then
+            Return "there is no muxer to join the pieces"
+        End If
+
+        If Not (TypeOf Muxer Is MkvMuxer OrElse TypeOf Muxer Is MP4Muxer) Then
+            Return "the " + Muxer.Name + " muxer does not join the pieces"
+        End If
+
+        Return ""
+    End Function
+
+    'Chunks above 1 that cannot be honoured falls back to one ordinary encode, which is the
+    'right file; write the reason into the log rather than leave the user counting processes.
+    Sub LogChunkEncodeRefusal()
+        Dim chunks = CInt(Params.Chunks.Value)
+
+        If chunks < 2 Then Exit Sub
+
+        Dim refusal = GetChunkEncodeRefusal()
+
+        If refusal <> "" Then
+            Log.WriteLine($"Chunks is set to {chunks}, but {refusal}, so the video is encoded in one piece.{BR}")
+        End If
+    End Sub
+
     Overrides Function GetChunks() As Integer
-        Return CInt(Params.Chunks.Value)
+        Return If(CanChunkEncode(), CInt(Params.Chunks.Value), 1)
     End Function
 
     Overrides Function GetChunkEncodeActions() As List(Of Action)
@@ -1618,6 +1675,9 @@ Public Class SvtAv1EncParams
                 sb.Append($" --frames {n}")
             End If
         Else
+            'No --skip for a piece: where it starts is decided by the cut in the piping tool
+            'above, avs2pipemod's -trim or vspipe's --start/--end. SvtAv1Enc.GetChunkEncodeRefusal
+            'keeps chunked encoding away from the inputs that have no such cut.
             sb.Append($" --frames {endFrame - startFrame + 1}")
         End If
 
