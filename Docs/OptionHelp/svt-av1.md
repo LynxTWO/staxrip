@@ -148,22 +148,23 @@ Status: reviewed
 ## svt-av1.level
 Label: Level
 Summary: Records an AV1 level in the stream, the rank from the AV1 specification that tells a player how demanding the video is. Autodetect lets the encoder work it out from the input.
-When to change: Leave it at Autodetect unless a delivery target names a level. The bundled build accepts 2.0, 2.1, 3.0, 3.1, 4.0, 4.1, 5.0 to 5.3 and 6.0 to 6.3; it stops before encoding with "Invalid or undefined level" for 2.2, 2.3, 3.2, 3.3, 4.2, 4.3 and 7.0 to 7.3, which StaxRip lists anyway. The help does not say whether a chosen level constrains the encode or only labels it.
+When to change: Leave it at Autodetect unless a delivery target names a level. You can pick 2.0, 2.1, 3.0, 3.1, 4.0, 4.1, 5.0 to 5.3 and 6.0 to 6.3. The AV1 format can express ten more level numbers that the specification has not defined yet, so no encoder can produce them and the list leaves them out. The help does not say whether a chosen level constrains the encode or only labels it.
 Values:
 - 0: Autodetect from input. The encoder default; its banner then shows the level as auto.
-- 2.2: Refused by the bundled build as an undefined level.
-- 2.3: Refused by the bundled build as an undefined level.
-- 3.2: Refused by the bundled build as an undefined level.
-- 3.3: Refused by the bundled build as an undefined level.
-- 4.2: Refused by the bundled build as an undefined level.
-- 4.3: Refused by the bundled build as an undefined level.
-- 7.0: Refused by the bundled build as an undefined level.
-- 7.1: Refused by the bundled build as an undefined level.
-- 7.2: Refused by the bundled build as an undefined level.
-- 7.3: Refused by the bundled build as an undefined level.
+- 2.2: Not defined in the AV1 specification, so the list leaves it out.
+- 2.3: Not defined in the AV1 specification, so the list leaves it out.
+- 3.2: Not defined in the AV1 specification, so the list leaves it out.
+- 3.3: Not defined in the AV1 specification, so the list leaves it out.
+- 4.2: Not defined in the AV1 specification, so the list leaves it out.
+- 4.3: Not defined in the AV1 specification, so the list leaves it out.
+- 7.0: Not defined in the AV1 specification, so the list leaves it out.
+- 7.1: Not defined in the AV1 specification, so the list leaves it out.
+- 7.2: Not defined in the AV1 specification, so the list leaves it out.
+- 7.3: Not defined in the AV1 specification, so the list leaves it out.
 Related: svt-av1.profile
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#encoder-global-options
+- https://aomediacodec.github.io/av1-spec/av1-spec.pdf
 Status: reviewed
 
 ## svt-av1.tune

@@ -54,33 +54,35 @@ Security, privacy, and logging: nothing new. The validator reads text; the help 
 
 ## 2. Maintainer's tone review (rule 10)
 
-Rebuild, launch, open the SVT-AV1 dialog, and answer each question here:
+Answered by the maintainer on 2026-08-27, on the dev build of this branch:
 
 1. Read the Basic and Rate Control pages by hovering every control: does each summary say what the option changes, in words you would use to a friend?
 
-   Answer:
+   Answer: Yes.
 
 2. Open three details windows (Preset, CRF, Tune): are the generated facts right for the current template, and is `When to change` a decision you could act on?
 
-   Answer:
+   Answer: Yes, near as I can tell.
 
 3. Pick five options you personally never touch (AV1 Specific 2 is a good place): does the text tell you honestly to leave them alone, without being condescending?
 
-   Answer:
+   Answer: Yes.
 
 4. Read `staxrip.chunks` and `staxrip.comp-check`: do they describe what StaxRip actually does?
 
-   Answer:
+   Answer: Yes.
 
 5. Search for `dark`, `grain`, `size`, and `speed`: do the hits make sense?
 
-   Answer:
+   Answer: Yes.
 
 6. List every stanza that reads as a forum opinion rather than dependable help, by id.
 
-   Answer:
+   Answer: None seen. If any surface later they can be corrected as the truth surfaces.
 
-Rule 10's readability review is satisfied for this branch only when the maintainer has nothing left to name. Until then every stanza is `reviewed` on technical verification only, the branch meaning of the word in `Docs/OptionHelp/README.md`. Fix every stanza named, re-run the validator and the probe, and repeat the list.
+One stanza was named in the same reading: `svt-av1.level` listed ten levels as "Refused by the bundled build as an undefined level", which reads as an encoder defect worth chasing. It is not. Annex A of the AV1 specification says "The missing entries in these tables (for example level 2.2 and 7.0) represent levels that are not yet defined", and those missing entries are exactly the ten. SvtAv1EncApp is right to refuse them; StaxRip was offering level numbers that do not exist. Fixed in both places (a5 below).
+
+**Rule 10's readability review is satisfied for this branch.** Every stanza is now `reviewed` in the full sense of `Docs/OptionHelp/README.md`: technically verified against the bundled build and read on the real interface by the maintainer. A later change to a stanza's facts, or a new encoder build, reopens the question for the stanzas it touches.
 
 ## 3. Findings for the maintainer
 
@@ -92,7 +94,7 @@ Each line names the stanza that states the behaviour to the user, because that t
 2. Only mkvmerge and MP4Box join chunk files: `ffmpegMuxer.Mux` (`Source/General/Muxer.vb` 1075-1082) opens `OutputPath`, which does not exist in chunk mode, and falls back to the source file; NullMuxer and BatchMuxer have no chunk code; `CanChunkEncode` is `Chunks > 1` and nothing else (`SvtAv1Enc.vb` 249-251). Stated in `staxrip.chunks`.
 3. Dead code: `Replace(Environment.NewLine, "")` in `OverridingTargetFileName` (`SvtAv1Enc.vb` 56-58) runs after `Macro.ExpandParamValues` (`Source/General/Macro.vb` 900-903) has already turned CR and LF into `-`. Stated in `staxrip.target-file-name` ("line breaks ... become `-`").
 4. Stale switches the bundled build rejects with `Unprocessed tokens`: `--ss` (`svt-av1.ss`), `--pin` (`svt-av1.pin`), `--enable-tpl-la` (`svt-av1.enable-tpl-la`); moving the control off its default stops the encode before it starts. Candidates for removal from the dialog; the three stanzas go with them.
-5. Ten of the 24 Level values are refused by the build ("Invalid or undefined level"): 2.2, 2.3, 3.2, 3.3, 4.2, 4.3, 7.0, 7.1, 7.2, 7.3. Stated per value in `svt-av1.level`; trim the list in `SvtAv1Enc.vb`.
+5. **Fixed on this branch.** Ten of the 24 Level values are refused by the build ("Invalid or undefined level"): 2.2, 2.3, 3.2, 3.3, 4.2, 4.3, 7.0, 7.1, 7.2, 7.3. The cause is the AV1 specification, not the encoder: Annex A leaves those seq_level_idx values undefined ("The missing entries in these tables (for example level 2.2 and 7.0) represent levels that are not yet defined"), so no AV1 encoder can produce them. `OnValueChanged` now hides them with `Level.ShowOption(i, False)` and resets a stored undefined level to Autodetect, the pattern `NVEnc`, `QSVEnc` and `VCEEnc` already use. They are hidden rather than deleted because `OptionParam` persists the dropdown **index**: a shorter `.Options`/`.Values` would silently re-map the level every saved profile holds (a profile on 5.1 would come back as 4.1). Delete them only together with a migration. `svt-av1.level` states the specification reason.
 6. `HbdMds` is off by one (`SvtAv1Enc.vb` 791-797): `IntegerValue` emits the dropdown index while the labels start at -1, so "0: Forces 8-bit" sends `--hbd-mds 1`, "1: Forces 10-bit" sends 2, and "2: 8/10-bit Hybrid" sends 3, always refused. Fix `.Values = {"-1", "0", "1", "2"}`, then rewrite the `Values` of `svt-av1.hbd-mds`, which documents the current behaviour entry by entry.
 7. Passes 2 and 3 send `p.VideoBitrate`, not the dialog's Target Bitrate (`SvtAv1Enc.vb` 1546), so a value typed in the dialog governs pass 1 only. Stated in `svt-av1.tbr`.
 8. `--cqp` is formatted with `ToString("0.##")` and no invariant culture (`SvtAv1Enc.vb` 1537), unlike `--crf` (1533) and `--qp` (1541); a comma-decimal locale would emit `--cqp 30,25`. Not stated in a stanza (code review, not tested with a locale change).
