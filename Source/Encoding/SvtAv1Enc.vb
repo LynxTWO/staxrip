@@ -841,7 +841,7 @@ Public Class SvtAv1EncParams
     Property QmMax As New NumParam With {
         .Switch = "--qm-max",
         .Text = "Max quant matrix flatness",
-        .VisibleFunc = Function() EnableQm.Visible,
+        .VisibleFunc = Function() EnableQm.Value,
         .Config = {0, 15, 1},
         .Init = 15}
 
@@ -964,12 +964,15 @@ Public Class SvtAv1EncParams
         .IntegerValue = True,
         .Init = 1}
 
+    'The bundled build stops a VBR or CBR encode with "Startup MG size feature only
+    'supports CRF/CQP rate control mode", so the control is offered in Quality mode only.
     Property StartupMgSize As New OptionParam With {
         .Switch = "--startup-mg-size",
         .Text = "Startup Mini-GOP Size",
         .Expanded = True,
         .Options = {"0: Off (default)", "2: 3 temporal layers", "3: 4 temporal layers", "4: 5 temporal layers"},
         .Values = {"0", "2", "3", "4"},
+        .VisibleFunc = Function() RateControlMode.Value = SvtAv1EncAppRateMode.Quality,
         .Init = 0}
 
     '   --------------------------------------------------------
@@ -1417,6 +1420,26 @@ Public Class SvtAv1EncParams
             If Level.Values(i).EqualsAny("2.2", "2.3", "3.2", "3.3", "4.2", "4.3", "7.0", "7.1", "7.2", "7.3") Then
                 Level.ShowOption(i, False)
                 If Level.Value = i Then Level.Value = 0
+            End If
+        Next
+
+        'CBR multi-pass can never run in the bundled build: it refuses multi-pass with the
+        'Low Delay structure CBR needs, refuses CBR itself with Random Access, and --pass 3
+        'is outside its range. Hide the entries instead of removing them: OptionParam stores
+        'the dropdown index, so a shorter list would silently re-map saved profiles.
+        For i = 1 To PassesCBR.Options.Length - 1
+            PassesCBR.ShowOption(i, False)
+            If PassesCBR.Value = i Then PassesCBR.Value = 0
+        Next
+
+        'VBR refuses --keyint 0 ("The intra period must be > 0 for RC mode 1") yet still
+        'exits 0 without writing a file, so StaxRip would report success. Hide the entry
+        'in VBR only; CBR ran with it.
+        For i = 0 To KeyInt.Values.Length - 1
+            If KeyInt.Values(i) = "0" Then
+                Dim allowed = RateControlMode.Value <> SvtAv1EncAppRateMode.VBR
+                KeyInt.ShowOption(i, allowed)
+                If Not allowed AndAlso KeyInt.Value = i Then KeyInt.Value = 0
             End If
         Next
 

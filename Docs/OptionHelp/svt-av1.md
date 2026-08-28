@@ -357,12 +357,12 @@ Status: reviewed
 ## svt-av1.pass
 Label: Passes
 Summary: Chooses whether the encoder first analyzes the whole video and then encodes it with that knowledge, so a bitrate target is met more accurately. 1-pass encodes in one go.
-Used when: Shown with Variable Bitrate (1 or 2 passes) or Constant Bitrate (1 to 3). Quality mode has no pass control, and the bundled build refuses a second pass in CRF mode anyway (tested).
-When to change: For Variable Bitrate pick 2-pass when the size matters; upstream says multi-pass helps VBR reach its target. For Constant Bitrate leave it at 1-pass: the bundled build refuses multi-pass with the Low Delay structure CBR needs, and `--pass 3` outright (tested), so 2-pass and 3-pass fail. StaxRip keeps the first-pass statistics in a file named after the output plus `_2pass.log`.
+Used when: Shown with Variable Bitrate (1 or 2 passes) or Constant Bitrate (1-pass only). Quality mode has no pass control, and the bundled build refuses a second pass in CRF mode anyway (tested).
+When to change: For Variable Bitrate pick 2-pass when the size matters; upstream says multi-pass helps VBR reach its target. For Constant Bitrate the list holds only 1-pass: the bundled build refuses multi-pass with the Low Delay structure CBR needs, and `--pass 3` outright (tested), so those entries are left out. StaxRip keeps the first-pass statistics in a file named after the output plus `_2pass.log`.
 Values:
-- 1: One pass. The default, and the only choice that works for Constant Bitrate in the bundled build.
+- 1: One pass. The default, and the only choice for Constant Bitrate in the bundled build.
 - 2: First pass gathers statistics, second pass encodes with them. Works for Variable Bitrate (tested).
-- 3: Constant Bitrate only. The bundled build refuses multi-pass CBR and `--pass 3` itself, so nothing is encoded.
+- 3: The list leaves it out: the bundled build refuses multi-pass CBR and `--pass 3` itself (tested).
 Related: svt-av1.rc, svt-av1.tbr, svt-av1.pred-struct, staxrip.custom, concept.two-pass
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#multi-pass-options
@@ -452,7 +452,7 @@ Status: reviewed
 ## svt-av1.qm-max
 Label: Max quant matrix flatness
 Summary: The flattest quantization matrix the encoder may pick, 0 to 15; 15 is fully flat, with no frequency weighting. The encoder picks each frame's level between Min and Max from its quantizer.
-Used when: Only with Enable quantisation matrices on. The control is always shown, but the encoder ignores the value while matrices are off (tested: byte-identical output).
+Used when: Shown and sent only with Enable quantisation matrices on.
 When to change: Leave it at 15. Lower it to force some weighting on every frame, which shrinks the file further at a quality cost. Keep it at or above Min quant matrix flatness, or the bundled build stops before encoding; in a test, matrices on with Min and Max both at 0 gave the smallest file of the settings tried.
 Related: svt-av1.qm-min, svt-av1.enable-qm
 References:
@@ -474,13 +474,13 @@ Status: reviewed
 ## svt-av1.keyint
 Label: Keyint / GOP Size
 Summary: Sets how often a new group of pictures starts with a keyframe, a frame stored whole. Closer keyframes make seeking quicker and the file larger; the default is five to seven seconds by frame rate.
-Used when: Two lists share this switch: with Constant Rate Factor on screen you get -1 for a single keyframe, otherwise 0 instead. Nothing is sent at the default entry; the encoder's own -2 applies.
-When to change: Leave it at -2 for video you keep; upstream says home users often choose 5 to 10 seconds, and every keyframe costs bits. Pick 1s or 2s when quick seeking matters more than size; upstream says video-on-demand services commonly use about one second. In Variable Bitrate the default and the seconds entries work; on 0 the bundled build writes no file yet reports success (tested).
+Used when: Two lists share this switch: Constant Rate Factor offers -1 for a single keyframe, the other modes 0, hidden in Variable Bitrate. Nothing is sent at the default entry; the encoder's own -2 applies.
+When to change: Leave it at -2 for video you keep; upstream says home users often choose 5 to 10 seconds, and every keyframe costs bits. Pick 1s or 2s when quick seeking matters more than size; upstream says video-on-demand services commonly use about one second. The list hides 0 in Variable Bitrate because the bundled build then writes no file yet reports success (tested).
 Example: Encode a short scene at -2 and again at 1s, compare the two sizes, then seek around both files in your player. In tests -2 placed a keyframe every 161 frames from 23.976 to 30 fps and every 321 at 50 and 60 fps: 5.4 s at 30 and 60, 6.4 at 25 and 50, 6.7 at 24 and 23.976.
 Values:
 - -2: The encoder default and StaxRip's; 161 frames in tests, 321 at 50 and 60 fps: five to seven seconds by frame rate.
 - -1: One keyframe at the start and never again. Offered with Constant Rate Factor; the help calls it CRF-only.
-- 0: Same as -1, for the other modes. Variable Bitrate writes no file yet reports success; Constant Bitrate ran (tested).
+- 0: Same as -1; hidden in Variable Bitrate, which wrote no file yet reported success; Constant Bitrate ran (tested).
 - 1s: A keyframe about every second at your frame rate; in tests it came one frame later than the rate, 26 at 25 fps.
 - 10s: The longest entry. Upstream calls 5 to 10 seconds common for home use.
 Related: svt-av1.irefresh-type, svt-av1.scd, svt-av1.rc, staxrip.chunks, concept.keyframe, concept.gop
@@ -574,8 +574,8 @@ Status: reviewed
 ## svt-av1.startup-mg-size
 Label: Startup Mini-GOP Size
 Summary: Gives the first mini-GOP after each keyframe a layer structure of its own, 3 to 5 layers; 0 keeps the usual one. Quality mode only.
-Used when: Quality mode only. In Variable or Constant Bitrate the bundled build stops with "Startup MG size feature only supports CRF/CQP rate control mode" (tested); the control stays visible anyway.
-When to change: Leave it at 0. The help says only that it swaps in another mini-GOP configuration after each keyframe, nothing about when that helps, so treat it as an experiment: in a test on a synthetic clip, 2, 3 and 4 each moved the file size by up to about a tenth, up or down, with no keyframe change. Set it back to 0 before a bitrate encode or the encode stops.
+Used when: Quality mode only; with a bitrate target the control is hidden and nothing is sent. The bundled build stops a Variable or Constant Bitrate encode handed the switch (tested).
+When to change: Leave it at 0. The help says only that it swaps in another mini-GOP configuration after each keyframe, nothing about when that helps, so treat it as an experiment: in a test on a synthetic clip, 2, 3 and 4 each moved the file size by up to about a tenth, up or down, with no keyframe change.
 Values:
 - 0: Off. The encoder default and StaxRip's.
 - 2: Three layers for the first mini-GOP after each keyframe.
