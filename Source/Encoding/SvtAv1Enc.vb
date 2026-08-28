@@ -661,22 +661,29 @@ Public Class SvtAv1EncParams
         .DefaultValue = 1,
         .Value = 2}
 
+    'Preset carried a ValueChangedAction that moved Hierarchical Levels with it; it is gone,
+    'deliberately, and the four SvtAv1 variants still hold the copy it was made from.
+    'It was written in 49a966ef against the list this file had then -- {"2: 3 temporal
+    'layers", "3: 4 temporal layers", "4: 5 temporal layers", "5: 6 temporal layers"} -- where
+    'its "If(v <= 13, 3, 2)" meant --hierarchical-levels 5 for every preset but the last and 4
+    'for that one, which was the encoder's own rule at the time. 364ca46d put "0: flat" and
+    '"1: 2 temporal layers" in front of that list without touching the action, so the same two
+    'indices now mean 3 and 2, two steps down from what it was tracking, and the bundled build
+    'no longer follows that rule either (it picks 5 up to preset 8 and 4 from preset 9 in CRF,
+    'and 4 in VBR).
+    'Correcting the indices would not have been enough. The action wrote through Value, which
+    'is persisted in Store.Int(GetKey), while the DefaultValue it moved in the same breath is
+    'rebuilt from .Init every time the params object is: the switch it suppressed in this
+    'session was therefore sent in the next one, and while the session lasted it also swallowed
+    'an explicit pick of the entry it had just made the default. Without it, StaxRip sends
+    'nothing while Hierarchical Levels is on its own default entry and sends exactly what the
+    'dropdown shows otherwise, which is what svt-av1.hierarchical-levels tells the user.
     Property Preset As New OptionParam With {
         .Switch = "--preset",
         .Text = "Preset",
         .Expanded = True,
         .Options = {"-1: Debug Option", "0: Slowest", "1: Extreme Slow", "2: Ultra Slow", "3: Very Slow", "4: Slower", "5: Slow", "6: Medium", "7: Fast", "8: Faster (default)", "9: Very Fast", "10: Mega Fast", "11: Ultra Fast", "12: Extreme Fast", "13: Fastest"},
         .Values = {"-1", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"},
-        .ValueChangedAction = Sub(v)
-                                  Dim hlv = If(v <= 13, 3, 2)
-                                  If HierarchicalLevels.IsDefaultValue Then
-                                      HierarchicalLevels.DefaultValue = hlv
-                                      HierarchicalLevels.ValueChangedUser(hlv)
-                                  Else
-                                      HierarchicalLevels.DefaultValue = hlv
-                                      HierarchicalLevels.ValueChangedUser(HierarchicalLevels.Value)
-                                  End If
-                              End Sub,
         .Init = 9}
 
     '   --------------------------------------------------------
@@ -1062,11 +1069,16 @@ Public Class SvtAv1EncParams
         .Config = {-1, 120, 1},
         .Init = -1}
 
+    'Entry 4 is marked as StaxRip's default rather than the encoder's, which "(default)" means
+    'everywhere else in this file: the bundled build has no single default here. It picks 5 up
+    'to preset 8 and 4 from preset 9 in CRF, and 4 in Variable Bitrate, and nothing is sent
+    'while this control sits on its own default entry, so leaving it there is what lets the
+    'encoder choose. svt-av1.hierarchical-levels carries the measurements.
     Property HierarchicalLevels As New OptionParam With {
         .Switch = "--hierarchical-levels",
         .Text = "Hierarchical Levels",
         .Expanded = True,
-        .Options = {"0: flat", "1: 2 temporal layers", "2: 3 temporal layers", "3: 4 temporal layers", "4: 5 temporal layers (default)", "5: 6 temporal layers"},
+        .Options = {"0: flat", "1: 2 temporal layers", "2: 3 temporal layers", "3: 4 temporal layers", "4: 5 temporal layers (StaxRip default)", "5: 6 temporal layers"},
         .Values = {"0", "1", "2", "3", "4", "5"},
         .Init = 4}
 

@@ -529,12 +529,11 @@ Status: reviewed
 Label: Hierarchical Levels
 Summary: Sets the frame layers per mini-GOP, 0 (flat) to 5 (six layers, 32 frames). Per upstream, slower presets use more layers for efficiency and fewer make a simpler stream that decodes faster.
 Used when: Bounded by other choices: Constant Bitrate caps it at 2 and open GOP (Intra Refresh Type 1) forces 4, each with a warning from the bundled build (tested).
-When to change: Leave it alone. StaxRip sends nothing at its default entry, so the encoder picks by preset. In CRF tests that was 5 up to preset 8 and 4 from preset 9, and 4 in Variable Bitrate at presets 4 to 10; the help's "5 up to preset 12" did not hold. The entry marked default says 4, and changing Preset here moves the default to 3 (2 at preset 13); neither is sent. Any other entry you pick is sent.
+When to change: Leave it alone. StaxRip sends nothing while its own default entry is selected, so the encoder picks by preset. In CRF tests that was 5 up to preset 8 and 4 from preset 9, and 4 in Variable Bitrate at presets 4 to 10; the help's "5 up to preset 12" did not hold. Any other entry is sent as you see it, whatever Preset is set to.
 Encoder default: 5 or 4 by preset, see below
 Values:
 - 0: Flat, no layers, one-frame mini-GOPs. Accepted by the bundled build although its help starts at 2.
 - 2: Three layers, 4-frame mini-GOPs. Constant Bitrate's ceiling: the bundled build caps it there with a warning.
-- 3: Four layers, 8-frame mini-GOPs. Where StaxRip's default entry lands after you change Preset here.
 - 4: Five layers, 16-frame mini-GOPs. StaxRip's default entry; the encoder's pick from preset 9 and in Variable Bitrate.
 - 5: Six layers, 32-frame mini-GOPs. The encoder's pick up to preset 8 in CRF tests; the help says up to preset 12.
 Related: svt-av1.preset, svt-av1.fast-decode, svt-av1.pred-struct, svt-av1.irefresh-type, svt-av1.rc, svt-av1.qp-scale-compress-strength, svt-av1.startup-mg-size, concept.gop
