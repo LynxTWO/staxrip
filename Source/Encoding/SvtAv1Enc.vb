@@ -637,16 +637,22 @@ Public Class SvtAv1EncParams
         .Config = {0, 6, 1, 0},
         .Init = 0}
 
+    'The bundled build rejects --pin with "Unprocessed tokens", so the control is hidden;
+    'it is kept rather than deleted so saved profiles and the option help stay valid.
     Property PinnedExecution As New NumParam With {
         .Switch = "--pin",
         .Text = "Pinned Execution",
         .Config = {0, OS.Hardware.Threads, 1, 0},
+        .VisibleFunc = Function() False,
         .Init = 0}
 
+    'The bundled build rejects --ss with "Unprocessed tokens", so the control is hidden;
+    'it is kept rather than deleted so saved profiles and the option help stay valid.
     Property TargetSocket As New NumParam With {
         .Switch = "--ss",
         .Text = "Target Socket",
         .Config = {-1, 1, 1, 0},
+        .VisibleFunc = Function() False,
         .Init = -1}
 
     Property FastDecode As New OptionParam With {
@@ -998,10 +1004,12 @@ Public Class SvtAv1EncParams
         .IntegerValue = True,
         .Init = True}
 
+    'The bundled build rejects --enable-tpl-la with "Unprocessed tokens", so the control is
+    'hidden; it is kept rather than deleted so saved profiles and the option help stay valid.
     Property EnableTPLModel As New BoolParam With {
         .Switch = "--enable-tpl-la",
         .Text = "Temporal Dependency Model",
-        .VisibleFunc = Function() RateControlMode.Value = SvtAv1EncAppRateMode.Quality,
+        .VisibleFunc = Function() False,
         .IntegerValue = True,
         .Init = True}
 

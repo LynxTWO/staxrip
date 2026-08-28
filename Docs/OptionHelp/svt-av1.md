@@ -118,8 +118,8 @@ Status: reviewed
 
 ## svt-av1.pin
 Label: Pinned Execution
-Summary: The encoder that ships with StaxRip does not accept this switch. Upstream documents `--pin` as running the encoder on the first N CPU cores only; the bundled help does not list it.
-When to change: Leave it at 0. Any other value puts `--pin` on the command line, and the bundled build then stops before encoding with "Unprocessed tokens: --pin", so the encode does not start (checked on 2026-08-27 with a test clip). To limit the encoder's CPU and memory use, lower Level Of Parallelism instead.
+Summary: The encoder that ships with StaxRip does not accept this switch, so the dialog no longer offers it. Upstream documents `--pin` as running the encoder on the first N CPU cores only.
+When to change: Nothing to set here. `--pin` on the command line stops the bundled build before encoding with "Unprocessed tokens: --pin", so the encode does not start (checked on 2026-08-27 with a test clip). To limit the encoder's CPU and memory use, lower Level Of Parallelism instead.
 Related: svt-av1.lp, svt-av1.ss, concept.parallelism
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#appendix-a-encoder-parameters
@@ -127,8 +127,8 @@ Status: reviewed
 
 ## svt-av1.ss
 Label: Target Socket
-Summary: The encoder that ships with StaxRip does not accept this switch. Target Socket once told the encoder which CPU socket to run on; the bundled help does not list it and no current document describes it.
-When to change: Leave it at the default. Changing the control puts `--ss` on the command line, and the bundled build then stops before encoding with "Unprocessed tokens: --ss", so the encode does not start (checked on 2026-08-27).
+Summary: The encoder that ships with StaxRip does not accept this switch, so the dialog no longer offers it. Target Socket once told the encoder which CPU socket to run on; no current document describes it.
+When to change: Nothing to set here. `--ss` on the command line stops the bundled build before encoding with "Unprocessed tokens: --ss", so the encode does not start (checked on 2026-08-27).
 Related: svt-av1.lp, svt-av1.pin
 Status: reviewed
 
@@ -696,9 +696,8 @@ Status: reviewed
 
 ## svt-av1.enable-tpl-la
 Label: Temporal Dependency Model
-Summary: The encoder that ships with StaxRip does not accept this switch. Its own temporal dependency model, which weighs how much later frames lean on each block when it hands out bits, stays on either way.
-Used when: Quality mode only; the control is hidden with a bitrate target and nothing is sent then.
-When to change: Leave it on. Switching it off puts `--enable-tpl-la 0` on the command line, and the bundled build then stops before encoding with "Unprocessed tokens: --enable-tpl-la", so the encode does not start (checked on 2026-08-27). The model itself goes off with Adaptive Quantization 0, which the build reports as "TPL is disabled for aq_mode 0".
+Summary: The encoder that ships with StaxRip does not accept this switch, so the dialog no longer offers it. The encoder's own temporal dependency model stays on either way.
+When to change: Nothing to set here. The model weighs how much later frames lean on each block when the encoder hands out bits. `--enable-tpl-la` on the command line stops the bundled build before encoding with "Unprocessed tokens: --enable-tpl-la" (checked on 2026-08-27). The model itself goes off with Adaptive Quantization 0, which the build reports as "TPL is disabled for aq_mode 0".
 Related: svt-av1.aq-mode, svt-av1.cqp, svt-av1.lookahead, svt-av1.rc
 Status: reviewed
 
