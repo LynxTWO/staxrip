@@ -794,12 +794,15 @@ Public Class SvtAv1EncParams
         .Options = {"0: Off", "1: Variance base using AV1 segments", "2: Deltaq pred efficiency (default)"},
         .Init = 2}
 
+    'The labels start at -1, so the emitted value must come from Values, not the dropdown
+    'index: with IntegerValue the entry "0: Forces 8-bit" sent --hbd-mds 1, "1: Forces
+    '10-bit" sent 2, and "2: 8/10-bit Hybrid" sent 3, which is outside the encoder's range.
     Property HbdMds As New OptionParam With {
         .Switch = "--hbd-mds",
         .Text = "High Bit Depth Mode Decisions",
         .Expanded = True,
-        .IntegerValue = True,
         .Options = {"-1: Off (default)", "0: Forces 8-bit", "1: Forces 10-bit", "2: 8/10-bit Hybrid"},
+        .Values = {"-1", "0", "1", "2"},
         .Init = 0}
 
     Property QpScaleCompressStrength As New NumParam With {

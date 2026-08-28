@@ -385,16 +385,16 @@ Status: reviewed
 
 ## svt-av1.hbd-mds
 Label: High Bit Depth Mode Decisions
-Summary: Chooses the bit depth for the encoder's mode decisions (its block size and prediction choices) with 10-bit video: 8-bit, 10-bit, or a mix. -1 lets the preset decide; only that entry works here.
+Summary: Chooses the bit depth for the encoder's mode decisions (its block size and prediction choices) with 10-bit video: 8-bit, 10-bit, or a mix. -1 lets the preset decide.
 Used when: 10-bit video only. Upstream says 10-bit decisions need 10-bit input, and the bundled build refuses 1 and 2 with 8-bit video (tested).
-When to change: Leave it at -1: Off. StaxRip sends each entry's position rather than the number in its label, so the list is off by one and every other entry either stops the encode or, with 10-bit video, crashed the bundled build in a test unless Level Of Parallelism was 1 to 3. The notes on each entry say what is sent.
+When to change: Leave it at -1: Off. With 10-bit video, 1 and 2 crashed the bundled build in a test unless Level Of Parallelism was 1 to 3, so set that first if you experiment; a crash can leave a partial file behind.
 Encoder default: -1
-Example: To try 10-bit mode decisions, put `--hbd-mds 1` in the Custom box (StaxRip then drops its own copy) and set Level Of Parallelism to 1 to 3, which slows the encode: in a test (640x480 10-bit clip, 16-core machine) 1 and 2 ran at 1 to 3, crashed intermittently at 4 and always at 5 and 6.
+Example: To try 10-bit mode decisions, pick 1: Forces 10-bit and set Level Of Parallelism to 1 to 3, which slows the encode: in a test (640x480 10-bit clip, 16-core machine) 1 and 2 ran at 1 to 3, crashed intermittently at 4 and always at 5 and 6.
 Values:
-- 0: The -1: Off entry. Nothing is sent and the preset decides; the only entry that works in this dialog.
-- 1: The 0: Forces 8-bit entry sends `--hbd-mds 1` (10-bit): refused for 8-bit video, crashed with 10-bit in a test.
-- 2: The 1: Forces 10-bit entry sends `--hbd-mds 2` (hybrid): refused for 8-bit video, crashed with 10-bit in a test.
-- 3: The 2: 8/10-bit Hybrid entry sends `--hbd-mds 3`, outside the encoder's range; the bundled build always stops.
+- -1: Off. Nothing is sent and the preset decides. The encoder default and StaxRip's.
+- 0: Mode decisions run in 8-bit even for 10-bit video.
+- 1: 10-bit mode decisions: refused with 8-bit video, crashed with 10-bit above Level Of Parallelism 3 (tested).
+- 2: 8/10-bit hybrid: refused with 8-bit video, crashed with 10-bit above Level Of Parallelism 3 (tested).
 Related: svt-av1.lp, svt-av1.preset, staxrip.custom
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
