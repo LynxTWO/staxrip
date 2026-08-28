@@ -116,7 +116,12 @@ Public Class SvtAv1Enc
     'the encoder on it. BeforeEncoding runs before the first pass in both the ordinary and the
     'chunked path, and RunCompCheck calls this too because it starts the encoder of its own.
     Sub VerifyMasteringDisplay()
-        Dim value = Params.MasteringDisplay.Value
+        'StringParam.GetArgs emits the box through String.Escape, which passes a value that is
+        'already wrapped in quotes straight through, and Windows strips those quotes again when
+        'it builds argv -- so a value pasted with the quotes the command-line strip shows reaches
+        'the encoder without them and always encoded fine. Trim quotes only: a stray blank really
+        'does hang the parser, so it must still be refused.
+        Dim value = Params.MasteringDisplay.Value.Trim(""""c)
 
         'An empty box sends no switch at all; a box holding only blanks does send one, and hangs.
         If value = "" OrElse IsMasteringDisplayFormatValid(value) Then
@@ -140,8 +145,11 @@ Public Class SvtAv1Enc
     'the parser. The hexadecimal, inf and nan literals strtod would also take are refused, no
     'mastering display needs them, and so is a value the parser would abandon halfway, since it
     'then writes zeros for the rest without a word.
+    'The digit classes are [0-9], not \d: .NET's \d also matches the Unicode decimal digits of
+    'other scripts, which C strtod does not read, so \d would admit a value the parser abandons
+    'halfway -- and it then writes zeros for the rest without a word.
     Shared Function IsMasteringDisplayFormatValid(value As String) As Boolean
-        Const number = "[ \t\n\v\f\r]*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+        Const number = "[ \t\n\v\f\r]*[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
         Dim pair = $"\({number},{number}\)"
 
         Return Regex.IsMatch(value, $"\A(?:[GgBbRrLl]{pair}|[Ww][\s\S]{pair})+\z")
