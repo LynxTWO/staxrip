@@ -226,12 +226,12 @@ Status: reviewed
 ## svt-av1.rc
 Label: Rate Control Mode
 Summary: Chooses what the encoder holds steady: a quality level (Quality, the default) or a bitrate (Variable or Constant Bitrate). It decides which controls below appear and which the encoder uses.
-When to change: Leave it at Quality for video you keep; set the level with Constant Rate Factor and the size follows. Use Variable Bitrate when the file must hit a size; the main window's size and bitrate boxes then feed Target Bitrate. Constant Bitrate needs Prediction Structure at Low Delay and Variable Bitrate needs Random Access, the default; the bundled build stops on the wrong pairing (tested).
+When to change: Leave it at Quality for video you keep; set the level with Constant Rate Factor and the size follows. Use Variable Bitrate when the file must hit a size; the main window's size and bitrate boxes then feed Target Bitrate. Constant Bitrate needs Prediction Structure at Low Delay and Variable Bitrate needs Random Access; the bundled build stops on the wrong pairing, so the dialog sets it (tested).
 Example: Encode the same clip once at Quality with CRF 35 and once at Variable Bitrate with the size the first run produced, and compare the look. Upstream recommends the quality mode wherever a target size is not required.
 Values:
 - 0: Quality. Holds a quality level; Adaptive Quantization decides whether you set it as CRF, QP, or CQP. The default.
 - 1: Variable Bitrate. Aims at Target Bitrate over the whole video; needs Prediction Structure at Random Access (tested).
-- 2: Constant Bitrate. Holds the target throughout; the bundled build refuses it unless Prediction Structure is Low Delay.
+- 2: Constant Bitrate. Holds the target throughout; the dialog switches Prediction Structure to Low Delay, which it needs.
 Related: svt-av1.crf, svt-av1.tbr, svt-av1.aq-mode, svt-av1.pass, svt-av1.pred-struct, staxrip.comp-check, concept.rate-control, concept.bitrate, concept.quality-level
 References:
 - https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/v4.2.0/Docs/Parameters.md#rate-control-options
@@ -547,8 +547,8 @@ Status: reviewed
 ## svt-av1.pred-struct
 Label: Prediction Structure
 Summary: Chooses how frames may borrow from each other: Random Access lets a frame predict from pictures before and after it; Low Delay only from earlier ones, for live use, at a cost in compression.
-Used when: Variable Bitrate needs Random Access and Constant Bitrate needs Low Delay; the bundled build stops on either other pairing. Quality mode (CRF, CQP) ran with both (tested).
-When to change: Leave it at 2: Random Access unless you choose Constant Bitrate, which the bundled build refuses with it ("use VBR mode"); then pick 1: Low Delay. The price: in a CRF test on a small synthetic clip the Low Delay file was about 70% larger, upstream says low delay handles one picture at a time, and the bundled build refuses multi-pass with it. Tune 3 (still-image quality) needs it too.
+Used when: Variable Bitrate needs Random Access and Constant Bitrate needs Low Delay; the bundled build stops on either other pairing, so each offers only its own. Quality mode offers both (tested).
+When to change: Leave it alone. With a bitrate target the dialog sets it: Low Delay for Constant Bitrate, Random Access for Variable Bitrate, the only pairings the bundled build accepts. Quality mode offers both; Low Delay costs compression, about 70% larger in a CRF test on a synthetic clip, and rules out multi-pass, but Tune 3 (still-image quality) needs it. Leaving Constant Bitrate leaves Low Delay selected.
 Values:
 - 1: Low Delay. Required for Constant Bitrate; no multi-pass with it, and about 70% larger in a CRF test.
 - 2: Random Access. The encoder default and StaxRip's; required for Variable Bitrate (tested).

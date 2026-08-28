@@ -1557,6 +1557,37 @@ Public Class SvtAv1EncParams
             If PassesCBR.Value = i Then PassesCBR.Value = 0
         Next
 
+        'Each bitrate mode runs with one prediction structure and the bundled build stops on the
+        'other: Constant Bitrate with Random Access ("use VBR mode"), Variable Bitrate with Low
+        'Delay. Random Access is StaxRip's default, so Constant Bitrate could not run at all.
+        'Offer only the structure the mode can use and move the value onto it. Quality mode
+        'takes both and is left alone -- Low Delay is a legitimate CRF choice and Tune 3 needs
+        'it -- and nothing is restored on the way out, so a trip through Constant Bitrate leaves
+        'Low Delay selected in Quality mode: visible in the dropdown and on the command line,
+        'unlike the encoder's refusal this replaces.
+        'The reset is safe to write because PredStructure's store key is "--pred-struct"
+        '(CommandLineParam.GetKey takes .Switch, there being no .Name) and it is the only
+        'control in this file carrying that switch or that caption, so nothing else shares the
+        'entry -- the trap the shared "Passes--pass" key above is the record of.
+        Dim requiredPredStruct = ""
+
+        Select Case RateControlMode.Value
+            Case SvtAv1EncAppRateMode.CBR
+                requiredPredStruct = "1"
+            Case SvtAv1EncAppRateMode.VBR
+                requiredPredStruct = "2"
+        End Select
+
+        For i = 0 To PredStructure.Values.Length - 1
+            Dim allowed = requiredPredStruct = "" OrElse PredStructure.Values(i) = requiredPredStruct
+
+            PredStructure.ShowOption(i, allowed)
+
+            If allowed AndAlso requiredPredStruct <> "" AndAlso PredStructure.Value <> i Then
+                PredStructure.Value = i
+            End If
+        Next
+
         'VBR refuses --keyint 0 ("The intra period must be > 0 for RC mode 1") yet still
         'exits 0 without writing a file, so StaxRip would report success. Hide the entry
         'in VBR only; CBR ran with it.
