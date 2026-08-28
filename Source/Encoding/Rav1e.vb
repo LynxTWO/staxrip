@@ -165,6 +165,12 @@ Public Class Rav1eParams
         End Get
     End Property
 
+    Public Overrides ReadOnly Property OptionHelpId As String
+        Get
+            Return "rav1e"
+        End Get
+    End Property
+
 
     Property Tune As New OptionParam With {
         .Text = "Tune",
@@ -181,6 +187,7 @@ Public Class Rav1eParams
         .Path = "Basic"}
 
     Property Mode As New OptionParam With {
+        .OptionHelpKey = "rav1e.mode",
         .Text = "Mode",
         .Path = "Basic",
         .AlwaysOn = True,
@@ -188,6 +195,7 @@ Public Class Rav1eParams
         .Values = {"--speed", "--bitrate"}}
 
     Property Bitrate As New NumParam With {
+        .OptionHelpKey = "rav1e.bitrate",
         .Text = "Bitrate",
         .Path = "Basic",
         .Config = {0, 9999},
@@ -260,6 +268,7 @@ Public Class Rav1eParams
         .Init = 12}
 
     Property Light As New NumParam With {
+        .OptionHelpKey = "rav1e.content-light.max-cll",
         .Text = "Content Light",
         .Switch = "--content_light",
         .Path = "VUI",
@@ -276,6 +285,7 @@ Public Class Rav1eParams
                         End Sub}
 
     Property MaxFALL As New NumParam With {
+        .OptionHelpKey = "rav1e.content-light.max-fall",
         .Switches = {"--content_light"},
         .Text = "Maximum FALL",
         .Path = "VUI",
@@ -288,6 +298,7 @@ Public Class Rav1eParams
         .Config = {0, 20}}
 
     Property Custom As New StringParam With {
+        .OptionHelpKey = "staxrip.custom",
         .Text = "Custom",
         .Path = "Misc",
         .Quotes = QuotesMode.Never,

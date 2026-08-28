@@ -491,6 +491,10 @@
       <Link>OptionHelp\svt-av1.md</Link>
       <LogicalName>StaxRip.OptionHelp.svt-av1.md</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\Docs\OptionHelp\rav1e.md">
+      <Link>OptionHelp\rav1e.md</Link>
+      <LogicalName>StaxRip.OptionHelp.rav1e.md</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\Docs\OptionHelp\staxrip.md">
       <Link>OptionHelp\staxrip.md</Link>
       <LogicalName>StaxRip.OptionHelp.staxrip.md</LogicalName>
