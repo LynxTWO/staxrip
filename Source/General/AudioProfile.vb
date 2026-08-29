@@ -1144,7 +1144,8 @@ Public Class GUIAudioProfile
         If ((Params.Codec = AudioCodec.AC3 AndAlso Params.DeezyChannelsDd = DeezyChannelsDd._2) OrElse (Params.Codec = AudioCodec.EAC3 AndAlso Params.DeezyDdpMode = DeezyDdpMode.Ddp AndAlso Params.DeezyChannelsDdp = DeezyChannelsDdp._2)) AndAlso Params.DeezyStereodownmix <> DeezyStereodownmix.Auto Then sb.Append($" --stereo-down-mix={Params.DeezyStereodownmix.ToString().ToLower()}")
         If Params.Codec <> AudioCodec.AC4 AndAlso Params.DeezyDynamicrangecompression <> DeezyDrcLineMode.Music_Light Then sb.Append($" --drc-line-mode={Params.DeezyDynamicrangecompression.ToString().ToLower()}")
         If Params.CustomSwitches <> "" Then sb.Append(" " + Params.CustomSwitches)
-        If includePaths Then sb.Append($" --overwrite --output={GetOutputFile.LongPathPrefix.Escape} {File.Escape}")
+        'Same asymmetry as opusenc: the output carried the prefix, the input did not.
+        If includePaths Then sb.Append($" --overwrite --output={GetOutputFile.LongPathPrefix.Escape} {File.LongPathPrefix.Escape}")
 
         Return sb.ToString()
     End Function
@@ -1349,7 +1350,15 @@ Public Class GUIAudioProfile
             sb.Append(" " + Params.CustomSwitches)
         End If
 
-        Dim input = If(usePipe, "-", File.Escape)
+        'The output already carried the long-path prefix and the input did not, so a temp folder
+        'deep enough to push the source past MAX_PATH made opusenc exit 1 with "No such file or
+        'directory" on a file that plainly exists -- and StaxRip then aborted the job, killing
+        'the video encoder mid-write and leaving a truncated output. Verified on a 267-character
+        'path: without the prefix opusenc exits 1 immediately, with it the file opens and
+        'encoding starts. LongPathPrefix is a no-op below MAX_PATH, so short paths are untouched.
+        'ffmpeg needs no such help -- it opens the same path either way -- so its calls are left
+        'as they are rather than churned.
+        Dim input = If(usePipe, "-", File.LongPathPrefix.Escape)
 
         If includePaths Then
             sb.Append(" " + input + " " + GetOutputFile.LongPathPrefix.Escape)
@@ -1425,10 +1434,14 @@ Public Class GUIAudioProfile
             sb.Append(" " + Params.CustomSwitches)
         End If
 
-        Dim input = If(usePipe, "-", File.Escape)
+        'Same asymmetry as opusenc, and here neither side carried the prefix. Not reproduced
+        'against qaac itself -- it needs an input this source does not provide -- but below
+        'MAX_PATH the helper changes nothing, and above it the current call is a guaranteed
+        'failure for any tool that is not long-path aware, so adding it can only help.
+        Dim input = If(usePipe, "-", File.LongPathPrefix.Escape)
 
         If includePaths Then
-            sb.Append(" " + input + " -o " + GetOutputFile.Escape)
+            sb.Append(" " + input + " -o " + GetOutputFile.LongPathPrefix.Escape)
         End If
 
         Return sb.ToString
