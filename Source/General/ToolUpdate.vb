@@ -11,6 +11,7 @@ Public Class ToolUpdate
     Property ExtractDir As String
     Property TargetDir As String
     Property UseCurl As Boolean
+    Property DownloadSha256 As String
 
     Private HttpClient As New HttpClient
     Private UpdateUI As IUpdateUI
@@ -22,6 +23,15 @@ Public Class ToolUpdate
     End Sub
 
     Async Sub Update()
+        'The download page is where executable dependencies come from. Plain HTTP
+        'lets anyone between the user and the host replace the page or the file.
+        If Not DownloadIntegrity.IsHttps(Package.DownloadURL) Then
+            UpdatePackageDialog()
+            MsgError("The download page for " + Package.Name + " is not served over HTTPS, so StaxRip will not fetch it.",
+                "Open the page in a browser, verify the file yourself, and install it manually:" + BR2 + Package.DownloadURL)
+            Exit Sub
+        End If
+
         Dim content = Await HttpClient.GetStringAsync(Package.DownloadURL)
         Dim matches = Regex.Matches(content, "href=(""|')[^ ]+\.(7z|zip|exe)(""|')")
 
@@ -31,11 +41,26 @@ Public Class ToolUpdate
             If Ignore(url) Then Continue For
             If Package.Include <> "" AndAlso Not url.Contains(Package.Include) Then Continue For
 
-            url = url.Substring(6, url.Length - 7)
+            url = DownloadIntegrity.ResolveLink(url.Substring(6, url.Length - 7), Package.DownloadURL)
 
-            If Not url.StartsWith("http") Then
-                Dim match2 = Regex.Match(Package.DownloadURL, "https?://[^/]+")
-                url = match2.Value + If(url.StartsWith("/"), "", "/") + url
+            If Not DownloadIntegrity.IsHttps(url) Then
+                UpdatePackageDialog()
+                MsgError("The download link is not served over HTTPS, so StaxRip will not fetch it.", url)
+                Exit For
+            End If
+
+            'A vendor page may hand the file to a mirror or a CDN. That is common and
+            'also exactly what a replaced link looks like, so the user sees both hosts
+            'and the default answer is no.
+            If Not DownloadIntegrity.IsSameHost(url, Package.DownloadURL) Then
+                UpdatePackageDialog()
+
+                If MessageBox.Show(DownloadIntegrity.DescribeCrossHost(url, Package.DownloadURL),
+                    "StaxRip", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2) <> DialogResult.OK Then
+
+                    Exit For
+                End If
             End If
 
             DownloadFile = IO.Path.Combine(Folder.Desktop, IO.Path.GetFileName(url))
@@ -53,6 +78,10 @@ Public Class ToolUpdate
             Using form As New DownloadForm(url, DownloadFile)
                 If form.ShowDialog() = DialogResult.OK AndAlso DownloadFile.FileExists Then
                     If DownloadFile.FileExists Then
+                        'No package declares a publisher checksum, so the digest is for
+                        'the user to compare by hand and for a support report to carry.
+                        DownloadSha256 = DownloadIntegrity.ComputeSha256(DownloadFile)
+                        Log.WriteLine("Downloaded " + DownloadFile.FileName + " from " + url + " with SHA-256 " + DownloadSha256)
                         Extract()
                     Else
                         MsgError("Downloaded file is missing.")
@@ -166,7 +195,7 @@ Public Class ToolUpdate
 
         If MsgQuestion("Copy new files?",
             "Copy new files from:" + BR2 + ExtractDir + BR2 + "to:" + BR2 +
-            TargetDir + BR2 + list) = DialogResult.OK Then
+            TargetDir + BR2 + list + BR2 + "SHA-256 of " + DownloadFile.FileName + ":" + BR + DownloadSha256) = DialogResult.OK Then
 
             For Each file In Directory.GetFiles(ExtractDir)
                 FileHelp.Copy(file, Path.Combine(TargetDir, file.FileName))

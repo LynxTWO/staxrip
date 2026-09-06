@@ -244,6 +244,7 @@
     <Compile Include="General\ProcController.vb" />
     <Compile Include="General\StaxRipUpdate.vb" />
     <Compile Include="General\Test.vb" />
+    <Compile Include="General\DownloadIntegrity.vb" />
     <Compile Include="General\ToolUpdate.vb" />
     <Compile Include="Video\VideoRenderer.vb" />
     <Compile Include="My Project\Application.Designer.vb">

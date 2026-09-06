@@ -83,8 +83,8 @@ Public Class Package
         .Description = "Haali Splitter is used by eac3to to write MKV files.",
         .Required = False,
         .IsIncluded = False,
-        .WebURL = "http://haali.su/mkv",
-        .DownloadURL = "http://haali.su/mkv",
+        .WebURL = "https://haali.net:1443/mkv/",
+        .DownloadURL = "https://haali.net:1443/mkv/",
         .Locations = {Registry.ClassesRoot.GetString("CLSID\" + GUIDS.HaaliMuxer.ToString + "\InprocServer32", Nothing).Dir}})
 
     Shared Property NicAudio As Package = Add(New PluginPackage With {
