@@ -55,6 +55,15 @@ Treat comments that affect compilation, project metadata, resources, encodings, 
 - Record the exact configuration and platform for build evidence. A Debug x64 build does not verify Release x64.
 - Separate branch activation evidence from outcome evidence for retries, fallbacks, concurrency, and external-tool invocation.
 
+## Anti-dark-code skill and calibration
+
+- The canonical repo-local skill is `.agents/skills/anti-dark-code/`. It is a managed core installed from a release tag with a published digest; do not edit it in place. Claude Code discovers it through the thin adapter at `.claude/skills/anti-dark-code/SKILL.md`.
+- Repo-owned memory lives in `.agents/skills/anti-dark-code/calibration/`: the deterministic repo profile, the human-reviewed verification plan, exact gates, invariants, the system map, coverage and findings ledgers, and upstream candidates. Read the file the current pass needs before crawling the repository, and update it when evidence changes.
+- `calibration/gates.json` is an owner-controlled trust record. A gate runs only after the owner approves its exact command and reconfirms execution safety. Each MSBuild gate is bound to a hash of its solution and project files; when those files change, the runner refuses the gate until the binding is reviewed and refreshed for the current tree.
+- Run artifacts, scratch worktrees, retained baselines, and staged proposals live under `.anti-dark-code/`. Neither that directory nor the skill and adapter directories are tracked; `.git/info/exclude` keeps them out of `git status`.
+- `probe --write` and `plan --write` replace the profile and the plan. Run them read-only first, compare against the calibrated records, and keep the human-reviewed statuses and reasons.
+- A general lesson goes to `calibration/upstream-candidates.md` and reaches the shared skill only as a reviewed proposal. Never edit the shared skill from this repository.
+
 ## Approval-gated areas
 
 Document the finding and smallest proposed edit, then obtain explicit human approval before changing:
