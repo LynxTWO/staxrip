@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "execution_policy": {
+    "owner_confirmed_safe_to_execute": true,
+    "notes": "The user approved direct Debug and Release x64 compile checks, official dependency retrieval, isolated portable application execution, synthetic media and plugin scripts, bounded lifecycle/resource testing, and scratch release-equivalent packaging. Approval does not cover the hard-coded A: release scripts, live updates, release publication, real user media, or unrelated external tools. Re-approved by the owner on 2026-09-05 after migration to 2026.09.04-unified.9: all five gate command arrays, source bindings, and cautions verified identical to the pre-migration record."
+  },
+  "machine": {
+    "notes": [
+      "Windows host with MSBuild 18.8.2, Visual C++ v143, Windows SDK 10.0.26100.0, and .NET Framework 4.8 reference assemblies.",
+      "Source/packages and the prepared Source/bin Apps tree were absent before the first dry run.",
+      "An isolated worktree passed x64 builds after an official NuGet.org restore and staging three headers from VapourSynth R79 commit acabf605b2205b32d65859bb2736405719d2fafd.",
+      "The integrated portable candidate passed GUI startup/source fixtures, 5,000 lifecycle iterations per engine, and a full scratch archive gate that took 1,038.3 seconds and about 10.3 GiB private memory."
+    ],
+    "avoid_locally": [
+      "Source/BuildAndPack.ps1",
+      "Source/Release.ps1",
+      "network restore outside an explicitly approved isolated worktree"
+    ],
+    "preferred_remote_runner": null
+  },
+  "gates": [
+    {
+      "id": "working-tree-whitespace",
+      "level": 0,
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "enabled": true,
+      "review_status": "approved",
+      "source": "reviewed repository-neutral Git check",
+      "confidence": "verified",
+      "inherit_env": true,
+      "env": {},
+      "timeout_seconds": 60,
+      "resource_class": "light",
+      "cwd": ".",
+      "include_globs": [
+        "**"
+      ],
+      "exclude_globs": [
+        "Source/bin/**",
+        "Source/bin-x86/**",
+        "Source/obj/**"
+      ]
+    },
+    {
+      "id": "autocrop-debug-x64",
+      "level": 1,
+      "argv": [
+        "Source\\Tools\\Gates\\msbuild.cmd",
+        "Source\\Tools\\AutoCrop\\AutoCrop.sln",
+        "-t:Rebuild",
+        "-p:Configuration=Debug",
+        "-p:Platform=x64",
+        "-m",
+        "-nologo",
+        "-verbosity:minimal"
+      ],
+      "enabled": true,
+      "review_status": "approved",
+      "source": "reviewed direct build from Source/Tools/AutoCrop/AutoCrop.sln",
+      "source_files": [
+        "Source/Tools/AutoCrop/AutoCrop.sln",
+        "Source/Tools/AutoCrop/AutoCrop.vbproj"
+      ],
+      "source_definition_sha256": "33e2d00f08ddefcfe2f5b3f05b6ae0f7f0dab2c30cba7d23004eab207580a80a",
+      "confidence": "verified",
+      "inherit_env": true,
+      "env": {},
+      "timeout_seconds": 600,
+      "resource_class": "medium",
+      "cwd": ".",
+      "include_globs": [
+        "Source/Tools/AutoCrop/**"
+      ],
+      "exclude_globs": [],
+      "previous_definition_sha256": "31f46c323430980b2db264f561cf665dcd2b422848c696806a7fbfa2172abb3b",
+      "owner_notes": "Source binding refreshed 2026-09-05 under the owner's blanket re-approval after migration to 2026.09.04-unified.9. Drift since the 2026-08-11 approval tree (198223ea) was the owner's own merged commits e10d99cf (retire x86 configurations), bc453e33 (FrameServer x64 intermediate directories), and 5bceb621 (structured bug report preview); the command array is unchanged. 2026-09-06: argv[0] changed from the absolute Build Tools path to Source/Tools/Gates/msbuild.cmd under the owner's CI approval; the wrapper prefers that same Build Tools path when present, so the local command is unchanged, and falls back to vswhere on a runner."
+    },
+    {
+      "id": "autocrop-release-x64",
+      "level": 1,
+      "argv": [
+        "Source\\Tools\\Gates\\msbuild.cmd",
+        "Source\\Tools\\AutoCrop\\AutoCrop.sln",
+        "-t:Rebuild",
+        "-p:Configuration=Release",
+        "-p:Platform=x64",
+        "-m",
+        "-nologo",
+        "-verbosity:minimal"
+      ],
+      "enabled": false,
+      "review_status": "approved",
+      "source": "reviewed direct build from Source/Tools/AutoCrop/AutoCrop.sln",
+      "source_files": [
+        "Source/Tools/AutoCrop/AutoCrop.sln",
+        "Source/Tools/AutoCrop/AutoCrop.vbproj"
+      ],
+      "source_definition_sha256": "33e2d00f08ddefcfe2f5b3f05b6ae0f7f0dab2c30cba7d23004eab207580a80a",
+      "confidence": "verified",
+      "inherit_env": true,
+      "env": {},
+      "timeout_seconds": 600,
+      "resource_class": "medium",
+      "cwd": ".",
+      "include_globs": [
+        "Source/Tools/AutoCrop/**"
+      ],
+      "exclude_globs": [],
+      "previous_definition_sha256": "31f46c323430980b2db264f561cf665dcd2b422848c696806a7fbfa2172abb3b",
+      "owner_notes": "Disabled 2026-09-06 with owner approval: this exact command rewrites the tracked Source/Tools/AutoCrop/bin/x64/Release binaries, so every run is marked stale. autocrop-release-x64-scratch carries the same build to a scratch OutDir. Kept for the record; re-enable only if the tracked-binary contract requires the in-place output. 2026-09-06: argv[0] changed from the absolute Build Tools path to Source/Tools/Gates/msbuild.cmd under the owner's CI approval; the wrapper prefers that same Build Tools path when present, so the local command is unchanged, and falls back to vswhere on a runner."
+    },
+    {
+      "id": "main-solution-debug-x64",
+      "level": 3,
+      "argv": [
+        "Source\\Tools\\Gates\\msbuild.cmd",
+        "Source\\StaxRip.sln",
+        "-t:Rebuild",
+        "-p:Configuration=Debug",
+        "-p:Platform=x64",
+        "-m",
+        "-nologo",
+        "-verbosity:minimal"
+      ],
+      "enabled": true,
+      "review_status": "approved",
+      "source": "reviewed direct build from Source/StaxRip.sln",
+      "source_files": [
+        "Source/StaxRip.sln",
+        "Source/StaxRip.vbproj",
+        "Source/FrameServer/FrameServer.vcxproj"
+      ],
+      "source_definition_sha256": "b321a76a0b2543ea5d2e3910388f3c89f560fd289b5eddc9e89e8bccc09bff1f",
+      "confidence": "verified",
+      "inherit_env": true,
+      "env": {},
+      "timeout_seconds": 1200,
+      "resource_class": "heavy",
+      "cwd": ".",
+      "include_globs": [
+        "Source/**/*.vb",
+        "Source/**/*.cpp",
+        "Source/**/*.h",
+        "Source/**/*.sln",
+        "Source/**/*.vbproj",
+        "Source/**/*.vcxproj",
+        "Source/packages.config"
+      ],
+      "exclude_globs": [],
+      "previous_definition_sha256": "e3abae70a72fa1e7b50a2d97c039b82eabebecd40c2445a85ee80c479ea5e009",
+      "owner_notes": "Source binding refreshed 2026-09-06 after the main worktree moved from agent/chunk-sync-guard-fix (603db71d) to audit/steering-and-trail, based on fork master 6e0c5b5a. Drift in the bound files came from the owner's own merged commits on master: b65df804 (Release x64 is a real release build), 656c9818 (remove legacy x86 bootstrapper entries), and the option-help resource commits (e0d163d3 and successors). Command arrays unchanged; blanket re-approval of 2026-09-05 applies. 2026-09-06: argv[0] changed from the absolute Build Tools path to Source/Tools/Gates/msbuild.cmd under the owner's CI approval; the wrapper prefers that same Build Tools path when present, so the local command is unchanged, and falls back to vswhere on a runner."
+    },
+    {
+      "id": "main-solution-release-x64",
+      "level": 3,
+      "argv": [
+        "Source\\Tools\\Gates\\msbuild.cmd",
+        "Source\\StaxRip.sln",
+        "-t:Rebuild",
+        "-p:Configuration=Release",
+        "-p:Platform=x64",
+        "-m",
+        "-nologo",
+        "-verbosity:minimal"
+      ],
+      "enabled": true,
+      "review_status": "approved",
+      "source": "reviewed direct build from Source/StaxRip.sln",
+      "source_files": [
+        "Source/StaxRip.sln",
+        "Source/StaxRip.vbproj",
+        "Source/FrameServer/FrameServer.vcxproj"
+      ],
+      "source_definition_sha256": "b321a76a0b2543ea5d2e3910388f3c89f560fd289b5eddc9e89e8bccc09bff1f",
+      "confidence": "verified",
+      "inherit_env": true,
+      "env": {},
+      "timeout_seconds": 1200,
+      "resource_class": "heavy",
+      "cwd": ".",
+      "include_globs": [
+        "Source/**/*.vb",
+        "Source/**/*.cpp",
+        "Source/**/*.h",
+        "Source/**/*.sln",
+        "Source/**/*.vbproj",
+        "Source/**/*.vcxproj",
+        "Source/packages.config"
+      ],
+      "exclude_globs": [],
+      "previous_definition_sha256": "e3abae70a72fa1e7b50a2d97c039b82eabebecd40c2445a85ee80c479ea5e009",
+      "owner_notes": "Source binding refreshed 2026-09-06 after the main worktree moved from agent/chunk-sync-guard-fix (603db71d) to audit/steering-and-trail, based on fork master 6e0c5b5a. Drift in the bound files came from the owner's own merged commits on master: b65df804 (Release x64 is a real release build), 656c9818 (remove legacy x86 bootstrapper entries), and the option-help resource commits (e0d163d3 and successors). Command arrays unchanged; blanket re-approval of 2026-09-05 applies. 2026-09-06: argv[0] changed from the absolute Build Tools path to Source/Tools/Gates/msbuild.cmd under the owner's CI approval; the wrapper prefers that same Build Tools path when present, so the local command is unchanged, and falls back to vswhere on a runner."
+    },
+    {
+      "id": "autocrop-release-x64-scratch",
+      "level": 1,
+      "argv": [
+        "Source\\Tools\\Gates\\msbuild.cmd",
+        "Source\\Tools\\AutoCrop\\AutoCrop.sln",
+        "-t:Rebuild",
+        "-p:Configuration=Release",
+        "-p:Platform=x64",
+        "-m",
+        "-nologo",
+        "-verbosity:minimal",
+        "-p:OutDir=../../../.anti-dark-code/runs/autocrop-release-scratch/"
+      ],
+      "enabled": true,
+      "review_status": "approved",
+      "source": "reviewed direct build from Source/Tools/AutoCrop/AutoCrop.sln, output redirected to an ignored scratch directory",
+      "source_files": [
+        "Source/Tools/AutoCrop/AutoCrop.sln",
+        "Source/Tools/AutoCrop/AutoCrop.vbproj"
+      ],
+      "source_definition_sha256": "33e2d00f08ddefcfe2f5b3f05b6ae0f7f0dab2c30cba7d23004eab207580a80a",
+      "confidence": "verified",
+      "inherit_env": true,
+      "env": {},
+      "timeout_seconds": 600,
+      "resource_class": "medium",
+      "cwd": ".",
+      "include_globs": [
+        "Source/Tools/AutoCrop/**"
+      ],
+      "exclude_globs": [],
+      "owner_notes": "Approved by the owner on 2026-09-06 as the Release x64 evidence gate for AutoCrop. Same rebuild as autocrop-release-x64 with -p:OutDir into .anti-dark-code/runs/, so the tracked Release binaries are never rewritten by a gate run (finding F-001). The tracked-binary policy itself is unchanged and still awaits the maintainer's artifact contract. OutDir is written project-relative with forward slashes: a trailing backslash before the closing quote was read as an escaped quote by MSBuild (MSB1008) on the first run. 2026-09-06: argv[0] changed from the absolute Build Tools path to Source/Tools/Gates/msbuild.cmd under the owner's CI approval; the wrapper prefers that same Build Tools path when present, so the local command is unchanged, and falls back to vswhere on a runner."
+    }
+  ]
+}

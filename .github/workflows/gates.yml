@@ -1,0 +1,119 @@
+name: Gates
+
+# The four owner-approved deterministic gates, run through the same runner and the same
+# gates.json a contributor uses locally, so what CI executes is what was approved and
+# nothing else. Scope and decisions: Docs/Review/CI-Proposal.md.
+#
+# Not a required check yet. Nothing here packages, publishes, tags, or runs the release
+# scripts under Source/*.ps1.
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ADC_TAG: v2026.09.06-unified.11
+  ADC_CORE_SHA256: 3f32a303bf78e5aa1ae91fe7627ad0c6d86190867470e5f951f598add678a1a1
+  VS_COMMIT: acabf605b2205b32d65859bb2736405719d2fafd
+
+jobs:
+  gates:
+    name: Approved gates (Windows x64)
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Check out the candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the pinned anti-dark-code core beside the tracked calibration
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="$RUNNER_TEMP/adc-src"
+          mkdir -p "$src"
+          curl -sSL --retry 3 -o "$src/core.zip" "https://github.com/LynxTWO/anti-dark-code-skill/archive/refs/tags/${ADC_TAG}.zip"
+          unzip -q "$src/core.zip" -d "$src"
+          core="$(find "$src" -maxdepth 2 -type d -name anti-dark-code | head -1)"
+          python "$core/scripts/adc.py" install --repo . --source-skill "$core" \
+            --expect-core-digest "$ADC_CORE_SHA256" --hosts none --apply > "$RUNNER_TEMP/install.json"
+          python - "$RUNNER_TEMP/install.json" <<'PY'
+          import json, sys
+          text = open(sys.argv[1], encoding="utf-8").read()
+          plan = json.loads(text[: text.rfind("}") + 1])
+          assert plan["applied"] and not plan["conflicts"], plan
+          assert plan["calibration_binding"]["status"] == "match", plan["calibration_binding"]
+          print("installed", plan["version"], "binding", plan["calibration_binding"]["status"])
+          PY
+          python .agents/skills/anti-dark-code/scripts/adc.py validate --skill .agents/skills/anti-dark-code --mode installed
+
+      - name: Restore the three declared packages from nuget.org and verify their digests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          nuget restore Source/StaxRip.sln -Source https://api.nuget.org/v3/index.json -PackagesDirectory Source/packages -NonInteractive
+          # SHA-256 of each restored .nupkg, as recorded in Docs/Verification/Clean-Build-Dry-Run.md.
+          $expected = @{
+            'Source/packages/DirectN.1.5.0/DirectN.1.5.0.nupkg' = 'd56d9f1db10caebe1fc2df5b6de7591510c3ec602903d8a3567061244b96ab92'
+            'Source/packages/ManagedCuda-100.10.0.31/ManagedCuda-100.10.0.31.nupkg' = '46cdb41e1d839ac61f6709981845327f00bc765f5069ffb027f755f6c99044e1'
+            'Source/packages/Microsoft.PowerShell.5.ReferenceAssemblies.1.1.0/Microsoft.PowerShell.5.ReferenceAssemblies.1.1.0.nupkg' = '2bc5ab45f20bfa5d9d141611cf8b68c23a8d94371f01bcea65e5f71a86deea45'
+          }
+          foreach ($entry in $expected.GetEnumerator()) {
+            $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $entry.Key).Hash.ToLowerInvariant()
+            if ($actual -ne $entry.Value) { throw "digest mismatch for $($entry.Key): $actual" }
+            Write-Host "verified $($entry.Key)"
+          }
+
+      - name: Stage the three VapourSynth R79 headers and verify their digests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = 'Source/bin/Apps/FrameServer/VapourSynth/sdk/include/vapoursynth'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          # SHA-256 of the LF form served by raw.githubusercontent.com at the R79 commit.
+          # Docs/Verification/Clean-Build-Dry-Run.md records the CRLF checkout form of the same bytes.
+          $expected = @{
+            'VapourSynth4.h' = '62ca1cca248ee89d6f8a79c8f4172ccebca1ed6b69626c8d231d1be5df4ccecc'
+            'VSHelper4.h'    = 'a648bc2123e17365548be83070a6f1363994ccef54433d3848aa84f15c419892'
+            'VSScript4.h'    = '357b4aca7003d71d3ec381c44424c8b649bcd116ea7880c4afb0c872cd569942'
+          }
+          foreach ($entry in $expected.GetEnumerator()) {
+            $target = Join-Path $dir $entry.Key
+            Invoke-WebRequest -Uri "https://raw.githubusercontent.com/vapoursynth/vapoursynth/$env:VS_COMMIT/include/$($entry.Key)" -OutFile $target
+            $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $target).Hash.ToLowerInvariant()
+            if ($actual -ne $entry.Value) { throw "digest mismatch for $($entry.Key): $actual" }
+            Write-Host "verified $($entry.Key)"
+          }
+
+      - name: Run the approved gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A pull request runs the gates its change set reaches; a push to master runs every
+          # approved gate. Documentation-only changes finish at the whitespace gate.
+          args=(--repo . --level 3 --allow-exec)
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            args+=(--changed-from "${{ github.event.pull_request.base.sha }}")
+          fi
+          python .agents/skills/anti-dark-code/scripts/adc.py gates "${args[@]}"
+
+      - name: Keep the run record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gates-${{ github.sha }}-${{ github.run_attempt }}
+          path: .anti-dark-code/runs/
+          if-no-files-found: ignore

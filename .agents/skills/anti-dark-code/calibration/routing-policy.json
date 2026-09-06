@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "_readme": [
+    "Repository-owned routing policy. Every rule ships review_status 'proposed'.",
+    "A proposed rule loads and never matches, so an unread template routes",
+    "everything to the full recipe rather than quietly running less. Approve a",
+    "rule only after reading what it lets the router skip.",
+    "Gate ids here must exist in gates.json, be enabled, and be approved.",
+    "The canonical full set lives in gates.json, not here: a policy that could",
+    "define what 'full' means could shrink it."
+  ],
+  "classifier": {
+    "surfaces": [
+      {
+        "glob": "**/*.md",
+        "surface": "docs",
+        "effect": "prose",
+        "breadth": "leaf"
+      },
+      {
+        "_note": "SKILL.md is instruction, not description. A change here can alter what every agent does, so it is never only documentation.",
+        "glob": "**/SKILL.md",
+        "surface": "skill-policy",
+        "effect": "public-contract",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/scripts/*.py",
+        "surface": "product",
+        "effect": "behavior",
+        "breadth": "runtime"
+      },
+      {
+        "_note": "Tests are verification authority. Weakening one changes what the repository can claim, which is why this cannot be a cheap route.",
+        "glob": "**/tests/*.py",
+        "surface": "tests",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/assets/*.json",
+        "surface": "schema",
+        "effect": "public-contract",
+        "breadth": "cross-runtime"
+      },
+      {
+        "_note": "A workflow decides which checks run at all. Same reasoning as tests, one level up.",
+        "glob": ".github/workflows/**",
+        "surface": "ci",
+        "effect": "verification-authority",
+        "breadth": "repository",
+        "sensitivity": "release"
+      },
+      {
+        "_note": "The router and the receipt writer decide what every other change is allowed to skip. Left as ordinary product code they graded themselves: with the rules below approved, a change to the router took the Level 2 product route. Entries below this line exist because a classifier is what makes a path authority, and load_policy refuses a policy that omits them. See D-071. This entry names the shipped skill's own scripts in the source spelling and the next names every installed spelling; the earlier **/scripts/*.py reached every nested scripts directory of an installing repository. See D-107 and D-118.",
+        "glob": "anti-dark-code/scripts/*.py",
+        "surface": "product",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/anti-dark-code/scripts/*.py",
+        "surface": "product",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/scripts/adc_receipt.py",
+        "surface": "product",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "_note": "The installer and distribution controls decide which skill a repository is running at all.",
+        "glob": "**/scripts/adc.py",
+        "surface": "product",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "_note": "The capability catalog defines what verification means. A change here can retire an obligation without touching a test.",
+        "glob": "**/assets/verification-capabilities.json",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "_note": "Installed and shipped calibration: the routing policy itself, the gate configuration, and the verification plan. A policy that could route its own edits cheaply could approve its own shortcut.",
+        "glob": "**/calibration/*.json",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "anti-dark-code/SOURCE-SCOPE.json",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": ".github/CODEOWNERS",
+        "surface": "ci",
+        "effect": "verification-authority",
+        "breadth": "repository",
+        "sensitivity": "release"
+      },
+      {
+        "glob": ".gitattributes",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": ".gitignore",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": ".gitmodules",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "design/routing/mutants/*",
+        "surface": "tests",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "pyproject.toml",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/pyproject.toml",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "requirements*.txt",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/requirements*.txt",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "Pipfile",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/Pipfile",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "*.lock",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/*.lock",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "setup.py",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/setup.py",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "setup.cfg",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/setup.cfg",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "pytest.ini",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/pytest.ini",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "tox.ini",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "glob": "**/tox.ini",
+        "surface": "schema",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      },
+      {
+        "_note": "Pass references are the instructions the passes execute, not descriptions of them. The routing-owning references took the Level 0 docs route before this entry existed.",
+        "glob": "**/references/*.md",
+        "surface": "docs",
+        "effect": "verification-authority",
+        "breadth": "repository"
+      }
+    ]
+  },
+  "full_recipe": {
+    "minimum_level": 3,
+    "passes": ["07", "10", "11", "14"],
+    "obligations": {
+      "V01": ["mutation-replay"],
+      "V08": ["distribution"],
+      "V09": ["validate-core"],
+      "V12": ["hostile-environment"],
+      "V21": ["full-suite"]
+    },
+    "independent_review": true
+  },
+  "rules": [
+    {
+      "_note": "Prose only. The cheapest route the policy offers, and the one to read hardest before approving.",
+      "id": "docs-only",
+      "review_status": "proposed",
+      "match": {"surfaces": ["docs"], "effects": ["prose"]},
+      "requires": {"passes": ["06"], "minimum_level": 0},
+      "obligations": {"V09": ["validate-core"]}
+    },
+    {
+      "id": "product-code",
+      "review_status": "proposed",
+      "match": {"surfaces": ["product"]},
+      "requires": {"passes": ["10", "11"], "minimum_level": 2},
+      "obligations": {"V21": ["full-suite"], "V09": ["validate-core"]}
+    },
+    {
+      "id": "schema-contract",
+      "review_status": "proposed",
+      "match": {"surfaces": ["schema"]},
+      "requires": {"passes": ["10", "11"], "minimum_level": 2},
+      "obligations": {"V08": ["distribution"], "V21": ["full-suite"]}
+    },
+    {
+      "_note": "The self-grading rule. A change to what verifies the repository cannot be judged by a route that change could have weakened, so it forces the full recipe and independent review.",
+      "id": "verification-authority",
+      "review_status": "proposed",
+      "match": {"effects": ["verification-authority"]},
+      "requires": {
+        "passes": ["07", "14"],
+        "minimum_level": 3,
+        "force_full": true,
+        "independent_review": true
+      },
+      "obligations": {"V01": ["mutation-replay"], "V12": ["hostile-environment"]}
+    },
+    {
+      "id": "skill-policy",
+      "review_status": "proposed",
+      "match": {"surfaces": ["skill-policy"]},
+      "requires": {
+        "passes": ["07"],
+        "minimum_level": 3,
+        "force_full": true,
+        "independent_review": true
+      },
+      "obligations": {"V09": ["validate-core"]}
+    },
+    {
+      "_note": "A mode change can turn data into a program without altering a byte of content, so it never takes a content-shaped route.",
+      "id": "mode-change",
+      "review_status": "proposed",
+      "match": {"mode_changed": true},
+      "requires": {"passes": ["04", "10"], "minimum_level": 2},
+      "obligations": {"V09": ["validate-core"]}
+    }
+  ]
+}

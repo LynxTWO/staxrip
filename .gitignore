@@ -19,3 +19,10 @@
 /Source/TaskDialog/WPFTest/bin
 /Source/TaskDialog/WPFTest/obj
 *.aps
+
+# Anti-dark-code: the managed core is installed per clone from a pinned release; only the
+# repo-owned calibration is tracked. Run artifacts and agent worktrees stay local.
+/.agents/skills/anti-dark-code/*
+!/.agents/skills/anti-dark-code/calibration/
+/.anti-dark-code/
+/.claude/
