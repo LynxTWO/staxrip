@@ -1,6 +1,6 @@
 # Proposal: continuous integration for the fork
 
-Status: proposal. No workflow file is added by this document. Adding privileged CI is an approval-gated change under `AGENTS.md`.
+Status: approved by the owner on 2026-09-06 and implemented as fork commit `fb5a1efc` (`.github/workflows/gates.yml`, `Source/Tools/Gates/msbuild.cmd`, tracked calibration). Decisions taken: the AutoCrop Release gate runs the scratch-output variant; the restore verifies each `.nupkg` against its recorded SHA-256; the check is not required. The text below is the proposal as approved.
 
 ## What it would do
 
