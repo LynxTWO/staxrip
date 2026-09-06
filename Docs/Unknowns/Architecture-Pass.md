@@ -55,6 +55,14 @@ These entries describe evidence gaps found while mapping commit `198223ea` on `m
   deliberate and offers the tested five-line fix as a PR. The intent question stays open
   until the upstream maintainer answers.
 
+  **Verified through the approved gate on 2026-09-06.** With the fork tree `audit/steering-and-trail`
+  (master `6e0c5b5a` plus documentation) checked out, the approved `main-solution-release-x64` gate
+  produced a `StaxRip.exe` whose `DebuggableAttribute` reports `IgnoreSymbolStoreSequencePoints` only,
+  JIT optimizer enabled, with the `TraceInformation` member reference present. The fix is therefore in
+  effect on the fork's build path, not only in the isolated worktree that produced it. The size,
+  3,965,952 bytes, is not comparable to the August table because the option-help resources were
+  added to the assembly in between.
+
 ### Clean-checkout build and shipping graph is incomplete
 
 - **Area or file:** `Source/StaxRip.sln`, `Source/Tools/AutoCrop/AutoCrop.sln`, `Source/FrameServer/FrameServer.vcxproj`, `.gitignore`, `Source/*.ps1`
