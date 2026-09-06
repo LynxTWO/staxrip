@@ -24,3 +24,34 @@ This ledger records risk-ranked review coverage. It does not convert partial ins
 | Planning and repository steering | Medium | verified | Root `AGENTS.md` is tracked; Architecture and Engineering sections are filled; Decision Log index and entries are consistent through D-036; D-033 through D-036 and `../Planning/SLICE-001.md` have human approval; `../Planning/PHASE-6-AUDIT.md` records the final pass | M0 evidence and later runtime behavior remain unverified | Begin M0 discovery; its gates block dependent production implementation |
 
 Update this ledger when a touched path gains or loses evidence. A higher confidence in one row does not imply coverage of adjacent rows.
+
+## Anti-dark-code audit slices
+
+This section carries the slice ledger from the anti-dark-code passes. It separates verified observations from configured, inferred, and unbounded behavior. Evidence is current for upstream base `198223ea`, the private integrated x64 candidate described in `Docs/Verification/Portable-X64-Validation.md`, and the fork tree named in each row.
+
+| Slice | Evidence | Status | Re-run trigger |
+| --- | --- | --- | --- |
+| Main solution Debug/Release x64 | direct isolated rebuilds | verified | solution, project, dependency, or shared source change |
+| AutoCrop Debug/Release x64 | direct isolated rebuilds | verified | AutoCrop project/source change |
+| x86/Win32 configuration retirement | solution parsing, property evaluation, rejection checks, six x64 builds | verified on Phase 1 | solution/project configuration change |
+| x64 runtime branch cleanup | diff audit, IL and compatibility probes, integrated build/runtime | verified on Phase 2 | package/update/startup architecture change |
+| FrameServer controlled lifecycle | missing runtime, retry, script failure, overlap, sequential cases | verified | native lifetime/loader change |
+| Packaged AviSynth/VapourSynth | real runtimes, plugins, scripts, representative frames | verified for fixtures | runtime, Python, plugin, or ABI change |
+| StaxRip GUI startup | isolated settings, changelog dismissal, responsive main form, clean exit | verified for v2.52.5 candidate | startup, settings, TaskDialog, or main-form change |
+| GUI media opening | AVC/AAC, VP9/Opus, 10-bit FFV1/PCM, VFR FFV1 | verified for fixtures | source opening, MediaInfo, demux, script generation, or template change |
+| Lifecycle/resource soak | 5,000 sessions per engine, flat handles, bounded memory | verified for fixtures | FrameServer/runtime/plugin change |
+| Release copy/exclusion contract | exact filtered scratch copy and sentinel paths | verified | `Release.ps1`, Apps layout, or exclusions change |
+| Full and EXE archive integrity | exact 7-Zip parameters, test, manifest closure, hashes | verified in scratch | binary/package/archive setting change |
+| Release publication | no external upload or release command | not tested | maintainer-controlled release rehearsal |
+| Hardware encoding | no NVENC/QSV/AMF encode on physical devices | not tested | dedicated hardware matrix |
+| Arbitrary media/plugins/scripts | synthetic representative corpus only | unbounded | curated regression additions |
+| Network and tool updates | static source review only | configured/inferred | isolated update sandbox |
+| Failure recovery | selected invalid-script/loader paths only | partial | cancellation, disk-full, process-crash harness |
+| Persistence and jobs | source mapping and mutex/retry review | inferred/partial | deterministic state-model harness |
+| Approved gate runs on the fork tree | `adc.py gates --allow-exec` at levels 1 and 3 on 2026-09-06 (runs under `.anti-dark-code/runs/`): whitespace, AutoCrop Debug x64, main solution Debug and Release x64 passed on `603db71d`; AutoCrop Release x64 was marked stale because it rewrites tracked binaries (finding F-001) | verified for that tree | any change to the bound solution or project files, which also requires a gate rebind |
+
+The absence of a checked-in test project and CI workflow remains a maintenance risk.
+Private probes and evidence improve confidence but do not replace a small upstream
+verification harness.
+
+The absence of a checked-in test project and CI workflow remains a maintenance risk. Private probes and evidence improve confidence but do not replace a small upstream verification harness; `Docs/Review/CI-Proposal.md` proposes the first step.

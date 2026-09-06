@@ -1,0 +1,427 @@
+{
+  "schema_version": 1,
+  "generated_by": "anti-dark-code 2026.09.06-unified.11 adc.py plan plus human review",
+  "generated_at_utc": "2026-09-06T13:37:22Z",
+  "catalog_version": "2026.09.06-unified.11",
+  "repo_profile_sha256": "722cdb454a1a7f40f71fbba34a50bc607e1f82e086636ccd372922789fb1ba12",
+  "repo_types": [
+    "mixed"
+  ],
+  "primary_repo_type": "mixed",
+  "summary": {
+    "selected": 11,
+    "candidate": 8,
+    "deferred": 3,
+    "not_applicable": 0
+  },
+  "confidence_levels": {
+    "0": "Every meaningful edit: whitespace, schema, architecture, and cheap changed-slice checks.",
+    "1": "Completed unit or slice: affected compile, contract, integration, and replay checks.",
+    "2": "Before merge or elevated risk: property, model, fault, performance, and focused adversarial checks.",
+    "3": "Scheduled, release, or high-risk: full solution, prepared runtime tree, platform matrix, and release-equivalent checks."
+  },
+  "capabilities": [
+    {
+      "id": "V01",
+      "name": "Mutation testing",
+      "status": "deferred",
+      "reason": "The only test target is the option-help harness under Source/Tests/OptionHelp, a standalone program for one feature, not a behavior suite for a high-risk module; mutation results on it would not be meaningful. Trigger: focused behavior tests for a high-risk pure module.",
+      "evidence": [
+        "repo-profile.json#counts.test_like_files=3",
+        "Source/Tests/OptionHelp/OptionHelpTests.vbproj"
+      ],
+      "level": 2,
+      "repo_type_adaptation": "Start with one managed semantic module; do not target WinForms designer or catalog declarations.",
+      "deterministic_work": [
+        "Mutate the selected module and report killed, survived, uncovered, timeout, and error counts."
+      ],
+      "agent_judgment": [
+        "Classify equivalent mutants and choose behavior worth protecting."
+      ]
+    },
+    {
+      "id": "V02",
+      "name": "Model-based stateful testing",
+      "status": "candidate",
+      "reason": "Jobs, project state, retries, and GUI workflows are stateful. Condition: define a model and isolate filesystem and process effects.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#critical-data-flows",
+        "Source/General/JobManager.vb"
+      ],
+      "level": 2,
+      "repo_type_adaptation": "Model job and project transitions below the WinForms layer before attempting UI actions.",
+      "deterministic_work": [
+        "Generate seeded action traces and shrink failures."
+      ],
+      "agent_judgment": [
+        "Define legal states, ownership, and recovery invariants."
+      ]
+    },
+    {
+      "id": "V03",
+      "name": "Executable invariants",
+      "status": "selected",
+      "reason": "Temp deletion, output publication, serialization, and process ownership have load-bearing safety properties.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#trust-boundaries-and-privilege-edges"
+      ],
+      "level": 1,
+      "repo_type_adaptation": "Prefer narrow managed checks around path ownership and state transitions; keep native ABI assertions at the boundary.",
+      "deterministic_work": [
+        "Assert named preconditions and fail with the first violating state."
+      ],
+      "agent_judgment": [
+        "Approve each invariant and its fail, quarantine, or recovery policy."
+      ]
+    },
+    {
+      "id": "V04",
+      "name": "Differential testing",
+      "status": "candidate",
+      "reason": "AviSynth and VapourSynth paths and multiple tool integrations offer comparisons, but semantic equivalence is not yet defined.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#runtime-dependency-graph"
+      ],
+      "level": 2,
+      "repo_type_adaptation": "Compare normalized frame metadata or generated commands only where both backends promise the same result.",
+      "deterministic_work": [
+        "Run both implementations on one reviewed fixture and diff normalized output."
+      ],
+      "agent_judgment": [
+        "Define equivalence and document intentional backend differences."
+      ]
+    },
+    {
+      "id": "V05",
+      "name": "Metamorphic testing",
+      "status": "candidate",
+      "reason": "Serialization, batch inputs, crop calculations, and generated commands have relational properties. Condition: create non-sensitive fixtures and safe seams.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#data-stores-and-schemas"
+      ],
+      "level": 2,
+      "repo_type_adaptation": "Use save-load, input-order, and path-normalization relations without running external encoders.",
+      "deterministic_work": [
+        "Transform fixtures and compare normalized semantic outputs."
+      ],
+      "agent_judgment": [
+        "State valid transformations and limits."
+      ]
+    },
+    {
+      "id": "V06",
+      "name": "Deterministic execution mode",
+      "status": "candidate",
+      "reason": "Concurrency, retry timing, filesystem state, and external processes affect results. Condition: introduce injectable clocks, process adapters, and isolated paths.",
+      "evidence": [
+        "Docs/Unknowns/Architecture-Pass.md#cross-process-job-and-shared-state-coordination"
+      ],
+      "level": 1,
+      "repo_type_adaptation": "Fix locale, timezone, settings root, temp root, tool paths, and process responses per test.",
+      "deterministic_work": [
+        "Capture fixture, seed, environment identity, and ordered events."
+      ],
+      "agent_judgment": [
+        "Separate intentional timing behavior from avoidable nondeterminism."
+      ]
+    },
+    {
+      "id": "V07",
+      "name": "Record and replay regression corpus",
+      "status": "candidate",
+      "reason": "Logs and projects contain replay clues, but no safe replay format or redacted corpus exists.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#diagnostics-and-observability-authority"
+      ],
+      "level": 1,
+      "repo_type_adaptation": "Store synthetic project, command, and process-response fixtures; never retain user media or raw logs.",
+      "deterministic_work": [
+        "Replay minimized fixtures with stable identity and version fields."
+      ],
+      "agent_judgment": [
+        "Choose permanent regressions and enforce redaction."
+      ]
+    },
+    {
+      "id": "V08",
+      "name": "Schema and contract validation",
+      "status": "selected",
+      "reason": "Project files, settings, job files, command lines, package records, and native calls are explicit compatibility boundaries.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#interface-surface",
+        "Docs/Architecture/System-Map.md#data-stores-and-schemas"
+      ],
+      "level": 0,
+      "repo_type_adaptation": "Validate managed persistence and command contracts separately from the C++ ABI and external executable contracts.",
+      "deterministic_work": [
+        "Report exact field, argument, or ABI boundary failures."
+      ],
+      "agent_judgment": [
+        "Define ownership, defaults, compatibility, and failure policy."
+      ]
+    },
+    {
+      "id": "V09",
+      "name": "Static architecture enforcement",
+      "status": "selected",
+      "reason": "The main solution, separate AutoCrop solution, ignored Apps tree, and native include path form a non-obvious build and shipping graph.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#dependency-shipping-and-reachability-graphs"
+      ],
+      "level": 0,
+      "repo_type_adaptation": "Check project membership, output paths, package ownership, and native dependency locations rather than language imports alone.",
+      "deterministic_work": [
+        "Parse solution and project files and flag drift from named graph rules."
+      ],
+      "agent_judgment": [
+        "Decide whether each exception is intended architecture or debt."
+      ]
+    },
+    {
+      "id": "V10",
+      "name": "Deterministic quality gate",
+      "status": "selected",
+      "reason": "The repository had no CI or exact contributor checks. Reviewed argument-array gates now cover whitespace plus Debug and Release x64 builds for AutoCrop and the main solution.",
+      "evidence": [
+        "gates.json",
+        "Docs/Verification/Clean-Build-Dry-Run.md"
+      ],
+      "level": 0,
+      "repo_type_adaptation": "Use direct MSBuild commands with explicit solution, configuration, and platform; do not wrap release scripts.",
+      "deterministic_work": [
+        "Capture exit code and bounded first-failure output."
+      ],
+      "agent_judgment": [
+        "Interpret prerequisite failures without claiming source regressions."
+      ]
+    },
+    {
+      "id": "V11",
+      "name": "Change-impact analysis",
+      "status": "selected",
+      "reason": "Managed, native, scripting, documentation, packaging, and external-tool changes have different verification needs.",
+      "evidence": [
+        "AGENTS.md#high-risk-paths",
+        "gates.json#include_globs"
+      ],
+      "level": 0,
+      "repo_type_adaptation": "Route AutoCrop-only edits to its build; native or shared solution edits to the main gate; release edits to human approval.",
+      "deterministic_work": [
+        "Map changed paths to the smallest applicable gate set."
+      ],
+      "agent_judgment": [
+        "Add semantic edges for shared package, persistence, command, and release contracts."
+      ]
+    },
+    {
+      "id": "V12",
+      "name": "Hermetic builds and tests",
+      "status": "selected",
+      "reason": "Isolated x64 source builds, an official hash-verified v2.52.5 runtime base, representative portable execution, and scratch archive closure are verified. Reconstructing every bundled Apps binary from authoritative source remains open.",
+      "evidence": [
+        "Docs/Verification/Clean-Build-Dry-Run.md",
+        "Docs/Verification/Portable-X64-Validation.md"
+      ],
+      "level": 3,
+      "repo_type_adaptation": "Define a Windows toolchain and prepared Apps-tree contract; distinguish source compilation from a release-equivalent portable tree.",
+      "deterministic_work": [
+        "Repeat the locked restore and source builds from a fresh checkout; keep runtime-tree and release validation separate."
+      ],
+      "agent_judgment": [
+        "Identify intentional external inputs and approve their provenance."
+      ]
+    },
+    {
+      "id": "V13",
+      "name": "Golden and semantic snapshot testing",
+      "status": "candidate",
+      "reason": "Generated scripts, commands, logs, and serialized state could regress structurally. Condition: define stable normalization and compatibility fixtures.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#critical-data-flows"
+      ],
+      "level": 1,
+      "repo_type_adaptation": "Snapshot normalized scripts and command models, not machine paths, timestamps, UI pixels, or raw binary formatter bytes by default.",
+      "deterministic_work": [
+        "Diff normalized artifacts against reviewed baselines."
+      ],
+      "agent_judgment": [
+        "Approve semantic fields and intentional baseline changes."
+      ]
+    },
+    {
+      "id": "V14",
+      "name": "Performance and leak budgets",
+      "status": "selected",
+      "reason": "A fixed synthetic H.264 workload and real-runtime probe now measure repeated FrameServer lifecycle, handles, working set, and private memory for both engines.",
+      "evidence": [
+        "Docs/Verification/Portable-X64-Validation.md#bounded-lifecycle-soak"
+      ],
+      "level": 2,
+      "repo_type_adaptation": "Measure UI responsiveness, job orchestration, frame serving, process count, memory, and handle growth separately.",
+      "deterministic_work": [
+        "Run fixed workloads and compare against reviewed budgets."
+      ],
+      "agent_judgment": [
+        "Choose user-relevant budgets and distinguish noise from regression."
+      ]
+    },
+    {
+      "id": "V15",
+      "name": "Fault injection",
+      "status": "deferred",
+      "reason": "Process, network, disk, and concurrency faults matter, but no isolated harness prevents effects on user files and tools. Trigger: add safe adapters and scratch roots.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#trust-boundaries-and-privilege-edges"
+      ],
+      "level": 2,
+      "repo_type_adaptation": "Inject child-process exits, locked job files, disk-full responses, and interrupted publication only in synthetic sandboxes.",
+      "deterministic_work": [
+        "Replay reviewed faults and assert recovery invariants."
+      ],
+      "agent_judgment": [
+        "Choose realistic faults and approve isolation."
+      ]
+    },
+    {
+      "id": "V16",
+      "name": "Authoritative project map",
+      "status": "selected",
+      "reason": "The repo spans three runtime units, local scripts, persisted state, native interop, and many external executables. A map now records those boundaries.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md"
+      ],
+      "level": 0,
+      "repo_type_adaptation": "Keep build, shipping, runtime, and trust graphs distinct and record observed versus configured reachability.",
+      "deterministic_work": [
+        "Refresh manifest, language, entrypoint, CI, test, and freshness facts."
+      ],
+      "agent_judgment": [
+        "Explain purpose, authority, trust, ownership, and exceptions."
+      ]
+    },
+    {
+      "id": "V17",
+      "name": "Separated builder, challenger, and verifier roles",
+      "status": "candidate",
+      "reason": "Independent review would help high-risk persistence, deletion, process, native, and release changes. Condition: a maintainer requests or assigns that workflow.",
+      "evidence": [
+        "AGENTS.md#approval-gated-areas"
+      ],
+      "level": 1,
+      "repo_type_adaptation": "Use role separation only for high-risk slices; ordinary documentation can use maintainer review plus deterministic gates.",
+      "deterministic_work": [
+        "Enforce implementation, challenge, and verification stage order."
+      ],
+      "agent_judgment": [
+        "Assign independent reviewers without duplicating mechanical work."
+      ]
+    },
+    {
+      "id": "V18",
+      "name": "Test-change policing",
+      "status": "selected",
+      "reason": "The option-help harness (Source/Tests/OptionHelp) and its check scripts are the first test configuration in the repository, so there is now something to police: skips, assertion loss, broad fakes, timeout growth, and baseline rewrites in the same patch as a production change.",
+      "evidence": [
+        "Source/Tests/OptionHelp/OptionHelpTests.vbproj",
+        "Source/Tests/OptionHelp/Probe-Embedded.ps1",
+        "Source/Tools/OptionHelp/Check-OptionHelp.ps1"
+      ],
+      "level": 0,
+      "repo_type_adaptation": "Treat fixture baselines, build gates, timeouts, and external-process fakes as test configuration once introduced.",
+      "deterministic_work": [
+        "Flag skips, assertion loss, broad mocks, timeout growth, and baseline rewrites."
+      ],
+      "agent_judgment": [
+        "Decide whether a behavior contract legitimately changed."
+      ]
+    },
+    {
+      "id": "V19",
+      "name": "Minimal failure packets",
+      "status": "selected",
+      "reason": "Build and external-tool failures can be large and machine-specific; the first bounded failure is more useful than full logs.",
+      "evidence": [
+        "Docs/Verification/Clean-Build-Dry-Run.md"
+      ],
+      "level": 0,
+      "repo_type_adaptation": "Include commit, toolchain, configuration, platform, first missing input or error, exit code, replay command, and redacted log path.",
+      "deterministic_work": [
+        "Capture and redact the first failing gate packet."
+      ],
+      "agent_judgment": [
+        "Request only the missing maintainer or environment context."
+      ]
+    },
+    {
+      "id": "V20",
+      "name": "Confidence ladder",
+      "status": "selected",
+      "reason": "A full Windows media application build is too expensive and environment-dependent for every documentation or isolated-tool edit.",
+      "evidence": [
+        "gates.json",
+        "confidence_levels"
+      ],
+      "level": 0,
+      "repo_type_adaptation": "Run cheap repository checks first, affected managed builds second, adversarial checks for risky boundaries, and prepared full builds for release-sensitive work.",
+      "deterministic_work": [
+        "Select gates by changed path, risk, and measured cost."
+      ],
+      "agent_judgment": [
+        "Recalibrate levels after real runtime and failure-history evidence exists."
+      ]
+    },
+    {
+      "id": "V21",
+      "name": "Affected-unit testing",
+      "status": "deferred",
+      "reason": "Only the option-help harness exists (Source/Tests/OptionHelp), and it is a standalone program for one feature rather than per-area test sets, so affected-unit selection has one unit to select. Trigger: a second test project or per-module suites. Until then change impact routes to the affected MSBuild gate under V11.",
+      "evidence": [
+        "repo-profile.json#counts.test_like_files=3",
+        "Source/Tests/OptionHelp/OptionHelpTests.vbproj",
+        "gates.json#include_globs"
+      ],
+      "level": 1,
+      "repo_type_adaptation": "When a test project appears, map Source/General, Source/Encoding, and Source/FrameServer edits to their own test sets rather than running one solution-wide suite.",
+      "deterministic_work": [
+        "Run the unit and module tests owning the changed paths",
+        "Report the executed set, not the selected set"
+      ],
+      "agent_judgment": [
+        "Name ownership edges a path map cannot see"
+      ]
+    },
+    {
+      "id": "V22",
+      "name": "Input fuzz testing",
+      "status": "candidate",
+      "reason": "Project, settings, template, and job deserialization, plus command-line and script generation, are parser-shaped inputs with user-owned data behind them, but no in-process entry point accepts bytes without touching user files or launching tools. Condition: an isolated seam for one persisted format and a scratch root.",
+      "evidence": [
+        "Docs/Architecture/System-Map.md#data-stores-and-schemas",
+        "AGENTS.md#approval-gated-areas"
+      ],
+      "level": 2,
+      "repo_type_adaptation": "Fuzz the managed persistence and command-model parsers in-process; never fuzz by launching encoders, muxers, or frame servers.",
+      "deterministic_work": [
+        "Generate hostile and malformed inputs against a parser or decoder",
+        "Minimize and record any failing input"
+      ],
+      "agent_judgment": [
+        "Choose the input surfaces worth fuzzing and the properties that must hold"
+      ]
+    }
+  ],
+  "dependency_policy": "Do not install or update tools from this plan. Prefer declared repository dependencies after the maintainer confirms the bootstrap procedure.",
+  "notes": [
+    "All 20 capabilities were evaluated. This run separately received approval for isolated application execution, synthetic runtime/media fixtures, bounded soak, and scratch packaging-equivalent validation.",
+    "The automatic mixed-repo plan selected 19 capabilities. Human calibration reduced this to the smallest evidence-backed set.",
+    "The isolated x64 source build passed after a locked NuGet.org restore and staged official R79 headers.",
+    "The 2026-08-11 integrated candidate passed representative GUI/runtime coverage, 5,000 lifecycles per engine, and exact scratch archive closure.",
+    "Re-run after architecture, CI, test, build-bootstrap, or runtime-boundary changes.",
+    "2026-09-05: moved to the 2026.09.05-unified.10 catalog of 22 capabilities after the profiler stopped counting nested worktrees and started recognizing Visual Basic .NET. V01 to V20 keep their reviewed statuses and reasons because the profile changed in scope accuracy, not in evidence; test_like_files is still 0 and no CI exists. V21 and V22 were reviewed and added as deferred and candidate.",
+    "The automatic plan on this profile selects 21 of 22 and defers 1, because documentation prose trips the content signals (for example financial_or_entitlement from AGENTS.md and the logging audit). Human calibration keeps the smallest evidence-backed set. The deterministic repo_types are now just mixed; the earlier windows-desktop, native-library, and powershell-build labels were human annotations and live in the system map.",
+    "The automatic plan on this profile selects 22 of 22 and defers 0, because documentation prose trips the content signals (for example financial_or_entitlement from AGENTS.md and the logging audit). Human calibration keeps the smallest evidence-backed set. The deterministic repo_types are now just mixed; the earlier windows-desktop, native-library, and powershell-build labels were human annotations and live in the system map.",
+    "2026-09-05: moved to the 2026.09.06-unified.11 catalog of 22 capabilities after the profiler stopped counting nested worktrees and started recognizing Visual Basic .NET. V01 to V20 keep their reviewed statuses and reasons because the profile changed in scope accuracy, not in evidence; test_like_files is still 0 and no CI exists. V21 and V22 were reviewed and added as deferred and candidate.",
+    "2026-09-06, unified.11: the profile now records evidence classes; documentation-only signals here: financial_or_entitlement. The automatic plan on this profile selects 22 of 22 (candidate 0, deferred 0); the human-reviewed statuses stand.",
+    "2026-09-06: the master-based tree carries Source/Tests/OptionHelp, the first test target. V18 moved to selected; V01 and V21 stay deferred with reasons updated to name the harness instead of claiming no tests exist."
+  ]
+}

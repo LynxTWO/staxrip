@@ -1,0 +1,730 @@
+{
+  "schema_version": 1,
+  "generated_by": "anti-dark-code 2026.09.06-unified.11 adc.py probe",
+  "generated_at_utc": "2026-09-06T13:37:16Z",
+  "repo_root": ".",
+  "source_identity": {
+    "git_commit": "0a42031144431a1aed1f6b33c4057b2de9fac699",
+    "git_branch": "audit/steering-and-trail",
+    "worktree_clean": false,
+    "worktree_status_sha256": "53d8c0e15372c8330e0f38f55b39dd1396d71ed225d67b50cb188789862be972",
+    "identity_excludes": [
+      ".agents/skills/",
+      ".claude/skills/",
+      ".claude/worktrees/",
+      ".gemini/skills/",
+      ".codex/skills/",
+      ".anti-dark-code/"
+    ]
+  },
+  "scan": {
+    "complete": true,
+    "files_seen": 557,
+    "files_scanned_for_indicators": 349,
+    "scan_limit": 50000,
+    "content_scan_limit": 4000,
+    "ignored_directories": [
+      ".anti-dark-code",
+      ".cache",
+      ".git",
+      ".gradle",
+      ".hg",
+      ".idea",
+      ".mypy_cache",
+      ".next",
+      ".nox",
+      ".nuxt",
+      ".pytest_cache",
+      ".ruff_cache",
+      ".svn",
+      ".terraform",
+      ".tox",
+      ".turbo",
+      ".venv",
+      ".vscode",
+      "DerivedData",
+      "Library",
+      "Logs",
+      "Pods",
+      "Temp",
+      "__pycache__",
+      "bin",
+      "bower_components",
+      "build",
+      "coverage",
+      "dist",
+      "env",
+      "node_modules",
+      "obj",
+      "out",
+      "target",
+      "vendor",
+      "venv"
+    ],
+    "ignored_skill_trees": [
+      ".agents/skills/",
+      ".claude/skills/",
+      ".codex/skills/",
+      ".gemini/skills/"
+    ],
+    "ignored_worktree_trees": [
+      ".claude/worktrees/"
+    ],
+    "skipped_nested_repositories": [],
+    "requested_exclusions": []
+  },
+  "repo_types": [
+    "mixed"
+  ],
+  "languages": [
+    {
+      "name": "Visual Basic .NET",
+      "source_files": 157
+    },
+    {
+      "name": "C/C++",
+      "source_files": 14
+    },
+    {
+      "name": "PowerShell",
+      "source_files": 11
+    },
+    {
+      "name": "C++",
+      "source_files": 3
+    },
+    {
+      "name": "C#",
+      "source_files": 2
+    },
+    {
+      "name": "Python",
+      "source_files": 1
+    }
+  ],
+  "manifests": [
+    "Source/StaxRip.sln",
+    "Source/StaxRip.vbproj",
+    "Source/Tests/OptionHelp/OptionHelpTests.vbproj",
+    "Source/Tools/AutoCrop/AutoCrop.sln",
+    "Source/Tools/AutoCrop/AutoCrop.vbproj",
+    "Source/Tools/OptionHelp/fixtures/repo-clean/Source/StaxRip.vbproj",
+    "Source/Tools/OptionHelp/fixtures/repo/Source/StaxRip.vbproj"
+  ],
+  "ci_files": [],
+  "steering_files": [
+    "AGENTS.md"
+  ],
+  "counts": {
+    "total_files": 557,
+    "source_files": 188,
+    "test_like_files": 3,
+    "total_bytes": 87850624,
+    "extensions": {
+      ".vb": 157,
+      ".md": 108,
+      ".png": 56,
+      ".resx": 51,
+      ".txt": 28,
+      ".tlog": 22,
+      ".dll": 22,
+      ".xml": 16,
+      ".h": 14,
+      ".ps1": 11,
+      ".yml": 6,
+      ".obj": 6,
+      ".vbproj": 5,
+      ".pdb": 5,
+      ".ico": 4,
+      ".log": 3,
+      ".config": 3,
+      ".cpp": 3,
+      ".p7s": 3,
+      ".nupkg": 3,
+      "<none>": 2,
+      ".html": 2,
+      ".cs": 2,
+      ".sln": 2,
+      ".recipe": 2,
+      ".res": 2,
+      ".lastbuildstate": 2,
+      ".myapp": 2,
+      ".manifest": 2,
+      ".bin": 2
+    }
+  },
+  "signals": {
+    "architecture_tool_present": {
+      "present": false,
+      "evidence": [],
+      "evidence_classes": {},
+      "documentation_only": false
+    },
+    "batch_or_chunk_processing": {
+      "present": true,
+      "evidence": [
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "README.md",
+        "Docs/README.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Features.md",
+        "Docs/Introduction/Screenshots.md",
+        "Docs/OptionHelp/README.md",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/OptionHelp/rav1e.md"
+      ],
+      "evidence_classes": {
+        "prose": 43,
+        "source": 29,
+        "config": 2
+      },
+      "documentation_only": false
+    },
+    "concurrency_or_async": {
+      "present": true,
+      "evidence": [
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "README.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Community.md",
+        "Docs/Introduction/Features.md",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/OptionHelp/rav1e.md",
+        "Docs/OptionHelp/staxrip.md"
+      ],
+      "evidence_classes": {
+        "prose": 36,
+        "source": 42,
+        "config": 6
+      },
+      "documentation_only": false
+    },
+    "cross_platform": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/ISSUE_TEMPLATE/01-bug_report.yml",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Features.md",
+        "Docs/Introduction/Installation.md"
+      ],
+      "evidence_classes": {
+        "prose": 51,
+        "config": 9,
+        "source": 86
+      },
+      "documentation_only": false
+    },
+    "deterministic_or_replay": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/OptionHelp/svt-av1.md",
+        "Docs/Planning/ARCHITECTURE.md",
+        "Docs/Planning/DECISION-LOG.md",
+        "Docs/Planning/ENGINEERING.md",
+        "Docs/Planning/PHASE-6-AUDIT.md",
+        "Docs/Planning/SLICE-001.md"
+      ],
+      "evidence_classes": {
+        "prose": 16,
+        "source": 7,
+        "config": 1
+      },
+      "documentation_only": false
+    },
+    "emergent_or_simulation": {
+      "present": true,
+      "evidence": [
+        "Docs/Architecture/Repo-Slices.md",
+        "Source/General/Package.vb"
+      ],
+      "evidence_classes": {
+        "prose": 1,
+        "source": 1
+      },
+      "documentation_only": false
+    },
+    "external_dependencies": {
+      "present": true,
+      "evidence": [
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        "Docs/README.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Community.md",
+        "Docs/Introduction/Installation.md",
+        "Docs/Introduction/System-Requirements.md",
+        "Docs/OptionHelp/README.md"
+      ],
+      "evidence_classes": {
+        "prose": 40,
+        "config": 9,
+        "source": 33
+      },
+      "documentation_only": false
+    },
+    "financial_or_entitlement": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "Docs/Security/Logging-Audit.md"
+      ],
+      "evidence_classes": {
+        "prose": 2
+      },
+      "documentation_only": true
+    },
+    "generated_or_serialized_output": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/OptionHelp/svt-av1.md",
+        "Docs/Planning/ARCHITECTURE.md",
+        "Docs/Planning/DECISION-LOG.md",
+        "Docs/Planning/ENGINEERING.md",
+        "Docs/Planning/PHASE-6-AUDIT.md",
+        "Docs/Planning/SLICE-001.md",
+        "Docs/Reports/SVT-AV1/report-b1-asm-sse2-sse3-crash.md"
+      ],
+      "evidence_classes": {
+        "prose": 20,
+        "source": 19,
+        "config": 3
+      },
+      "documentation_only": false
+    },
+    "has_ci": {
+      "present": false,
+      "evidence": [],
+      "evidence_classes": {},
+      "documentation_only": false
+    },
+    "has_tests": {
+      "present": true,
+      "evidence": [
+        "3 test-like files"
+      ],
+      "evidence_classes": {
+        "structure": 1
+      },
+      "documentation_only": false
+    },
+    "large_repo": {
+      "present": false,
+      "evidence": [],
+      "evidence_classes": {},
+      "documentation_only": false
+    },
+    "localization": {
+      "present": true,
+      "evidence": [
+        "CHANGELOG.md",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/OptionHelp/concepts.md",
+        "Docs/OptionHelp/rav1e.md",
+        "Docs/OptionHelp/staxrip.md",
+        "Docs/OptionHelp/svt-av1.md",
+        "Docs/OptionHelp/vvencffapp.md",
+        "Docs/Planning/ARCHITECTURE.md",
+        "Docs/Planning/DECISION-LOG.md",
+        "Docs/Planning/ENGINEERING.md",
+        "Docs/Planning/OPTION-HELP.md",
+        "Docs/Planning/SLICE-001.md"
+      ],
+      "evidence_classes": {
+        "prose": 53,
+        "source": 1,
+        "config": 3
+      },
+      "documentation_only": false
+    },
+    "long_running_or_background": {
+      "present": true,
+      "evidence": [
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/Planning/ARCHITECTURE.md",
+        "Docs/Planning/DECISION-LOG.md",
+        "Docs/Planning/ENGINEERING.md",
+        "Docs/Planning/PHASE-4-AUDIT.md",
+        "Docs/Planning/SLICE-001.md",
+        "Docs/Review/Approval-Packets.md",
+        "Docs/Review/Chunk-Encode-Synchronize-Concurrency.md"
+      ],
+      "evidence_classes": {
+        "prose": 21,
+        "source": 4,
+        "config": 3
+      },
+      "documentation_only": false
+    },
+    "migration_or_rewrite": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/Repo-Slices.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/OptionHelp/README.md",
+        "Docs/OptionHelp/concepts.md",
+        "Docs/Planning/ARCHITECTURE.md"
+      ],
+      "evidence_classes": {
+        "prose": 35,
+        "source": 18,
+        "config": 2
+      },
+      "documentation_only": false
+    },
+    "multiple_implementations": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Overview.md",
+        "Docs/Planning/ARCHITECTURE.md",
+        "Docs/Planning/DECISION-LOG.md",
+        "Docs/Planning/ENGINEERING.md",
+        "Docs/Planning/OPTION-HELP.md"
+      ],
+      "evidence_classes": {
+        "prose": 36,
+        "config": 6,
+        "source": 42
+      },
+      "documentation_only": false
+    },
+    "mutation_tool_present": {
+      "present": false,
+      "evidence": [],
+      "evidence_classes": {},
+      "documentation_only": false
+    },
+    "parser_or_protocol": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "README.md",
+        "Docs/README.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/Repo-Slices.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Features.md",
+        "Docs/Introduction/Overview.md",
+        "Docs/OptionHelp/README.md"
+      ],
+      "evidence_classes": {
+        "prose": 102,
+        "source": 62,
+        "config": 6
+      },
+      "documentation_only": false
+    },
+    "performance_sensitive": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Features.md",
+        "Docs/Introduction/System-Requirements.md",
+        "Docs/OptionHelp/README.md",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/OptionHelp/concepts.md"
+      ],
+      "evidence_classes": {
+        "prose": 39,
+        "source": 24,
+        "config": 4
+      },
+      "documentation_only": false
+    },
+    "persistence": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        ".github/ISSUE_TEMPLATE/01-bug_report.yml",
+        "Docs/README.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/Repo-Slices.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/OptionHelp/aomenc.md"
+      ],
+      "evidence_classes": {
+        "prose": 43,
+        "config": 3,
+        "source": 41
+      },
+      "documentation_only": false
+    },
+    "property_tool_present": {
+      "present": false,
+      "evidence": [],
+      "evidence_classes": {},
+      "documentation_only": false
+    },
+    "public_api": {
+      "present": true,
+      "evidence": [
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Source/General/Misc.vb",
+        "Source/packages/Microsoft.PowerShell.5.ReferenceAssemblies.1.1.0/lib/net4/Microsoft.PowerShell.Workflow.ServiceCore.xml"
+      ],
+      "evidence_classes": {
+        "prose": 2,
+        "source": 1,
+        "config": 1
+      },
+      "documentation_only": false
+    },
+    "randomness_or_time": {
+      "present": true,
+      "evidence": [
+        "Docs/Architecture/System-Map.md",
+        "Docs/Review/Chunk-Encode-Synchronize-Concurrency.md",
+        "Docs/Review/probes/chunk-sync-guard-probe.cs",
+        "Docs/Review/probes/chunk-sync-probe.cs",
+        "Docs/Unknowns/Architecture-Pass.md",
+        "Source/Encoding/NVEnc.vb",
+        "Source/Encoding/QSVEnc.vb",
+        "Source/Encoding/VCEEnc.vb",
+        "Source/General/ApplicationSettings.vb",
+        "Source/General/General.vb",
+        "Source/General/GlobalClass.vb",
+        "Source/General/LogBuilder.vb"
+      ],
+      "evidence_classes": {
+        "prose": 5,
+        "source": 12
+      },
+      "documentation_only": false
+    },
+    "release_sensitive": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "License.txt",
+        "README.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/Repo-Slices.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Installation.md",
+        "Docs/Introduction/System-Requirements.md"
+      ],
+      "evidence_classes": {
+        "prose": 45,
+        "source": 15,
+        "config": 7
+      },
+      "documentation_only": false
+    },
+    "rendered_output": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "README.md",
+        ".github/ISSUE_TEMPLATE/01-bug_report.yml",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/OptionHelp/README.md",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/OptionHelp/concepts.md",
+        "Docs/OptionHelp/svt-av1.md",
+        "Docs/Planning/ARCHITECTURE.md",
+        "Docs/Planning/DECISION-LOG.md"
+      ],
+      "evidence_classes": {
+        "prose": 32,
+        "config": 3,
+        "source": 18
+      },
+      "documentation_only": false
+    },
+    "schema_validation_present": {
+      "present": false,
+      "evidence": [],
+      "evidence_classes": {},
+      "documentation_only": false
+    },
+    "search_or_numerical": {
+      "present": true,
+      "evidence": [
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/Repo-Slices.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Features.md",
+        "Docs/OptionHelp/aomenc.md",
+        "Docs/OptionHelp/concepts.md",
+        "Docs/OptionHelp/rav1e.md"
+      ],
+      "evidence_classes": {
+        "prose": 44,
+        "source": 32,
+        "config": 4
+      },
+      "documentation_only": false
+    },
+    "security_sensitive": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "License.txt",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Planning/ARCHITECTURE.md",
+        "Docs/Planning/DECISION-LOG.md",
+        "Docs/Planning/ENGINEERING.md",
+        "Docs/Planning/OPTION-HELP.md",
+        "Docs/Planning/SLICE-001.md",
+        "Docs/Planning/OptionHelp/PLAN-1-Validator.md",
+        "Docs/Planning/OptionHelp/PLAN-3-Close-Out.md",
+        "Docs/Reports/SVT-AV1/report-b5-enable-tf-2-nondeterministic.md"
+      ],
+      "evidence_classes": {
+        "prose": 22,
+        "source": 12,
+        "config": 6
+      },
+      "documentation_only": false
+    },
+    "stateful": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "README.md",
+        "Docs/README.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/Repo-Slices.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Contribution/README.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/OptionHelp/README.md",
+        "Docs/OptionHelp/aomenc.md"
+      ],
+      "evidence_classes": {
+        "prose": 45,
+        "source": 45,
+        "config": 10
+      },
+      "documentation_only": false
+    },
+    "workflow_or_ui": {
+      "present": true,
+      "evidence": [
+        "AGENTS.md",
+        "CHANGELOG-SUPPORTER.md",
+        "CHANGELOG.md",
+        "README.md",
+        "Docs/README.md",
+        "Docs/Architecture/Coverage-Ledger.md",
+        "Docs/Architecture/Repo-Slices.md",
+        "Docs/Architecture/System-Map.md",
+        "Docs/Guides/StaxRip-Contributor-Guide.html",
+        "Docs/Guides/StaxRip-User-Guide.html",
+        "Docs/Introduction/Features.md",
+        "Docs/Introduction/Screenshots.md"
+      ],
+      "evidence_classes": {
+        "prose": 57,
+        "source": 127,
+        "config": 6
+      },
+      "documentation_only": false
+    }
+  },
+  "exact_commands": [
+    {
+      "id": "dotnet-test",
+      "level": 3,
+      "argv": [
+        "dotnet",
+        "test"
+      ],
+      "enabled": false,
+      "source": "conventional candidate from .NET manifest",
+      "confidence": "inferred",
+      "timeout_seconds": 1200,
+      "resource_class": "heavy",
+      "cwd": ".",
+      "include_globs": [],
+      "exclude_globs": [],
+      "source_files": [
+        "Source/StaxRip.sln",
+        "Source/StaxRip.vbproj",
+        "Source/Tests/OptionHelp/OptionHelpTests.vbproj",
+        "Source/Tools/AutoCrop/AutoCrop.sln",
+        "Source/Tools/AutoCrop/AutoCrop.vbproj",
+        "Source/Tools/OptionHelp/fixtures/repo-clean/Source/StaxRip.vbproj",
+        "Source/Tools/OptionHelp/fixtures/repo/Source/StaxRip.vbproj"
+      ],
+      "source_definition_sha256": "5f9e53b4c2d6030c13811fdafae9be3979e27b0aed8f0b476066e8fce0754d7f"
+    }
+  ],
+  "notes": []
+}
