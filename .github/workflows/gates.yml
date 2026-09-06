@@ -17,8 +17,8 @@ permissions:
   contents: read
 
 env:
-  ADC_TAG: v2026.09.06-unified.11
-  ADC_CORE_SHA256: 3f32a303bf78e5aa1ae91fe7627ad0c6d86190867470e5f951f598add678a1a1
+  ADC_TAG: v2026.09.06-unified.12
+  ADC_CORE_SHA256: d99d12b5ab74b67b8c8e419f4bc879d7bbcd7e0524a5b6e5f2f2643a3a200e2a
   VS_COMMIT: acabf605b2205b32d65859bb2736405719d2fafd
 
 jobs:
