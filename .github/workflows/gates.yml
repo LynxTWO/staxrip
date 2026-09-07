@@ -108,6 +108,9 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             args+=(--changed-from "${{ github.event.pull_request.base.sha }}")
           fi
+          # The installer can rewrite identical tracked calibration bytes.
+          # Refresh Git's index stat cache before the runner binds its inputs.
+          git diff --check
           python .agents/skills/anti-dark-code/scripts/adc.py gates "${args[@]}"
 
       - name: Keep the run record
