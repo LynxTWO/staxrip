@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source_skill": "anti-dark-code",
-  "installed_version": "2026.09.06-unified.12",
-  "installed_core_sha256": "d99d12b5ab74b67b8c8e419f4bc879d7bbcd7e0524a5b6e5f2f2643a3a200e2a",
+  "installed_version": "2026.10.04-unified.17",
+  "installed_core_sha256": "1d95ca4c22f01c014bc2e77492ed5e29a7d1205017b15e06c8c89da85ad20840",
   "promotion_mode": "proposal-only",
   "parent_path": null,
   "notes": [
