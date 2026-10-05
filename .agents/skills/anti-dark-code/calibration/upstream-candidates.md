@@ -6,7 +6,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-001: Treat "a check that cannot fail" as a named defect class
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-verifier-falsifiability.md)
 - Scope: repo-agnostic
 - Lesson: An assertion that no execution can fail is worse than a missing assertion, because it
   reports coverage that does not exist. For every check, name a concrete, producible input that
@@ -34,7 +34,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-002: A fix without a guard is a fix that can be deleted
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/11-remediation-loop.md and the 07-adversarial-review.md widening guard)
 - Scope: repo-agnostic
 - Lesson: When a fix widens a detector, rule set, or matcher, add a case that fails if the
   widening is removed, and prove it by reverting the change and requiring the test to go red. A
@@ -55,7 +55,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-003: Verify an isolation property, never trust the request that asked for it
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/assurance-claim-proof.md)
 - Scope: repo-agnostic
 - Lesson: Sandboxing, isolation, and privilege-restriction interfaces can accept a request,
   return success, and silently apply nothing, depending on host policy. Evidence that a property
@@ -78,7 +78,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-004: Keep verification artifacts out of trees that developer tooling indexes
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-gate-environment.md)
 - Scope: repo-agnostic
 - Lesson: A gate that needs exclusive file access must not run inside a directory an editor
   indexer, search service, anti-malware scanner, backup agent, or sync client is walking. Such a
@@ -104,7 +104,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-005: A sequence of passing producers is not audited evidence
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-audited-producers.md and 14-deterministic-verification.md)
 - Scope: repo-agnostic
 - Lesson: Producers passing in sequence and an audit certifying them as a set are different
   claims, and only the second supports a release decision. Treat any producer record written after
@@ -125,7 +125,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-006: Verify that review is complete, not that it says it is complete
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/assurance-claim-proof.md)
 - Scope: repo-agnostic
 - Lesson: A checker satisfied by editing the artifact it checks is a ritual, not evidence. Binding
   closure to a version stamp, status word, or single declarative line lets one keystroke on the
@@ -149,7 +149,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-007: A value produced in a child context must cross the boundary as an artifact
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-exact-gate-contract.md)
 - Scope: repo-agnostic
 - Lesson: When verification runs part of its work in a separate process, container, sandbox, or
   job, values computed there are invisible to the parent unless they cross as a file, stream, or
@@ -170,7 +170,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-008: Anchor repository identity to immutable history, and report which component failed
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/15-dogfeeding-flowback.md, with the unified.7 erratum that reversed root-commit anchoring)
 - Scope: repo-agnostic
 - Lesson: Repository identity should be anchored to something the repository cannot change
   casually, such as its root commit set. A remote URL is mutable and legitimately changes with a
@@ -194,7 +194,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-009: Revert-mutation proofs need a committed baseline
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-mutation-restoration.md)
 - Scope: repo-agnostic
 - Lesson: A revert-mutation proof restores the code by version-control checkout, and
   checkout cannot restore a file the version control does not yet track. Running mutation
@@ -217,7 +217,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-010: Whole-record equality over collection members is a hidden reference comparison
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-exact-gate-contract.md)
 - Scope: repo-shape:managed-desktop
 - Lesson: In runtimes where a record or value type delegates member equality to the
   default comparer, a collection-typed member compares by backing reference, so a
@@ -241,7 +241,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-011: An implicit restore is a silent mutation of audited dependency state
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-gate-environment.md)
 - Scope: repo-agnostic
 - Lesson: Where dependency lock files are audited evidence, a routine build that
   implicitly restores can rewrite them for the build's own narrower context, for example
@@ -267,7 +267,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-012: A remediation must fix exactly the set the gate names
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/11-remediation-loop.md and the 07-adversarial-review.md widening guard)
 - Scope: repo-agnostic
 - Lesson: When a gate names the artifacts that violate a rule, the fix must target that
   named set and nothing wider. A remediation loop that re-derives its own candidate set,
@@ -294,7 +294,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-013: A mutation proof that hangs is a defect in the code, not the proof
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-mutation-restoration.md)
 - Scope: repo-agnostic
 - Lesson: A revert-mutation proof expects red; a third outcome exists: the suite never
   finishes. When a mutation neutralizes a safety action, any unbounded wait downstream
@@ -320,7 +320,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-014: A surviving mutant demands a diagnosis, and the diagnosis is a finding
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-mutation-restoration.md)
 - Scope: repo-agnostic
 - Lesson: When a mutation survives, the possibilities are a missing test or an
   equivalent mutant, and both are findings, never noise. An equivalent mutant means
@@ -349,7 +349,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-015: A new producer is born under the audit, or its pass is not evidence
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-audited-producers.md and 14-deterministic-verification.md)
 - Scope: repo-agnostic
 - Lesson: Where an audit certifies gate evidence as a set, adding a new gate is not
   done when the gate passes; it is done when the audit validates the gate's record
@@ -386,7 +386,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-016: A finding that crossed a context boundary is a hypothesis again
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/00-conventions.md)
 - Scope: repo-agnostic
 - Lesson: A claim carried across a summary, a handoff, or a session boundary loses the
   thing that made it a finding, which is the act of having looked. It arrives as a
@@ -415,7 +415,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-017: An unaudited producer needs its own output root
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-gate-environment.md)
 - Scope: repo-agnostic
 - Lesson: When a repository has an audited artifact tree, anything that writes there must
   participate in the tree's discipline, and the way a new tool acquires that obligation is
@@ -443,7 +443,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-018: Enumerate the channels before reporting an absence
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/00-conventions.md)
 - Scope: repo-agnostic
 - Lesson: An availability survey inherits the blind spots of whatever channel it looks
   at. When an ecosystem is mid-migration between distribution channels, inspecting the
@@ -468,7 +468,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-019: A profiler must stop at a nested checkout
 
-- Status: staged
+- Status: promoted (unified.9 to unified.11; scripts/adc.py probe)
 - Scope: repo-agnostic
 - Lesson: A deterministic profile is only as honest as its scan scope. Agent harnesses
   keep linked Git worktrees inside the repository they belong to (Claude Code keeps them
@@ -501,7 +501,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-020: An unrecognized language is an unknown, not an absence
 
-- Status: staged
+- Status: promoted (unified.9 to unified.11; scripts/adc.py probe)
 - Scope: repo-agnostic
 - Lesson: A source-extension table is an allow-list. A language missing from it is not
   merely uncounted; it vanishes from the language list, contributes nothing to repo-type
@@ -526,7 +526,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-021: Documentation is not evidence that code does a thing
 
-- Status: staged
+- Status: promoted (unified.9 to unified.11; scripts/adc.py probe)
 - Scope: repo-agnostic
 - Lesson: A content-signal scan that reads every text file treats a design note, a
   steering file, or a user guide as proof that the product has the behavior the note
@@ -555,7 +555,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-022: A line-ending override plus a sweep commit rewrites the repository
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/00-conventions.md)
 - Scope: repo-agnostic
 - Lesson: On a checkout whose line endings are normalized on the way in and out, a commit
   that both overrides the normalization setting and stages everything modified will see
@@ -582,7 +582,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-023: A required job at the edge of its timeout is a flake waiting for contention
 
-- Status: staged
+- Status: promoted (in the shared core by unified.12; references/specialist-gate-environment.md)
 - Scope: repo-agnostic
 - Lesson: A continuous-integration job whose normal duration sits within a few percent of
   its timeout passes alone and fails whenever runners are shared, and the failure reads as
@@ -603,7 +603,7 @@ limits. A repo fact is not a general lesson, and one incident is an observation,
 
 ## ADC-LOCAL-024: A refusal must name a repair that does not destroy something else
 
-- Status: staged
+- Status: promoted (unified.12; scripts/adc.py gates --rebind)
 - Scope: repo-agnostic
 - Lesson: When a guard refuses because a bound input drifted, the message names the
   repair the operator will run. If the named repair is a broad regeneration that also
