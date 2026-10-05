@@ -17,8 +17,8 @@ permissions:
   contents: read
 
 env:
-  ADC_TAG: v2026.09.07-unified.14
-  ADC_CORE_SHA256: 6bf235f6e826c0ac9dbf4bfedadf241540b9d20ddb24dae32ddb9aa24f25a1ae
+  ADC_TAG: v2026.10.04-unified.17
+  ADC_CORE_SHA256: 1d95ca4c22f01c014bc2e77492ed5e29a7d1205017b15e06c8c89da85ad20840
   VS_COMMIT: acabf605b2205b32d65859bb2736405719d2fafd
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
           mkdir -p "$src"
           curl -sSL --retry 3 -o "$src/core.zip" "https://github.com/LynxTWO/anti-dark-code-skill/archive/refs/tags/${ADC_TAG}.zip"
           unzip -q "$src/core.zip" -d "$src"
-          core="$(find "$src" -maxdepth 2 -type d -name anti-dark-code | head -1)"
+          core="$(find "$src" -maxdepth 3 -type d -path '*/skills/anti-dark-code' | head -1)"| head -1)"
           python "$core/scripts/adc.py" install --repo . --source-skill "$core" \
             --expect-core-digest "$ADC_CORE_SHA256" --hosts none --apply > "$RUNNER_TEMP/install.json"
           python - "$RUNNER_TEMP/install.json" <<'PY'
