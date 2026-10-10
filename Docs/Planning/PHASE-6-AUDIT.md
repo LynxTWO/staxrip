@@ -3,6 +3,8 @@
 Version: 0.1 Draft. Date: 2026-08-15. Status: Pass.
 Repository base: `9fc6255a`. Audit scope: the source-bound planning change that contains this file.
 
+Historical note: This audit predates D-037. D-037 later superseded D-030 and D-034, replaced `Ready` with bounded Source project checks, replaced successful-job evidence with static caller mapping plus pure policy and focused source checks, and approved the position-persistence opt-out. Preserve the results below as the Phase 6 snapshot. Use `SLICE-001.md` and `../Verification/SLICE-001/README.md` for current status.
+
 This is a planning audit. It approves M0 discovery under `SLICE-001.md`. It does not prove runtime behavior, authorize dependent production implementation before M0 closes, or authorize packaging, release, or publication work.
 
 ## Approval record

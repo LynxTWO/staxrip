@@ -359,12 +359,19 @@ Public MustInherit Class VideoEncoder
         Dim muxer = ObjectHelp.GetCopy(Of Muxer)(Me.Muxer)
 
         If muxer.CanEdit AndAlso muxer.Edit() = DialogResult.OK Then
-            Me.Muxer = muxer
-            g.MainForm.llMuxer.Tag = Me.Muxer.Name
-            g.MainForm.llMuxer.Text = Me.Muxer.OutputExt.ToUpperInvariant
-            g.MainForm.Refresh()
-            g.MainForm.UpdateSizeOrBitrate()
-            g.MainForm.Assistant()
+            Dim isActiveEncoder = Me Is p.VideoEncoder
+            If isActiveEncoder Then g.MainForm.BeginProjectCheckInvalidatingMutation()
+
+            Try
+                Me.Muxer = muxer
+                g.MainForm.llMuxer.Tag = Me.Muxer.Name
+                g.MainForm.llMuxer.Text = Me.Muxer.OutputExt.ToUpperInvariant
+                g.MainForm.Refresh()
+                g.MainForm.UpdateSizeOrBitrate()
+                g.MainForm.Assistant()
+            Finally
+                If isActiveEncoder Then g.MainForm.EndProjectCheckInvalidatingMutation()
+            End Try
         End If
     End Sub
 
@@ -377,16 +384,23 @@ Public MustInherit Class VideoEncoder
     End Function
 
     Sub LoadMuxer(profile As Profile)
-        Muxer = DirectCast(ObjectHelp.GetCopy(profile), Muxer)
-        Muxer.Init()
+        Dim isActiveEncoder = Me Is p.VideoEncoder
+        If isActiveEncoder Then g.MainForm.BeginProjectCheckInvalidatingMutation()
 
-        Dim text = Muxer.OutputExt.ToUpperInvariant()
-        g.MainForm.llMuxer.Tag = Muxer.Name
-        g.MainForm.llMuxer.Text = If(String.IsNullOrWhiteSpace(text), "[ ? ]", text)
+        Try
+            Muxer = DirectCast(ObjectHelp.GetCopy(profile), Muxer)
+            Muxer.Init()
 
-        UpdateTargetFile()
-        g.MainForm.RecalcBitrate()
-        g.MainForm.Assistant()
+            Dim text = Muxer.OutputExt.ToUpperInvariant()
+            g.MainForm.llMuxer.Tag = Muxer.Name
+            g.MainForm.llMuxer.Text = If(String.IsNullOrWhiteSpace(text), "[ ? ]", text)
+
+            UpdateTargetFile()
+            g.MainForm.RecalcBitrate()
+            g.MainForm.Assistant()
+        Finally
+            If isActiveEncoder Then g.MainForm.EndProjectCheckInvalidatingMutation()
+        End Try
     End Sub
 
     Function GetMuxerProfile() As Profile
